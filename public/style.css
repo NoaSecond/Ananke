@@ -128,6 +128,11 @@ main {
     transition: border-left-color 0.3s ease;
 }
 
+.workflow-header.locked {
+    cursor: default;
+    background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.02) 10px, rgba(0, 0, 0, 0.02) 20px);
+}
+
 .workflow-header h3 {
     margin: 0;
 }
@@ -184,6 +189,15 @@ main {
     width: 100%;
     padding: 0.75rem;
     border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.75rem;
+}
+
+.workflow-menu button .material-symbols-outlined {
+    font-size: 20px;
+    color: inherit;
 }
 
 .workflow-menu button.delete {

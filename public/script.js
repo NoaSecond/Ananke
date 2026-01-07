@@ -181,6 +181,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (mapFrenchToEnglish[w.title]) {
                     w.title = mapFrenchToEnglish[w.title];
                 }
+                // Migrate French task descriptions
+                if (w.tasks) {
+                    w.tasks.forEach(t => {
+                        if (t.description === 'Cliquez pour modifier...' || t.description === 'Cliquez pour éditer...') {
+                            t.description = 'Click to edit...';
+                        }
+                    });
+                }
             });
             Logger.success('📂 Data loaded successfully', { workflows: savedData.workflows.length });
         } else {
@@ -302,18 +310,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 columnEl.className = 'workflow-column';
                 columnEl.dataset.workflowId = workflow.id;
 
+                const isLocked = workflow.locked || false;
+                const lockIcon = isLocked ? ' <span class="material-symbols-outlined" style="font-size: 1.2em; vertical-align: bottom; opacity: 0.6;" title="Locked">lock</span>' : '';
+                const headerClass = isLocked ? 'workflow-header locked' : 'workflow-header';
+
                 columnEl.innerHTML = `
-                    <div class="workflow-header" style="border-left: 4px solid ${workflow.color || '#1a73e8'}">
-                        <h3>${workflow.title}</h3>
+                    <div class="${headerClass}" style="border-left: 4px solid ${workflow.color || '#1a73e8'}">
+                        <h3>${workflow.title}${lockIcon}</h3>
                         <div class="workflow-actions">
                             <button class="workflow-menu-btn" title="Column Options">
                                 <span class="material-symbols-outlined">more_vert</span>
                             </button>
                             <div class="workflow-menu">
-                                <button class="edit-workflow-btn" data-workflow-id="${workflow.id}">Edit</button>
-                                <button class="duplicate-workflow-btn" data-workflow-id="${workflow.id}">Duplicate</button>
-                                <button class="add-task-btn-menu" data-workflow-id="${workflow.id}">Add Task</button>
-                                <button class="delete-workflow-btn delete" data-workflow-id="${workflow.id}">Delete</button>
+                                <button class="edit-workflow-btn" data-workflow-id="${workflow.id}">
+                                    <span class="material-symbols-outlined">edit</span> Edit
+                                </button>
+                                <button class="lock-workflow-btn" data-workflow-id="${workflow.id}">
+                                    <span class="material-symbols-outlined">${isLocked ? 'lock_open' : 'lock'}</span> ${isLocked ? 'Unlock' : 'Lock'}
+                                </button>
+                                <button class="duplicate-workflow-btn" data-workflow-id="${workflow.id}">
+                                    <span class="material-symbols-outlined">content_copy</span> Duplicate
+                                </button>
+                                <button class="add-task-btn-menu" data-workflow-id="${workflow.id}">
+                                    <span class="material-symbols-outlined">add_task</span> Add Task
+                                </button>
+                                <button class="delete-workflow-btn delete" data-workflow-id="${workflow.id}">
+                                    <span class="material-symbols-outlined">delete</span> Delete
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -346,7 +369,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const initDragAndDrop = () => {
         new Sortable(kanbanBoard, {
-            group: 'columns', animation: 150, handle: '.workflow-header',
+            group: 'columns',
+            animation: 150,
+            handle: '.workflow-header',
+            filter: '.locked', // Disable dragging if element has class .locked
             onStart: () => {
                 isDraggingInternal = true;
             },
@@ -639,6 +665,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     'success'
                 );
             });
+        }
+
+        // Lock/Unlock Column
+        const lockWorkflowBtn = e.target.closest('.lock-workflow-btn');
+        if (lockWorkflowBtn) {
+            const workflow = boardData.workflows.find(w => w.id == lockWorkflowBtn.dataset.workflowId);
+            if (workflow) {
+                workflow.locked = !workflow.locked;
+                Logger.success(`🔒 Column ${workflow.locked ? 'locked' : 'unlocked'}`, { title: workflow.title });
+                renderBoard();
+                ErrorHandler.showUserNotification(`Column "${workflow.title}" ${workflow.locked ? 'locked' : 'unlocked'}!`, 'success');
+            }
         }
 
         // Edit Task (Card click or Edit button click)
