@@ -133,6 +133,18 @@ document.addEventListener('DOMContentLoaded', () => {
         saveBtn: document.getElementById('save-task-btn'),
         deleteBtn: document.getElementById('delete-task-btn'),
         duplicateBtn: document.getElementById('duplicate-task-btn'),
+        columnSelect: document.getElementById('task-column-select'),
+        tagsContainer: document.getElementById('task-tags-container'),
+        newTagName: document.getElementById('new-tag-name'),
+        newTagColor: document.getElementById('new-tag-color'),
+        addTagBtn: document.getElementById('add-tag-btn'),
+        // Tag Picker Elements
+        showTagPickerBtn: document.getElementById('show-tag-picker-btn'),
+        tagPicker: document.getElementById('tag-picker'),
+        availableTagsList: document.getElementById('available-tags-list'),
+
+        customFieldsContainer: document.getElementById('task-custom-fields-container'),
+        addCustomFieldBtn: document.getElementById('add-custom-field-btn'),
     };
     const workflowModal = document.getElementById('workflow-modal');
     const workflowForm = {
@@ -151,6 +163,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Default Data ---
     const getDefaultData = () => ({
         projectName: 'Online Kanban',
+        tags: [
+            { name: 'Urgent', color: '#ef4444' },
+            { name: 'High Priority', color: '#f97316' },
+            { name: 'Design', color: '#8b5cf6' },
+            { name: 'Bug', color: '#ef4444' }
+        ],
         workflows: [
             { id: Date.now() + 1, title: 'To Do', color: '#ef4444', tasks: [] },
             { id: Date.now() + 2, title: 'In Progress', color: '#f97316', tasks: [] },
@@ -169,6 +187,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Handle legacy data without project name
             if (!boardData.projectName) {
                 boardData.projectName = 'Online Kanban';
+            }
+            if (!boardData.tags) {
+                boardData.tags = [];
             }
             // Migrate French titles if necessary (optional improvement)
             const mapFrenchToEnglish = {
@@ -322,7 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span class="material-symbols-outlined">more_vert</span>
                             </button>
                             <div class="workflow-menu">
-                                <button class="edit-workflow-btn" data-workflow-id="${workflow.id}">
+                                <button class="edit-workflow-btn" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                                     <span class="material-symbols-outlined">edit</span> Edit
                                 </button>
                                 <button class="lock-workflow-btn" data-workflow-id="${workflow.id}">
@@ -331,10 +352,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <button class="duplicate-workflow-btn" data-workflow-id="${workflow.id}">
                                     <span class="material-symbols-outlined">content_copy</span> Duplicate
                                 </button>
-                                <button class="add-task-btn-menu" data-workflow-id="${workflow.id}">
+                                <button class="add-task-btn-menu" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                                     <span class="material-symbols-outlined">add_task</span> Add Task
                                 </button>
-                                <button class="delete-workflow-btn delete" data-workflow-id="${workflow.id}">
+                                <button class="delete-workflow-btn delete" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                                     <span class="material-symbols-outlined">delete</span> Delete
                                 </button>
                             </div>
@@ -349,12 +370,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     taskCard.className = 'task-card';
                     taskCard.dataset.taskId = task.id;
                     taskCard.style.borderLeftColor = task.color;
+
+                    const taskActionsHtml = isLocked ? `
+                        <div class="task-actions">
+                            <button class="task-card-action-btn edit-btn" title="Edit Task">
+                                <span class="material-symbols-outlined">edit</span>
+                            </button>
+                        </div>` : `
+                        <div class="task-actions">
+                            <button class="task-card-action-btn edit-btn" title="Edit Task">
+                                <span class="material-symbols-outlined">edit</span>
+                            </button>
+                            <button class="task-card-action-btn duplicate-btn" title="Duplicate Task">
+                                <span class="material-symbols-outlined">content_copy</span>
+                            </button>
+                            <button class="task-card-action-btn delete-btn" title="Delete Task">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>`;
+
                     taskCard.innerHTML = `
-                        <button class="task-card-edit-btn" title="Edit Task">
-                            <span class="material-symbols-outlined">edit</span>
-                        </button>
+                        ${taskActionsHtml}
                         <h4>${task.title}</h4>
+                        <div class="task-tags-display">
+                            ${(task.tags || []).map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color};" title="${tag.name}"></span>`).join('')}
+                        </div>
                         <p>${task.description}</p>
+                        ${(task.customFields || []).filter(f => f.showOnCard).map(f => `<div class="task-custom-field-small"><strong>${f.name}:</strong> ${f.value}</div>`).join('')}
                     `;
                     taskList.appendChild(taskCard);
                 });
@@ -384,8 +426,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         document.querySelectorAll('.task-list').forEach(list => {
+            const workflowId = list.dataset.workflowId;
+            const workflow = boardData.workflows.find(w => w.id == workflowId);
+            const isLocked = workflow && workflow.locked;
+
             new Sortable(list, {
-                group: 'tasks', animation: 150,
+                group: {
+                    name: 'tasks',
+                    pull: !isLocked, // Cannot pull out if locked
+                    put: !isLocked   // Cannot put in if locked
+                },
+                sort: !isLocked, // Cannot reorder if locked
+                animation: 150,
                 onStart: () => {
                     isDraggingInternal = true;
                 },
@@ -513,23 +565,217 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }, 'Deleting column from modal'));
 
+    const renderTags = (tags) => {
+        taskForm.tagsContainer.innerHTML = '';
+        tags.forEach((tag, index) => {
+            const tagEl = document.createElement('div');
+            tagEl.className = 'tag-pill';
+            tagEl.style.backgroundColor = tag.color;
+            tagEl.innerHTML = `
+                ${tag.name}
+                <button class="tag-remove" data-index="${index}">&times;</button>
+            `;
+            taskForm.tagsContainer.appendChild(tagEl);
+        });
+    };
+
+    const renderCustomFields = (fields) => {
+        taskForm.customFieldsContainer.innerHTML = '';
+        fields.forEach((field, index) => {
+            const fieldEl = document.createElement('div');
+            fieldEl.className = 'custom-field-row';
+            fieldEl.dataset.index = index;
+
+            // Determine input type based on field type
+            let inputHtml = '';
+            if (field.type === 'date') {
+                inputHtml = `<input type="date" class="small-input field-value full-width" value="${field.value}">`;
+            } else if (field.type === 'number') {
+                inputHtml = `<input type="number" class="small-input field-value full-width" value="${field.value}" placeholder="Value">`;
+            } else {
+                inputHtml = `<input type="text" class="small-input field-value full-width" value="${field.value}" placeholder="Value">`;
+            }
+
+            fieldEl.innerHTML = `
+                <div class="custom-field-header">
+                    <div style="display:flex; gap: 0.5rem; align-items: center; width: 100%;">
+                        <select class="small-input field-type-select" title="Field Type">
+                            <option value="text" ${!field.type || field.type === 'text' ? 'selected' : ''}>Text</option>
+                            <option value="number" ${field.type === 'number' ? 'selected' : ''}>Number</option>
+                            <option value="date" ${field.type === 'date' ? 'selected' : ''}>Date</option>
+                        </select>
+                        <input type="text" class="small-input field-name" value="${field.name}" placeholder="Field Name" style="flex-grow:1;">
+                    </div>
+                    <button class="custom-field-remove" data-index="${index}">&times;</button>
+                </div>
+                ${inputHtml}
+                <div class="custom-field-options">
+                    <input type="checkbox" class="field-show" id="field-show-${index}" ${field.showOnCard ? 'checked' : ''}>
+                    <label for="field-show-${index}">Show on card</label>
+                </div>
+            `;
+            taskForm.customFieldsContainer.appendChild(fieldEl);
+        });
+    };
+
+    // Store temporary state for tags and custom fields while editing
+    let tempTags = [];
+    let tempCustomFields = [];
+
+    // Tag Picker Logic
+    const toggleTagPicker = (show) => {
+        if (show) {
+            taskForm.tagPicker.classList.remove('hidden');
+            renderAvailableTags();
+        } else {
+            taskForm.tagPicker.classList.add('hidden');
+        }
+    };
+
+    const renderAvailableTags = () => {
+        taskForm.availableTagsList.innerHTML = '';
+        boardData.tags.forEach(tag => {
+            const isAssigned = tempTags.some(t => t.name === tag.name);
+            if (!isAssigned) {
+                const tagOption = document.createElement('div');
+                tagOption.className = 'tag-option';
+                tagOption.style.backgroundColor = tag.color;
+                tagOption.textContent = tag.name;
+                tagOption.addEventListener('click', () => {
+                    tempTags.push({ ...tag });
+                    renderTags(tempTags);
+                    toggleTagPicker(false);
+                });
+                taskForm.availableTagsList.appendChild(tagOption);
+            }
+        });
+        if (taskForm.availableTagsList.children.length === 0) {
+            taskForm.availableTagsList.innerHTML = '<span style="font-size:0.8rem; opacity:0.6; padding:0.5rem;">No other tags available</span>';
+        }
+    };
+
+    // Global listener to close tag picker
+    document.addEventListener('click', (e) => {
+        if (!taskForm.tagPicker) return;
+        if (!taskForm.tagPicker.classList.contains('hidden') &&
+            !taskForm.tagPicker.contains(e.target) &&
+            e.target !== taskForm.showTagPickerBtn &&
+            !taskForm.showTagPickerBtn.contains(e.target)) {
+            toggleTagPicker(false);
+        }
+    });
+
+    taskForm.showTagPickerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = taskForm.tagPicker.classList.contains('hidden');
+        toggleTagPicker(isHidden);
+    });
+
+    taskForm.addTagBtn.addEventListener('click', () => {
+        const name = taskForm.newTagName.value.trim();
+        const color = taskForm.newTagColor.value;
+        if (name) {
+            const newTag = { name, color };
+            // Add to board tags if not exists
+            if (!boardData.tags.find(t => t.name === name)) {
+                boardData.tags.push(newTag);
+            }
+            tempTags.push(newTag);
+            renderTags(tempTags);
+            taskForm.newTagName.value = '';
+            toggleTagPicker(false);
+        }
+    });
+
+    taskForm.tagsContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('tag-remove')) {
+            const index = e.target.dataset.index;
+            tempTags.splice(index, 1);
+            renderTags(tempTags);
+        }
+    });
+
+    taskForm.addCustomFieldBtn.addEventListener('click', () => {
+        tempCustomFields.push({ name: '', value: '', type: 'text', showOnCard: false });
+        renderCustomFields(tempCustomFields);
+    });
+
+    taskForm.customFieldsContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('custom-field-remove')) {
+            const index = e.target.dataset.index;
+            tempCustomFields.splice(index, 1);
+            renderCustomFields(tempCustomFields);
+        }
+    });
+
+    // Update temp custom fields on input change
+    taskForm.customFieldsContainer.addEventListener('input', (e) => {
+        const row = e.target.closest('.custom-field-row');
+        if (!row) return;
+        const index = row.dataset.index;
+
+        if (e.target.classList.contains('field-name')) {
+            tempCustomFields[index].name = e.target.value;
+        } else if (e.target.classList.contains('field-value')) {
+            tempCustomFields[index].value = e.target.value;
+        }
+    });
+
+    // Handle Type Change
+    taskForm.customFieldsContainer.addEventListener('change', (e) => {
+        const row = e.target.closest('.custom-field-row');
+        if (!row) return;
+        const index = row.dataset.index;
+
+        if (e.target.classList.contains('field-show')) {
+            tempCustomFields[index].showOnCard = e.target.checked;
+        } else if (e.target.classList.contains('field-type-select')) {
+            tempCustomFields[index].type = e.target.value;
+            tempCustomFields[index].value = '';
+            renderCustomFields(tempCustomFields);
+        }
+    });
+
     taskForm.saveBtn.addEventListener('click', () => {
-        for (const workflow of boardData.workflows) {
-            const task = workflow.tasks.find(t => t.id == taskForm.id.value);
-            if (task) {
-                const oldTitle = task.title;
+        const currentTaskId = taskForm.id.value;
+        let taskFound = false;
+
+        // Find and update the task
+        for (let wIndex = 0; wIndex < boardData.workflows.length; wIndex++) {
+            const workflow = boardData.workflows[wIndex];
+            const tIndex = workflow.tasks.findIndex(t => t.id == currentTaskId);
+
+            if (tIndex !== -1) {
+                const task = workflow.tasks[tIndex];
+                const newWorkflowId = taskForm.columnSelect.value;
+                const targetWorkflow = boardData.workflows.find(w => w.id == newWorkflowId);
+
+                // Update basic properties
                 task.title = taskForm.title.value;
                 task.description = taskForm.description.value;
                 task.color = taskForm.color.value;
-                Logger.success('✏️ Task modified', {
-                    id: task.id,
-                    oldTitle,
-                    newTitle: task.title
-                });
+                task.tags = [...tempTags];
+                task.customFields = [...tempCustomFields];
+
+                // Handle move if column changed
+                if (workflow.id != newWorkflowId && targetWorkflow) {
+                    workflow.tasks.splice(tIndex, 1);
+                    targetWorkflow.tasks.push(task);
+                    Logger.success('🚚 Task moved and updated', { title: task.title, from: workflow.title, to: targetWorkflow.title });
+                } else {
+                    Logger.success('✏️ Task modified', { id: task.id, newTitle: task.title });
+                }
+
                 renderBoard();
-                ErrorHandler.showUserNotification(`Task "${task.title}" modified!`, 'success');
+                ErrorHandler.showUserNotification(`Task "${task.title}" saved!`, 'success');
+                taskFound = true;
                 break;
             }
+        }
+
+        if (!taskFound) {
+            Logger.error('❌ Could not find task to save');
+            ErrorHandler.showUserNotification('Error saving task', 'error');
         }
         closeModal(taskModal);
     });
@@ -615,7 +861,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Edit Column
         const editWorkflowBtn = e.target.closest('.edit-workflow-btn');
-        if (editWorkflowBtn) {
+        if (editWorkflowBtn && !editWorkflowBtn.disabled) {
             const workflow = boardData.workflows.find(w => w.id == editWorkflowBtn.dataset.workflowId);
             if (workflow) {
                 workflowForm.id.value = workflow.id;
@@ -644,13 +890,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Add Task Menu
         const addTaskMenuBtn = e.target.closest('.add-task-btn-menu');
-        if (addTaskMenuBtn) {
+        if (addTaskMenuBtn && !addTaskMenuBtn.disabled) {
             openAddModal('task', addTaskMenuBtn.dataset.workflowId);
         }
 
         // Delete Column
         const deleteWorkflowBtn = e.target.closest('.delete-workflow-btn');
-        if (deleteWorkflowBtn) {
+        if (deleteWorkflowBtn && !deleteWorkflowBtn.disabled) {
             showConfirm('Are you sure you want to delete this column and all its tasks?', () => {
                 const deletedWorkflowId = deleteWorkflowBtn.dataset.workflowId;
                 const deletedWorkflow = boardData.workflows.find(w => w.id == deletedWorkflowId);
@@ -679,23 +925,85 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Edit Task (Card click or Edit button click)
+        // Task Actions
         const taskCard = e.target.closest('.task-card');
-        const editTaskBtn = e.target.closest('.task-card-edit-btn');
+        const editTaskBtn = e.target.closest('.edit-btn');
+        const duplicateTaskBtn = e.target.closest('.duplicate-btn');
+        const deleteTaskBtn = e.target.closest('.delete-btn');
 
-        if (taskCard || editTaskBtn) {
-            // If click was on edit button, use that card
-            const targetCard = editTaskBtn ? editTaskBtn.closest('.task-card') : taskCard;
+        if (taskCard || editTaskBtn || duplicateTaskBtn || deleteTaskBtn) {
+            const targetCard = taskCard || (editTaskBtn || duplicateTaskBtn || deleteTaskBtn).closest('.task-card');
             const workflowId = targetCard.parentElement.dataset.workflowId;
             const workflow = boardData.workflows.find(w => w.id == workflowId);
             if (!workflow) return;
 
+            // Security check for locked columns
+            if (workflow.locked && (deleteTaskBtn || duplicateTaskBtn)) {
+                ErrorHandler.showUserNotification('Cannot modify tasks in a locked column', 'error');
+                return;
+            }
+
             const task = workflow.tasks.find(t => t.id == targetCard.dataset.taskId);
+            if (!task) return;
+
+            // Delete Task
+            if (deleteTaskBtn) {
+                showConfirm('Are you sure you want to delete this task?', () => {
+                    workflow.tasks = workflow.tasks.filter(t => t.id != task.id);
+                    Logger.success('🗑️ Task deleted from card', { title: task.title });
+                    renderBoard();
+                    ErrorHandler.showUserNotification(`Task "${task.title}" deleted`, 'success');
+                });
+                return;
+            }
+
+            // Duplicate Task
+            if (duplicateTaskBtn) {
+                const newTask = JSON.parse(JSON.stringify(task));
+                newTask.id = Date.now();
+                newTask.title = `${task.title} (Copy)`;
+                workflow.tasks.push(newTask);
+                Logger.success('📋 Task duplicated from card', { title: newTask.title });
+                renderBoard();
+                ErrorHandler.showUserNotification(`Task "${task.title}" duplicated!`, 'success');
+                return;
+            }
+
+            // Edit Task (default action or explicit edit button)
             if (task) {
                 taskForm.id.value = task.id;
                 taskForm.title.value = task.title;
                 taskForm.description.value = task.description;
                 taskForm.color.value = task.color;
+
+                // Initialize temp state for tags and fields
+                tempTags = task.tags ? [...task.tags] : [];
+                tempCustomFields = task.customFields ? JSON.parse(JSON.stringify(task.customFields)) : []; // Deep copy
+
+                renderTags(tempTags);
+                renderCustomFields(tempCustomFields);
+
+                // Populate column selector
+                taskForm.columnSelect.innerHTML = '';
+                boardData.workflows.forEach(w => {
+                    const option = document.createElement('option');
+                    option.value = w.id;
+                    option.textContent = w.title + (w.locked ? ' (🔒)' : '');
+                    // Disable if target is locked OR current is locked (cannot move out)
+                    option.disabled = (w.locked || workflow.locked) && w.id != workflow.id;
+                    if (w.id == workflow.id) option.selected = true;
+                    taskForm.columnSelect.appendChild(option);
+                });
+
+                // Disable Delete button in modal if locked
+                const deleteBtn = document.getElementById('delete-task-btn');
+                if (deleteBtn) {
+                    deleteBtn.disabled = !!workflow.locked;
+                    deleteBtn.style.opacity = workflow.locked ? '0.5' : '1';
+                    deleteBtn.style.cursor = workflow.locked ? 'not-allowed' : 'pointer';
+                    deleteBtn.title = workflow.locked ? 'Column is locked' : '';
+                }
+
                 openModal(taskModal);
             }
         }

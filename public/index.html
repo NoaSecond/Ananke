@@ -190,16 +190,60 @@
     </div>
 
     <div id="task-modal" class="modal-overlay">
-        <div class="modal-content">
-            <button class="modal-close-btn">&times;</button>
-            <h2 id="modal-title">Edit Task</h2>
-            <input type="hidden" id="task-id-input">
-            <label for="task-title-input">Title</label>
-            <input type="text" id="task-title-input" placeholder="Task title">
-            <label for="task-desc-input">Description</label>
-            <textarea id="task-desc-input" rows="4" placeholder="Description..."></textarea>
-            <label for="task-color-input">Color</label>
-            <input type="color" id="task-color-input">
+        <div class="modal-content task-modal-content">
+            <div class="modal-header-custom">
+                <input type="text" id="task-title-input" class="modal-title-input" placeholder="Task Title">
+                <div class="header-controls">
+                    <select id="task-column-select" class="column-select" title="Move to column"></select>
+                    <button class="modal-close-btn relative-close">&times;</button>
+                </div>
+            </div>
+
+            <div class="modal-body-scroll">
+                <input type="hidden" id="task-id-input">
+
+                <label for="task-desc-input">Description</label>
+                <textarea id="task-desc-input" rows="4" placeholder="Description..."></textarea>
+
+                <label for="task-color-input">Strip Color</label>
+                <input type="color" id="task-color-input">
+
+                <div class="section-divider"></div>
+
+                <!-- Tags Section -->
+                <div class="tags-section">
+                    <label>Tags</label>
+                    <div class="tags-wrapper">
+                        <div id="task-tags-container" class="tags-container"></div>
+                        <button id="show-tag-picker-btn" class="secondary-btn small-btn circular-btn" title="Add Tag">
+                            <span class="material-symbols-outlined">add</span>
+                        </button>
+                    </div>
+
+                    <!-- Tag Picker (Hidden by default) -->
+                    <div id="tag-picker" class="tag-picker hidden">
+                        <h4>Select a tag</h4>
+                        <div id="available-tags-list" class="available-tags-list"></div>
+                        <div class="tag-picker-divider">or create new</div>
+                        <div class="create-tag-row">
+                            <input type="text" id="new-tag-name" placeholder="Tag name" class="small-input">
+                            <input type="color" id="new-tag-color" value="#3b82f6" class="color-input-small">
+                            <button id="add-tag-btn" class="action-btn small-btn">Create</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <!-- Custom Fields Section -->
+                <div class="custom-fields-section">
+                    <label>Custom Fields</label>
+                    <div id="task-custom-fields-container" class="custom-fields-container"></div>
+                    <button id="add-custom-field-btn" class="secondary-btn small-btn full-width">+ Add Custom
+                        Field</button>
+                </div>
+            </div>
+
             <div class="modal-actions">
                 <button id="delete-task-btn" class="danger-btn">Delete</button>
                 <button id="duplicate-task-btn" class="secondary-btn">Duplicate</button>
