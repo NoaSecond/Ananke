@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Système de Log et Gestion d'Erreurs ---
+    // --- Log System & Error Handling ---
     const Logger = {
         levels: {
             ERROR: { emoji: '🚨', color: '#ef4444', level: 0 },
@@ -8,81 +8,81 @@ document.addEventListener('DOMContentLoaded', () => {
             SUCCESS: { emoji: '✅', color: '#22c55e', level: 3 },
             DEBUG: { emoji: '🔍', color: '#8b5cf6', level: 4 }
         },
-        
-        // Niveau de log pour production (2 = INFO et moins)
+
+        // Log level for production (2 = INFO and below)
         currentLevel: window.location.hostname === 'localhost' ? 4 : 2,
-        
+
         log(level, message, data = null) {
             const logLevel = this.levels[level];
             if (!logLevel || logLevel.level > this.currentLevel) return;
-            
+
             const timestamp = new Date().toLocaleTimeString();
             const logMessage = `${logLevel.emoji} [${timestamp}] ${message}`;
-            
+
             console.log(
                 `%c${logMessage}`,
                 `color: ${logLevel.color}; font-weight: bold;`
             );
-            
+
             if (data) {
-                console.log('📊 Données associées:', data);
+                console.log('📊 Associated data:', data);
             }
         },
-        
+
         error(message, error = null) {
             this.log('ERROR', message, error);
             if (error && error.stack) {
                 console.error('📋 Stack trace:', error.stack);
             }
         },
-        
+
         warn(message, data = null) {
             this.log('WARN', message, data);
         },
-        
+
         info(message, data = null) {
             this.log('INFO', message, data);
         },
-        
+
         success(message, data = null) {
             this.log('SUCCESS', message, data);
         },
-        
+
         debug(message, data = null) {
             this.log('DEBUG', message, data);
         }
     };
 
-    // --- Gestionnaire d'Erreurs Global ---
+    // --- Global Error Handler ---
     const ErrorHandler = {
         handle(error, context = 'Application') {
-            Logger.error(`Erreur dans ${context}`, error);
-            
-            // Afficher une notification à l'utilisateur si nécessaire
+            Logger.error(`Error in ${context}`, error);
+
+            // Show notification to user if necessary
             if (error.userFacing) {
                 this.showUserNotification(error.message, 'error');
             }
         },
-        
+
         showUserNotification(message, type = 'info') {
-            // Créer une notification temporaire
+            // Create temporary notification
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
             notification.innerHTML = `
-                <span class="notification-icon">${type === 'error' ? '🚨' : type === 'success' ? '✅' : 'ℹ️'}</span>
+                <span class="notification-icon">${type === 'error' ? '🚨' : type === 'success' ? '' : 'ℹ️'}</span>
                 <span class="notification-message">${message}</span>
             `;
-            
+
             document.body.appendChild(notification);
-            
-            // Supprimer après 5 secondes
+
+            // Remove after 5 seconds
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.parentNode.removeChild(notification);
                 }
             }, 5000);
         },
-        
+
         wrapAsync(fn, context) {
             return async (...args) => {
                 try {
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
         },
-        
+
         wrapSync(fn, context) {
             return (...args) => {
                 try {
@@ -106,9 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    Logger.info('🚀 Application OnlineKanban démarrée');
+    Logger.info('🚀 OnlineKanban application started');
 
-    // --- Éléments du DOM ---
+    // --- DOM Elements ---
     const kanbanBoard = document.getElementById('kanban-board');
     const themeToggleBtn = document.getElementById('theme-toggle-btn');
     const exportBtn = document.getElementById('export-btn');
@@ -132,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         color: document.getElementById('task-color-input'),
         saveBtn: document.getElementById('save-task-btn'),
         deleteBtn: document.getElementById('delete-task-btn'),
+        duplicateBtn: document.getElementById('duplicate-task-btn'),
     };
     const workflowModal = document.getElementById('workflow-modal');
     const workflowForm = {
@@ -141,102 +142,111 @@ document.addEventListener('DOMContentLoaded', () => {
         saveBtn: document.getElementById('save-workflow-btn'),
         deleteBtn: document.getElementById('delete-workflow-btn'),
     };
+    const confirmModal = document.getElementById('confirm-modal');
+    const confirmMessage = document.getElementById('confirm-modal-message');
+    const confirmOkBtn = document.getElementById('confirm-modal-ok-btn');
+    const confirmCancelBtn = document.getElementById('confirm-modal-cancel-btn');
+    let confirmCallback = null;
 
-    // --- Données par défaut ---
+    // --- Default Data ---
     const getDefaultData = () => ({
         projectName: 'Online Kanban',
         workflows: [
-            { id: Date.now() + 1, title: 'À faire', color: '#ef4444', tasks: [] },
-            { id: Date.now() + 2, title: 'En cours', color: '#f97316', tasks: [] },
-            { id: Date.now() + 3, title: 'À tester', color: '#3b82f6', tasks: [] },
-            { id: Date.now() + 4, title: 'Terminé', color: '#22c55e', tasks: [] }
+            { id: Date.now() + 1, title: 'To Do', color: '#ef4444', tasks: [] },
+            { id: Date.now() + 2, title: 'In Progress', color: '#f97316', tasks: [] },
+            { id: Date.now() + 3, title: 'Testing', color: '#3b82f6', tasks: [] },
+            { id: Date.now() + 4, title: 'Done', color: '#22c55e', tasks: [] }
         ]
     });
 
-    // --- État de l'application ---
+    // --- Application State ---
     let boardData;
     try {
-        Logger.debug('🔄 Chargement des données depuis localStorage');
+        Logger.debug('🔄 Loading data from localStorage');
         const savedData = JSON.parse(localStorage.getItem('kanbanBoard'));
         if (savedData && savedData.workflows && Array.isArray(savedData.workflows)) {
             boardData = savedData;
-            // Assurer la compatibilité avec les anciens fichiers sans nom de projet
+            // Handle legacy data without project name
             if (!boardData.projectName) {
                 boardData.projectName = 'Online Kanban';
             }
-            Logger.success('📂 Données chargées avec succès', { workflows: savedData.workflows.length });
+            // Migrate French titles if necessary (optional improvement)
+            const mapFrenchToEnglish = {
+                'À faire': 'To Do',
+                'En cours': 'In Progress',
+                'À tester': 'Testing',
+                'Terminé': 'Done'
+            };
+            boardData.workflows.forEach(w => {
+                if (mapFrenchToEnglish[w.title]) {
+                    w.title = mapFrenchToEnglish[w.title];
+                }
+            });
+            Logger.success('📂 Data loaded successfully', { workflows: savedData.workflows.length });
         } else {
-            Logger.warn('⚠️ Données invalides ou inexistantes, utilisation des données par défaut');
+            Logger.warn('⚠️ Invalid or non-existent data, using defaults');
             boardData = getDefaultData();
-            Logger.info('🔄 Données par défaut chargées');
+            Logger.info('🔄 Default data loaded');
         }
     } catch (e) {
-        Logger.error('💥 Erreur lors du chargement des données', e);
+        Logger.error('💥 Error while loading data', e);
         boardData = getDefaultData();
-        Logger.info('🔄 Données par défaut chargées');
+        Logger.info('🔄 Default data loaded');
     }
-    
-    // Mettre à jour le titre du projet
+
+    // Update project title
     const updateProjectTitle = ErrorHandler.wrapSync(() => {
         if (boardData.projectName) {
             projectTitle.textContent = boardData.projectName;
-            // Mise à jour SEO dynamique du titre de la page
+            // Dynamic SEO update of page title
             document.title = `${boardData.projectName} - Online Kanban`;
-            
-            // Mise à jour des meta tags dynamiques
+
+            // Dynamic meta tags update
             updateMetaTags(boardData.projectName);
-            
-            Logger.debug('🏷️ Titre du projet mis à jour', { title: boardData.projectName });
+
+            Logger.debug('🏷️ Project title updated', { title: boardData.projectName });
         }
-    }, 'Mise à jour du titre du projet');
-    
-    // Fonction pour mettre à jour les meta tags dynamiquement
+    }, 'Project title update');
+
+    // Function to update meta tags dynamically
     const updateMetaTags = (projectName) => {
-        // Ne pas mettre à jour si le nom n'a pas changé
         if (updateMetaTags.lastProjectName === projectName) return;
         updateMetaTags.lastProjectName = projectName;
-        
-        // Mise à jour de la description avec le nom du projet
-        const description = `Gérez votre projet "${projectName}" avec notre outil Kanban gratuit. Interface intuitive, drag & drop, colonnes personnalisables pour une productivité optimale.`;
-        
-        // Meta description
+
+        const description = `Manage your project "${projectName}" with our free Kanban tool. Intuitive interface, drag & drop, customizable columns for optimal productivity.`;
+
         const metaDescription = document.querySelector('meta[name="description"]');
         if (metaDescription) {
             metaDescription.setAttribute('content', description);
         }
-        
-        // Open Graph title
+
         const ogTitle = document.querySelector('meta[property="og:title"]');
         if (ogTitle) {
             ogTitle.setAttribute('content', `${projectName} - Online Kanban`);
         }
-        
-        // Open Graph description
+
         const ogDescription = document.querySelector('meta[property="og:description"]');
         if (ogDescription) {
             ogDescription.setAttribute('content', description);
         }
-        
-        // Twitter title
+
         const twitterTitle = document.querySelector('meta[property="twitter:title"]');
         if (twitterTitle) {
             twitterTitle.setAttribute('content', `${projectName} - Online Kanban`);
         }
-        
-        // Twitter description
+
         const twitterDescription = document.querySelector('meta[property="twitter:description"]');
         if (twitterDescription) {
             twitterDescription.setAttribute('content', description);
         }
-        
-        Logger.debug('🔍 Meta tags SEO mis à jour', { projectName, description });
+
+        Logger.debug('🔍 SEO Meta tags updated', { projectName, description });
     };
-    
-    // Fonction pour générer les mots-clés dynamiques basés sur le contenu
+
+    // Generate dynamic keywords based on content
     const generateDynamicKeywords = () => {
-        const keywords = ['kanban', 'gestion projet', 'tâches', 'productivité'];
-        
-        // Ajouter les titres des colonnes comme mots-clés
+        const keywords = ['kanban', 'project management', 'tasks', 'productivity'];
+
         if (boardData.workflows) {
             boardData.workflows.forEach(workflow => {
                 if (workflow.title && workflow.title.length > 2) {
@@ -244,24 +254,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-        
-        // Ajouter le nom du projet
+
         if (boardData.projectName && boardData.projectName !== 'Online Kanban') {
             keywords.push(boardData.projectName.toLowerCase());
         }
-        
-        // Mise à jour des meta keywords
+
         const metaKeywords = document.querySelector('meta[name="keywords"]');
         if (metaKeywords) {
             metaKeywords.setAttribute('content', keywords.join(', '));
         }
-        
-        Logger.debug('🔍 Mots-clés dynamiques générés', { keywords });
+
+        Logger.debug('🔍 Dynamic keywords generated', { keywords });
     };
-    
-    // Fonction pour tracker les événements (Google Analytics ready)
+
+    // Track events (Google Analytics ready)
     const trackEvent = (action, category = 'Kanban', label = null, value = null) => {
-        // Si Google Analytics est installé
         if (typeof gtag !== 'undefined') {
             gtag('event', action, {
                 event_category: category,
@@ -269,28 +276,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 value: value
             });
         }
-        
-        // Log uniquement en développement
+
         if (Logger.currentLevel >= 4) {
-            Logger.debug('📊 Événement tracké', { action, category, label, value });
+            Logger.debug('📊 Event tracked', { action, category, label, value });
         }
     };
-    
-    // --- Fonctions ---
+
+    // --- Functions ---
     const saveData = ErrorHandler.wrapSync(() => {
-        Logger.debug('💾 Sauvegarde des données');
+        Logger.debug('💾 Saving data');
         localStorage.setItem('kanbanBoard', JSON.stringify(boardData));
-        Logger.success('✅ Données sauvegardées avec succès');
-    }, 'Sauvegarde des données');
+        Logger.success('✅ Data saved successfully');
+    }, 'Data saving');
 
     const renderBoard = ErrorHandler.wrapSync(() => {
-        Logger.debug('🎨 Rendu du tableau Kanban');
+        Logger.debug('🎨 Rendering Kanban board');
         kanbanBoard.innerHTML = '';
         if (!boardData.workflows || boardData.workflows.length === 0) {
-            Logger.info('📋 Aucune colonne à afficher');
-            kanbanBoard.innerHTML = '<p style="text-align: center; width: 100%; opacity: 0.7;">Votre tableau est vide. Ajoutez une colonne pour commencer !</p>';
+            Logger.info('📋 No columns to display');
+            kanbanBoard.innerHTML = '<p style="text-align: center; width: 100%; opacity: 0.7;">Your board is empty. Add a column to start!</p>';
         } else {
-            Logger.debug('🏗️ Rendu des colonnes', { count: boardData.workflows.length });
+            Logger.debug('🏗️ Rendering columns', { count: boardData.workflows.length });
             boardData.workflows.forEach(workflow => {
                 const columnEl = document.createElement('div');
                 columnEl.className = 'workflow-column';
@@ -300,13 +306,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="workflow-header" style="border-left: 4px solid ${workflow.color || '#1a73e8'}">
                         <h3>${workflow.title}</h3>
                         <div class="workflow-actions">
-                            <button class="workflow-menu-btn" title="Options de la colonne">
+                            <button class="workflow-menu-btn" title="Column Options">
                                 <span class="material-symbols-outlined">more_vert</span>
                             </button>
                             <div class="workflow-menu">
-                                <button class="edit-workflow-btn" data-workflow-id="${workflow.id}">Éditer</button>
-                                <button class="add-task-btn-menu" data-workflow-id="${workflow.id}">Ajouter une tâche</button>
-                                <button class="delete-workflow-btn delete" data-workflow-id="${workflow.id}">Supprimer</button>
+                                <button class="edit-workflow-btn" data-workflow-id="${workflow.id}">Edit</button>
+                                <button class="duplicate-workflow-btn" data-workflow-id="${workflow.id}">Duplicate</button>
+                                <button class="add-task-btn-menu" data-workflow-id="${workflow.id}">Add Task</button>
+                                <button class="delete-workflow-btn delete" data-workflow-id="${workflow.id}">Delete</button>
                             </div>
                         </div>
                     </div>
@@ -319,17 +326,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     taskCard.className = 'task-card';
                     taskCard.dataset.taskId = task.id;
                     taskCard.style.borderLeftColor = task.color;
-                    taskCard.innerHTML = `<h4>${task.title}</h4><p>${task.description}</p>`;
+                    taskCard.innerHTML = `
+                        <button class="task-card-edit-btn" title="Edit Task">
+                            <span class="material-symbols-outlined">edit</span>
+                        </button>
+                        <h4>${task.title}</h4>
+                        <p>${task.description}</p>
+                    `;
                     taskList.appendChild(taskCard);
                 });
                 kanbanBoard.appendChild(columnEl);
             });
         }
-        Logger.success('✨ Tableau rendu avec succès');
+        Logger.success('✨ Board rendered successfully');
         initDragAndDrop();
-        generateDynamicKeywords(); // Mise à jour SEO des mots-clés
+        generateDynamicKeywords();
         saveData();
-    }, 'Rendu du tableau');
+    }, 'Board rendering');
 
     const initDragAndDrop = () => {
         new Sortable(kanbanBoard, {
@@ -370,75 +383,109 @@ document.addEventListener('DOMContentLoaded', () => {
     const openAddModal = (type, workflowId = null) => {
         addModalType.value = type;
         addModalInput.value = '';
-        addModalTitle.textContent = type === 'workflow' ? 'Ajouter une colonne' : 'Ajouter une tâche';
-        addModalInput.placeholder = type === 'workflow' ? 'Nom de la nouvelle colonne' : 'Titre de la nouvelle tâche';
+        addModalTitle.textContent = type === 'workflow' ? 'Add Column' : 'Add Task';
+        addModalInput.placeholder = type === 'workflow' ? 'New column name' : 'New task title';
         if (workflowId) addModalWorkflowId.value = workflowId;
         openModal(addModal);
         addModalInput.focus();
     };
 
-    // --- Logique CRUD ---
+    const showConfirm = (message, onConfirm) => {
+        confirmMessage.textContent = message;
+        confirmCallback = onConfirm;
+        openModal(confirmModal);
+    };
+
+    confirmOkBtn.addEventListener('click', () => {
+        if (confirmCallback) confirmCallback();
+        closeModal(confirmModal);
+        confirmCallback = null;
+    });
+
+    confirmCancelBtn.addEventListener('click', () => {
+        closeModal(confirmModal);
+        confirmCallback = null;
+    });
+
+    // --- CRUD Logic ---
     saveAddBtn.addEventListener('click', ErrorHandler.wrapSync(() => {
         const type = addModalType.value;
         const title = addModalInput.value.trim();
         if (title) {
             if (type === 'workflow') {
-                const newWorkflow = { 
-                    id: Date.now(), 
-                    title, 
-                    color: `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`, 
-                    tasks: [] 
+                const newWorkflow = {
+                    id: Date.now(),
+                    title,
+                    color: `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`,
+                    tasks: []
                 };
                 boardData.workflows.push(newWorkflow);
                 trackEvent('create_workflow', 'Workflow', title);
-                Logger.success('🆕 Nouvelle colonne créée', { id: newWorkflow.id, title, color: newWorkflow.color });
-                ErrorHandler.showUserNotification(`✅ Colonne "${title}" créée !`, 'success');
+                Logger.success('🆕 New column created', { id: newWorkflow.id, title, color: newWorkflow.color });
+                ErrorHandler.showUserNotification(`Column "${title}" created!`, 'success');
             } else {
                 const workflow = boardData.workflows.find(w => w.id == addModalWorkflowId.value);
                 if (workflow) {
-                    const newTask = { id: Date.now(), title, description: 'Cliquez pour éditer...', color: '#6b7280' };
+                    const newTask = { id: Date.now(), title, description: 'Click to edit...', color: '#6b7280' };
                     workflow.tasks.push(newTask);
                     trackEvent('create_task', 'Task', title);
-                    Logger.success('📝 Nouvelle tâche créée', { 
-                        taskId: newTask.id, 
-                        title, 
-                        workflowTitle: workflow.title 
+                    Logger.success('📝 New task created', {
+                        taskId: newTask.id,
+                        title,
+                        workflowTitle: workflow.title
                     });
-                    ErrorHandler.showUserNotification(`✅ Tâche "${title}" créée !`, 'success');
+                    ErrorHandler.showUserNotification(`Task "${title}" created!`, 'success');
                 } else {
-                    Logger.error('❌ Impossible de trouver la colonne pour ajouter la tâche');
+                    Logger.error('❌ Could not find column to add task');
                 }
             }
             renderBoard();
             closeModal(addModal);
         } else {
-            Logger.warn('⚠️ Tentative d\'ajout avec titre vide');
-            ErrorHandler.showUserNotification('⚠️ Veuillez entrer un titre', 'error');
+            Logger.warn('⚠️ Attempted to add with empty title');
+            ErrorHandler.showUserNotification('⚠️ Please enter a title', 'error');
         }
-    }, 'Ajout d\'élément'));
+    }, 'Adding item'));
 
     workflowForm.saveBtn.addEventListener('click', ErrorHandler.wrapSync(() => {
         const workflow = boardData.workflows.find(w => w.id == workflowForm.id.value);
         if (workflow) {
             const oldTitle = workflow.title;
-            const oldColor = workflow.color;
             workflow.title = workflowForm.title.value;
             workflow.color = workflowForm.color.value;
-            Logger.success('✏️ Colonne modifiée', { 
+            Logger.success('✏️ Column modified', {
                 id: workflow.id,
                 oldTitle,
-                newTitle: workflow.title,
-                oldColor,
-                newColor: workflow.color
+                newTitle: workflow.title
             });
             renderBoard();
-            ErrorHandler.showUserNotification(`✅ Colonne "${workflow.title}" modifiée !`, 'success');
+            ErrorHandler.showUserNotification(`Column "${workflow.title}" modified!`, 'success');
         } else {
-            Logger.error('❌ Impossible de trouver la colonne à modifier');
-            ErrorHandler.showUserNotification('❌ Erreur lors de la modification de la colonne', 'error');
+            Logger.error('❌ Could not find column to modify');
+            ErrorHandler.showUserNotification('❌ Error while modifying column', 'error');
         }
         closeModal(workflowModal);
-    }, 'Modification de colonne'));
+    }, 'Modifying column'));
+
+    workflowForm.deleteBtn.addEventListener('click', ErrorHandler.wrapSync(() => {
+        showConfirm('Are you sure you want to delete this column and all its tasks?', () => {
+            const deletedWorkflow = boardData.workflows.find(w => w.id == workflowForm.id.value);
+            const deletedWorkflowTitle = deletedWorkflow ? deletedWorkflow.title : 'Column';
+            const deletedTasksCount = deletedWorkflow ? deletedWorkflow.tasks.length : 0;
+
+            boardData.workflows = boardData.workflows.filter(w => w.id != workflowForm.id.value);
+            Logger.success('🗑️ Column deleted from modal', {
+                title: deletedWorkflowTitle,
+                tasksDeleted: deletedTasksCount
+            });
+            renderBoard();
+            ErrorHandler.showUserNotification(
+                `Column "${deletedWorkflowTitle}" and ${deletedTasksCount} task(s) deleted`,
+                'success'
+            );
+            closeModal(workflowModal);
+        });
+    }, 'Deleting column from modal'));
 
     taskForm.saveBtn.addEventListener('click', () => {
         for (const workflow of boardData.workflows) {
@@ -448,14 +495,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 task.title = taskForm.title.value;
                 task.description = taskForm.description.value;
                 task.color = taskForm.color.value;
-                Logger.success('✏️ Tâche modifiée', { 
+                Logger.success('✏️ Task modified', {
                     id: task.id,
                     oldTitle,
-                    newTitle: task.title,
-                    workflowTitle: workflow.title
+                    newTitle: task.title
                 });
                 renderBoard();
-                ErrorHandler.showUserNotification(`✅ Tâche "${task.title}" modifiée !`, 'success');
+                ErrorHandler.showUserNotification(`Task "${task.title}" modified!`, 'success');
                 break;
             }
         }
@@ -463,36 +509,55 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     taskForm.deleteBtn.addEventListener('click', () => {
-        if (!confirm('Voulez-vous vraiment supprimer cette tâche ?')) return;
-        
-        // Trouver le titre de la tâche avant suppression pour la notification
-        let deletedTaskTitle = '';
+        showConfirm('Are you sure you want to delete this task?', () => {
+            let deletedTaskTitle = '';
+            for (const workflow of boardData.workflows) {
+                const task = workflow.tasks.find(t => t.id == taskForm.id.value);
+                if (task) {
+                    deletedTaskTitle = task.title;
+                    break;
+                }
+            }
+
+            boardData.workflows.forEach(w => { w.tasks = w.tasks.filter(t => t.id != taskForm.id.value) });
+            Logger.success('🗑️ Task deleted', { title: deletedTaskTitle });
+            renderBoard();
+            ErrorHandler.showUserNotification(`Task "${deletedTaskTitle}" deleted`, 'success');
+            closeModal(taskModal);
+        });
+    });
+
+    taskForm.duplicateBtn.addEventListener('click', () => {
         for (const workflow of boardData.workflows) {
             const task = workflow.tasks.find(t => t.id == taskForm.id.value);
             if (task) {
-                deletedTaskTitle = task.title;
+                const newTask = JSON.parse(JSON.stringify(task));
+                newTask.id = Date.now();
+                newTask.title = `${task.title} (Copy)`;
+                workflow.tasks.push(newTask);
+                Logger.success('📋 Task duplicated', {
+                    oldId: task.id,
+                    newId: newTask.id,
+                    title: newTask.title
+                });
+                renderBoard();
+                ErrorHandler.showUserNotification(`Task "${task.title}" duplicated!`, 'success');
                 break;
             }
         }
-        
-        boardData.workflows.forEach(w => { w.tasks = w.tasks.filter(t => t.id != taskForm.id.value) });
-        Logger.success('🗑️ Tâche supprimée', { title: deletedTaskTitle });
-        renderBoard();
-        ErrorHandler.showUserNotification(`🗑️ Tâche "${deletedTaskTitle}" supprimée`, 'success');
         closeModal(taskModal);
     });
 
-    // --- Gestionnaires d'Événements ---
+    // --- Event Listeners ---
     addWorkflowBtn.addEventListener('click', () => openAddModal('workflow'));
 
-    // Gestionnaire pour le titre du projet
     projectTitle.addEventListener('click', ErrorHandler.wrapSync(() => {
-        Logger.info('✏️ Ouverture de la modale de renommage du projet');
+        Logger.info('✏️ Opening project rename modal');
         projectNameInput.value = boardData.projectName || 'Online Kanban';
         projectModal.classList.add('visible');
         projectNameInput.focus();
         projectNameInput.select();
-    }, 'Ouverture modale projet'));
+    }, 'Project modal opening'));
 
     saveProjectBtn.addEventListener('click', ErrorHandler.wrapSync(() => {
         const newName = projectNameInput.value.trim();
@@ -501,10 +566,10 @@ document.addEventListener('DOMContentLoaded', () => {
             updateProjectTitle();
             saveData();
             projectModal.classList.remove('visible');
-            Logger.success('🏷️ Nom du projet modifié', { newName });
-            ErrorHandler.showUserNotification('📝 Nom du projet modifié avec succès !', 'success');
+            Logger.success('🏷️ Project name modified', { newName });
+            ErrorHandler.showUserNotification('Project name modified successfully!', 'success');
         }
-    }, 'Sauvegarde nom du projet'));
+    }, 'Project name saving'));
 
     projectNameInput.addEventListener('keyup', (e) => {
         if (e.key === 'Enter') saveProjectBtn.click();
@@ -512,6 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     kanbanBoard.addEventListener('click', (e) => {
+        // Column Menu
         const menuBtn = e.target.closest('.workflow-menu-btn');
         if (menuBtn) {
             const menu = menuBtn.nextElementSibling;
@@ -521,6 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Edit Column
         const editWorkflowBtn = e.target.closest('.edit-workflow-btn');
         if (editWorkflowBtn) {
             const workflow = boardData.workflows.find(w => w.id == editWorkflowBtn.dataset.workflowId);
@@ -532,37 +599,61 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Duplicate Column
+        const duplicateWorkflowBtn = e.target.closest('.duplicate-workflow-btn');
+        if (duplicateWorkflowBtn) {
+            const workflow = boardData.workflows.find(w => w.id == duplicateWorkflowBtn.dataset.workflowId);
+            if (workflow) {
+                const newWorkflow = JSON.parse(JSON.stringify(workflow));
+                newWorkflow.id = Date.now();
+                newWorkflow.title = `${workflow.title} (Copy)`;
+                newWorkflow.tasks.forEach((t, i) => { t.id = Date.now() + i + 1; });
+
+                boardData.workflows.push(newWorkflow);
+                Logger.success('📋 Column duplicated', { title: newWorkflow.title });
+                renderBoard();
+                ErrorHandler.showUserNotification(`Column "${workflow.title}" duplicated!`, 'success');
+            }
+        }
+
+        // Add Task Menu
         const addTaskMenuBtn = e.target.closest('.add-task-btn-menu');
         if (addTaskMenuBtn) {
             openAddModal('task', addTaskMenuBtn.dataset.workflowId);
         }
-        
+
+        // Delete Column
         const deleteWorkflowBtn = e.target.closest('.delete-workflow-btn');
-        if(deleteWorkflowBtn) {
-            if (!confirm('Voulez-vous vraiment supprimer cette colonne et toutes ses tâches ?')) return;
-            
-            // Trouver le titre de la colonne avant suppression pour la notification
-            const deletedWorkflow = boardData.workflows.find(w => w.id == deleteWorkflowBtn.dataset.workflowId);
-            const deletedWorkflowTitle = deletedWorkflow ? deletedWorkflow.title : 'Colonne';
-            const deletedTasksCount = deletedWorkflow ? deletedWorkflow.tasks.length : 0;
-            
-            boardData.workflows = boardData.workflows.filter(w => w.id != deleteWorkflowBtn.dataset.workflowId);
-            Logger.success('🗑️ Colonne supprimée', { 
-                title: deletedWorkflowTitle, 
-                tasksDeleted: deletedTasksCount 
+        if (deleteWorkflowBtn) {
+            showConfirm('Are you sure you want to delete this column and all its tasks?', () => {
+                const deletedWorkflowId = deleteWorkflowBtn.dataset.workflowId;
+                const deletedWorkflow = boardData.workflows.find(w => w.id == deletedWorkflowId);
+                const deletedWorkflowTitle = deletedWorkflow ? deletedWorkflow.title : 'Column';
+                const deletedTasksCount = deletedWorkflow ? deletedWorkflow.tasks.length : 0;
+
+                boardData.workflows = boardData.workflows.filter(w => w.id != deletedWorkflowId);
+                Logger.success('🗑️ Column deleted from menu', { title: deletedWorkflowTitle });
+                renderBoard();
+                ErrorHandler.showUserNotification(
+                    `Column "${deletedWorkflowTitle}" and ${deletedTasksCount} task(s) deleted`,
+                    'success'
+                );
             });
-            renderBoard();
-            ErrorHandler.showUserNotification(
-                `🗑️ Colonne "${deletedWorkflowTitle}" et ${deletedTasksCount} tâche(s) supprimée(s)`, 
-                'success'
-            );
         }
-        
+
+        // Edit Task (Card click or Edit button click)
         const taskCard = e.target.closest('.task-card');
-        if(taskCard) {
-            const workflow = boardData.workflows.find(w => w.id == taskCard.parentElement.dataset.workflowId);
-            const task = workflow.tasks.find(t => t.id == taskCard.dataset.taskId);
-            if(task) {
+        const editTaskBtn = e.target.closest('.task-card-edit-btn');
+
+        if (taskCard || editTaskBtn) {
+            // If click was on edit button, use that card
+            const targetCard = editTaskBtn ? editTaskBtn.closest('.task-card') : taskCard;
+            const workflowId = targetCard.parentElement.dataset.workflowId;
+            const workflow = boardData.workflows.find(w => w.id == workflowId);
+            if (!workflow) return;
+
+            const task = workflow.tasks.find(t => t.id == targetCard.dataset.taskId);
+            if (task) {
                 taskForm.id.value = task.id;
                 taskForm.title.value = task.title;
                 taskForm.description.value = task.description;
@@ -579,47 +670,42 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     themeToggleBtn.addEventListener('click', ErrorHandler.wrapSync(() => {
-        Logger.debug('🎨 Changement de thème');
+        Logger.debug('🎨 Theme toggle');
         const isDark = document.body.classList.toggle('dark-mode');
         themeToggleBtn.textContent = isDark ? '☀️' : '🌙';
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        Logger.success(`✅ Thème changé vers ${isDark ? 'sombre' : 'clair'}`);
-    }, 'Changement de thème'));
+        Logger.success(`✅ Theme changed to ${isDark ? 'dark' : 'light'}`);
+    }, 'Theme toggle'));
 
     exportBtn.addEventListener('click', ErrorHandler.wrapSync(() => {
-        Logger.info('📤 Début de l\'export des données');
+        Logger.info('📤 Starting data export');
         trackEvent('export_project', 'Data', boardData.projectName);
         const dataStr = JSON.stringify(boardData, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        // Utiliser le nom du projet pour le nom du fichier, avec fallback
         const projectName = (boardData.projectName || 'Online Kanban').replace(/[^a-z0-9]/gi, '_').toLowerCase();
         a.download = `${projectName}.kanban`;
         a.click();
         URL.revokeObjectURL(url);
-        Logger.success('📦 Export terminé avec succès', { 
-            projectName: boardData.projectName,
-            workflows: boardData.workflows.length,
-            totalTasks: boardData.workflows.reduce((sum, w) => sum + w.tasks.length, 0)
-        });
-        ErrorHandler.showUserNotification('📦 Tableau exporté avec succès !', 'success');
-    }, 'Export des données'));
+        Logger.success('📦 Export successful');
+        ErrorHandler.showUserNotification('Board exported successfully!', 'success');
+    }, 'Data export'));
 
     importInput.addEventListener('change', ErrorHandler.wrapSync((e) => {
         const file = e.target.files[0];
         if (file && file.name.endsWith('.kanban')) {
-            Logger.info('📥 Début de l\'import des données', { fileName: file.name });
+            Logger.info('📥 Starting data import', { fileName: file.name });
             processImportFile(file);
-        } else { 
-            Logger.warn('⚠️ Fichier invalide sélectionné', { fileName: file?.name });
-            ErrorHandler.showUserNotification('⚠️ Veuillez sélectionner un fichier .kanban valide.', 'error');
+        } else {
+            Logger.warn('⚠️ Invalid file selected');
+            ErrorHandler.showUserNotification('⚠️ Please select a valid .kanban file.', 'error');
         }
-        e.target.value = ''; // Permet de réimporter le même fichier
-    }, 'Import des données'));
+        e.target.value = '';
+    }, 'Data import'));
 
-    [addModal, taskModal, workflowModal, projectModal].forEach(modal => {
+    [addModal, taskModal, workflowModal, projectModal, confirmModal].forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal || e.target.classList.contains('modal-close-btn')) {
                 closeModal(modal);
@@ -629,27 +715,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     addModalInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') saveAddBtn.click() });
 
-    // --- Drag and Drop pour Import ---
+    // --- Drag and Drop for Import ---
     let dragCounter = 0;
     let isDraggingInternal = false;
 
     const handleDragEnter = (e) => {
-        // Vérifier si on est en train de faire un drag interne
-        if (isDraggingInternal) {
-            return;
-        }
-        
+        if (isDraggingInternal) return;
         e.preventDefault();
         dragCounter++;
         document.body.classList.add('drag-over');
     };
 
     const handleDragLeave = (e) => {
-        // Vérifier si on est en train de faire un drag interne
-        if (isDraggingInternal) {
-            return;
-        }
-        
+        if (isDraggingInternal) return;
         e.preventDefault();
         dragCounter--;
         if (dragCounter === 0) {
@@ -658,20 +736,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const handleDragOver = (e) => {
-        // Vérifier si on est en train de faire un drag interne
-        if (isDraggingInternal) {
-            return;
-        }
-        
+        if (isDraggingInternal) return;
         e.preventDefault();
     };
 
     const handleDrop = ErrorHandler.wrapSync((e) => {
-        // Vérifier si on est en train de faire un drag interne
-        if (isDraggingInternal) {
-            return;
-        }
-        
+        if (isDraggingInternal) return;
         e.preventDefault();
         dragCounter = 0;
         document.body.classList.remove('drag-over');
@@ -680,11 +750,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (files.length > 0) {
             const file = files[0];
             if (file.name.endsWith('.kanban')) {
-                Logger.info('📥 Import par drag & drop', { fileName: file.name });
+                Logger.info('📥 Drag & drop import', { fileName: file.name });
                 processImportFile(file);
             } else {
-                Logger.warn('⚠️ Fichier non supporté glissé', { fileName: file.name });
-                ErrorHandler.showUserNotification('⚠️ Seuls les fichiers .kanban sont supportés', 'error');
+                ErrorHandler.showUserNotification('⚠️ Only .kanban files are supported', 'error');
             }
         }
     }, 'Drag and Drop');
@@ -695,49 +764,35 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const importedData = JSON.parse(event.target.result);
                 if (importedData.workflows && Array.isArray(importedData.workflows)) {
-                    const oldWorkflowsCount = boardData.workflows.length;
                     boardData = importedData;
-                    // Assurer la compatibilité avec les anciens fichiers sans nom de projet
-                    if (!boardData.projectName) {
-                        boardData.projectName = 'Online Kanban';
-                    }
+                    if (!boardData.projectName) boardData.projectName = 'Online Kanban';
                     updateProjectTitle();
                     renderBoard();
                     trackEvent('import_project', 'Data', boardData.projectName);
-                    Logger.success('📋 Import terminé avec succès', { 
-                        method: 'drag-drop',
-                        oldWorkflows: oldWorkflowsCount,
-                        newWorkflows: boardData.workflows.length,
-                        totalTasks: boardData.workflows.reduce((sum, w) => sum + w.tasks.length, 0)
-                    });
-                    ErrorHandler.showUserNotification('📋 Tableau importé avec succès !', 'success');
-                } else { 
-                    throw new Error('Format de fichier invalide.'); 
+                    ErrorHandler.showUserNotification('Board imported successfully!', 'success');
+                } else {
+                    throw new Error('Invalid file format.');
                 }
-            } catch (error) { 
-                Logger.error('💥 Erreur lors de l\'import', error);
-                ErrorHandler.showUserNotification(`❌ Erreur: ${error.message}`, 'error');
+            } catch (error) {
+                ErrorHandler.showUserNotification(`❌ Error: ${error.message}`, 'error');
             }
-        }, 'Lecture du fichier d\'import par drag & drop');
+        }, 'Reading import file');
         reader.readAsText(file);
     };
 
-    // Événements drag and drop sur le document
     document.addEventListener('dragenter', handleDragEnter);
     document.addEventListener('dragleave', handleDragLeave);
     document.addEventListener('dragover', handleDragOver);
     document.addEventListener('drop', handleDrop);
 
-    // --- Initialisation ---
+    // --- Initialization ---
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
         themeToggleBtn.textContent = '☀️';
-        Logger.debug('🌙 Thème sombre appliqué');
     }
-    
-    // Rendu initial et finalisation de l'initialisation
+
     updateProjectTitle();
     renderBoard();
-    Logger.success('🎉 Application OnlineKanban initialisée avec succès !');
+    Logger.success('🎉 OnlineKanban initialized successfully!');
 });
