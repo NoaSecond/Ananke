@@ -120,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const addModalType = document.getElementById('add-modal-type');
     const addModalWorkflowId = document.getElementById('add-modal-workflow-id');
     const projectTitle = document.getElementById('project-title');
+    const projectNameDisplay = document.getElementById('project-name-display');
     const projectModal = document.getElementById('project-modal');
     const projectNameInput = document.getElementById('project-name-input');
     const saveProjectBtn = document.getElementById('save-project-btn');
@@ -138,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         newTagName: document.getElementById('new-tag-name'),
         newTagColor: document.getElementById('new-tag-color'),
         addTagBtn: document.getElementById('add-tag-btn'),
+        showTags: document.getElementById('task-show-tags-input'),
         // Tag Picker Elements
         showTagPickerBtn: document.getElementById('show-tag-picker-btn'),
         tagPicker: document.getElementById('tag-picker'),
@@ -226,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update project title
     const updateProjectTitle = ErrorHandler.wrapSync(() => {
         if (boardData.projectName) {
-            projectTitle.textContent = boardData.projectName;
+            projectNameDisplay.textContent = boardData.projectName;
             // Dynamic SEO update of page title
             document.title = `${boardData.projectName} - Ananke`;
 
@@ -393,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${taskActionsHtml}
                         <h4>${task.title}</h4>
                         <div class="task-tags-display">
-                            ${(task.tags || []).map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color};" title="${tag.name}"></span>`).join('')}
+                            ${task.showTags !== false ? (task.tags || []).map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color};" title="${tag.name}">${tag.name}</span>`).join('') : ''}
                         </div>
                         <p>${task.description}</p>
                         ${(task.customFields || []).filter(f => f.showOnCard).map(f => `<div class="task-custom-field-small"><strong>${f.name}:</strong> ${f.value}</div>`).join('')}
@@ -588,31 +590,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Determine input type based on field type
             let inputHtml = '';
+            const typeSelectorHtml = `
+                <select class="small-input field-type-select" title="Field Type" style="width: auto; flex-shrink: 0; background-color: var(--primary-color); color: white; cursor: pointer;">
+                    <option value="text" ${!field.type || field.type === 'text' ? 'selected' : ''}>Text</option>
+                    <option value="number" ${field.type === 'number' ? 'selected' : ''}>Num</option>
+                    <option value="date" ${field.type === 'date' ? 'selected' : ''}>Date</option>
+                </select>
+            `;
+
             if (field.type === 'date') {
-                inputHtml = `<input type="date" class="small-input field-value full-width" value="${field.value}">`;
+                inputHtml = `<div style="display:flex; gap: 0.5rem; width: 100%;">${typeSelectorHtml}<input type="date" class="small-input field-value" value="${field.value}" style="flex-grow:1;"></div>`;
             } else if (field.type === 'number') {
-                inputHtml = `<input type="number" class="small-input field-value full-width" value="${field.value}" placeholder="Value">`;
+                inputHtml = `<div style="display:flex; gap: 0.5rem; width: 100%;">${typeSelectorHtml}<input type="number" class="small-input field-value" value="${field.value}" placeholder="Value" style="flex-grow:1;"></div>`;
             } else {
-                inputHtml = `<input type="text" class="small-input field-value full-width" value="${field.value}" placeholder="Value">`;
+                inputHtml = `<div style="display:flex; gap: 0.5rem; width: 100%;">${typeSelectorHtml}<input type="text" class="small-input field-value" value="${field.value}" placeholder="Value" style="flex-grow:1;"></div>`;
             }
 
             fieldEl.innerHTML = `
-                <div class="custom-field-header">
-                    <div style="display:flex; gap: 0.5rem; align-items: center; width: 100%;">
-                        <select class="small-input field-type-select" title="Field Type">
-                            <option value="text" ${!field.type || field.type === 'text' ? 'selected' : ''}>Text</option>
-                            <option value="number" ${field.type === 'number' ? 'selected' : ''}>Number</option>
-                            <option value="date" ${field.type === 'date' ? 'selected' : ''}>Date</option>
-                        </select>
-                        <input type="text" class="small-input field-name" value="${field.name}" placeholder="Field Name" style="flex-grow:1;">
+                <div class="custom-field-header" style="margin-bottom: 0.5rem;">
+                    <div style="display:flex; gap: 0.75rem; align-items: center; width: 100%;">
+                        <input type="text" class="small-input field-name" value="${field.name}" placeholder="Field Name" style="flex-grow:1; font-weight: 500; border: 1px solid #333333; background: var(--card-bg); padding: 0.4rem 0.75rem;">
+                        <div class="custom-field-options" style="opacity: 1;">
+                            <input type="checkbox" class="field-show" id="field-show-${index}" ${field.showOnCard ? 'checked' : ''} style="width: auto; margin: 0;">
+                            <label for="field-show-${index}" style="margin: 0; font-size: 0.8rem; white-space: nowrap;">Show on card</label>
+                        </div>
+                        <button class="custom-field-remove" data-index="${index}" title="Remove Field" style="display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; color: var(--danger-color);">
+                            <span class="material-symbols-outlined" style="font-size: 18px; color: inherit;">delete</span>
+                        </button>
                     </div>
-                    <button class="custom-field-remove" data-index="${index}">&times;</button>
                 </div>
                 ${inputHtml}
-                <div class="custom-field-options">
-                    <input type="checkbox" class="field-show" id="field-show-${index}" ${field.showOnCard ? 'checked' : ''}>
-                    <label for="field-show-${index}">Show on card</label>
-                </div>
             `;
             taskForm.customFieldsContainer.appendChild(fieldEl);
         });
@@ -755,6 +762,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 task.description = taskForm.description.value;
                 task.color = taskForm.color.value;
                 task.tags = [...tempTags];
+                task.showTags = taskForm.showTags.checked;
                 task.customFields = [...tempCustomFields];
 
                 // Handle move if column changed
@@ -975,6 +983,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 taskForm.title.value = task.title;
                 taskForm.description.value = task.description;
                 taskForm.color.value = task.color;
+                taskForm.showTags.checked = task.showTags !== false;
 
                 // Initialize temp state for tags and fields
                 tempTags = task.tags ? [...task.tags] : [];
