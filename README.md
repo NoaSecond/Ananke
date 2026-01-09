@@ -4,19 +4,6 @@ A modern and responsive web application to manage your projects with an intuitiv
 
 -----
 
-## Tech Stack
-
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **Styling**: CSS Grid, Flexbox, CSS Variables, Media Queries
-- **Interactions**: Drag & Drop with `SortableJS`, FileReader API
-- **Storage**: localStorage for client-side persistence
-- **SEO**: Meta tags, Open Graph, Twitter Cards, Schema.org
-- **PWA Ready**: Web App Manifest, Service Worker ready
-- **Deployment**: Compatible with Vercel, Apache, Nginx
-- **No backend**: 100% client-side application
-
------
-
 ## Installation and Setup
 
 ### Option 1: Simple Local Usage

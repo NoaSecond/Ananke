@@ -191,6 +191,34 @@
         </div>
     </div>
 
+    <div id="view-task-modal" class="modal-overlay">
+        <div class="modal-content task-modal-content">
+            <div class="modal-header-custom">
+                <h2 id="view-task-title" style="margin: 0; flex-grow: 1;"></h2>
+                <div class="header-controls">
+                    <button id="view-to-edit-btn" class="icon-only-btn" title="Edit Task">
+                        <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button class="modal-close-btn relative-close">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body-scroll">
+                <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">
+                    Description</h4>
+                <div id="view-task-desc" style="white-space: pre-wrap; margin-bottom: 1.5rem; line-height: 1.5;"></div>
+
+                <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">Tags</h4>
+                <div id="view-task-tags" class="tags-container" style="margin-bottom: 1.5rem;"></div>
+
+                <div id="view-task-custom-fields-section">
+                    <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">
+                        Custom Fields</h4>
+                    <div id="view-task-custom-fields" class="custom-fields-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="task-modal" class="modal-overlay">
         <div class="modal-content task-modal-content">
             <div class="modal-header-custom">
