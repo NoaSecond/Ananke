@@ -53,10 +53,28 @@ header h1 {
     cursor: pointer;
     transition: color 0.2s ease;
     user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 header h1:hover {
     color: var(--primary-color);
+}
+
+.edit-icon {
+    font-size: 1.1rem;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    color: var(--primary-color);
+}
+
+header h1:hover .edit-icon {
+    opacity: 0.7;
+}
+
+header h1:active .edit-icon {
+    transform: scale(0.9);
 }
 
 .controls {
@@ -307,6 +325,29 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
     opacity: 0.8;
 }
 
+.task-tags-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 4px 0 8px 0;
+}
+
+.tag-pill-small {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+    display: inline-block;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.task-custom-field-small {
+    font-size: 0.75rem;
+    margin-top: 4px;
+    opacity: 0.8;
+}
+
 /* Drag & Drop Placeholder */
 .sortable-ghost {
     opacity: 0.4;
@@ -318,7 +359,7 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
+    padding: 0.5rem 1rem;
     border-top: 1px solid var(--border-color);
     color: var(--text-color);
     background-color: var(--header-bg);
@@ -740,6 +781,11 @@ input[type="color"]#task-color-input::-webkit-color-swatch {
     border: none;
     cursor: pointer;
     font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.custom-field-remove:hover {
+    background-color: rgba(239, 68, 68, 0.1);
 }
 
 .custom-field-options {

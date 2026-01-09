@@ -118,7 +118,10 @@
 
 <body>
     <header>
-        <h1 id="project-title" title="Click to rename project">Ananke</h1>
+        <h1 id="project-title" title="Click to rename project">
+            <span id="project-name-display">Ananke</span>
+            <span class="material-symbols-outlined edit-icon">edit</span>
+        </h1>
         <div class="controls">
             <button id="add-workflow-btn" aria-label="Add a new Kanban column">➕ Add Column</button>
             <button id="theme-toggle-btn" aria-label="Toggle between light and dark mode">🌙</button>
@@ -217,6 +220,12 @@
                         <button id="show-tag-picker-btn" class="secondary-btn small-btn circular-btn" title="Add Tag">
                             <span class="material-symbols-outlined">add</span>
                         </button>
+                    </div>
+
+                    <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="task-show-tags-input" style="width: auto; margin: 0;">
+                        <label for="task-show-tags-input" style="margin: 0; font-size: 0.9rem; opacity: 0.9;">Show tags
+                            on card</label>
                     </div>
 
                     <!-- Tag Picker (Hidden by default) -->
