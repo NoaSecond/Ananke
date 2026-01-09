@@ -1,4 +1,4 @@
-# OnlineKanban
+# Ananke
 
 A modern and responsive web application to manage your projects with an intuitive Kanban board.
 
@@ -22,8 +22,8 @@ A modern and responsive web application to manage your projects with an intuitiv
 ### Option 1: Simple Local Usage
 ```bash
 # Clone the repository
-git clone https://github.com/NoaSecond/OnlineKanban
-cd OnlineKanban
+git clone https://github.com/NoaSecond/Ananke
+cd Ananke
 
 # Open the HTML file directly
 # Double-click on public/index.html or open it in your browser

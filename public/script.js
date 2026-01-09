@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    Logger.info('🚀 OnlineKanban application started');
+    Logger.info('🚀 Ananke application started');
 
     // --- DOM Elements ---
     const kanbanBoard = document.getElementById('kanban-board');
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Default Data ---
     const getDefaultData = () => ({
-        projectName: 'Online Kanban',
+        projectName: 'Ananke',
         tags: [
             { name: 'Urgent', color: '#ef4444' },
             { name: 'High Priority', color: '#f97316' },
@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
             boardData = savedData;
             // Handle legacy data without project name
             if (!boardData.projectName) {
-                boardData.projectName = 'Online Kanban';
+                boardData.projectName = 'Ananke';
             }
             if (!boardData.tags) {
                 boardData.tags = [];
@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (boardData.projectName) {
             projectTitle.textContent = boardData.projectName;
             // Dynamic SEO update of page title
-            document.title = `${boardData.projectName} - Online Kanban`;
+            document.title = `${boardData.projectName} - Ananke`;
 
             // Dynamic meta tags update
             updateMetaTags(boardData.projectName);
@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const ogTitle = document.querySelector('meta[property="og:title"]');
         if (ogTitle) {
-            ogTitle.setAttribute('content', `${projectName} - Online Kanban`);
+            ogTitle.setAttribute('content', `${projectName} - Ananke`);
         }
 
         const ogDescription = document.querySelector('meta[property="og:description"]');
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const twitterTitle = document.querySelector('meta[property="twitter:title"]');
         if (twitterTitle) {
-            twitterTitle.setAttribute('content', `${projectName} - Online Kanban`);
+            twitterTitle.setAttribute('content', `${projectName} - Ananke`);
         }
 
         const twitterDescription = document.querySelector('meta[property="twitter:description"]');
@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        if (boardData.projectName && boardData.projectName !== 'Online Kanban') {
+        if (boardData.projectName && boardData.projectName !== 'Ananke') {
             keywords.push(boardData.projectName.toLowerCase());
         }
 
@@ -825,7 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     projectTitle.addEventListener('click', ErrorHandler.wrapSync(() => {
         Logger.info('✏️ Opening project rename modal');
-        projectNameInput.value = boardData.projectName || 'Online Kanban';
+        projectNameInput.value = boardData.projectName || 'Ananke';
         projectModal.classList.add('visible');
         projectNameInput.focus();
         projectNameInput.select();
@@ -1031,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const projectName = (boardData.projectName || 'Online Kanban').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const projectName = (boardData.projectName || 'Ananke').replace(/[^a-z0-9]/gi, '_').toLowerCase();
         a.download = `${projectName}.kanban`;
         a.click();
         URL.revokeObjectURL(url);
@@ -1111,7 +1111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const importedData = JSON.parse(event.target.result);
                 if (importedData.workflows && Array.isArray(importedData.workflows)) {
                     boardData = importedData;
-                    if (!boardData.projectName) boardData.projectName = 'Online Kanban';
+                    if (!boardData.projectName) boardData.projectName = 'Ananke';
                     updateProjectTitle();
                     renderBoard();
                     trackEvent('import_project', 'Data', boardData.projectName);
@@ -1140,5 +1140,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateProjectTitle();
     renderBoard();
-    Logger.success('🎉 OnlineKanban initialized successfully!');
+    Logger.success('🎉 Ananke initialized successfully!');
 });
