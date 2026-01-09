@@ -1,4 +1,4 @@
-# Online Kanban - Performance Optimizations
+# Ananke - Performance Optimizations
 
 # Enable compression
 <IfModule mod_deflate.c>

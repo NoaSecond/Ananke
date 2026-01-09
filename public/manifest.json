@@ -1,13 +1,17 @@
 {
-  "name": "Online Kanban - Tableau de Gestion de Projet",
-  "short_name": "Kanban",
+  "name": "Ananke - Tableau de Gestion de Projet",
+  "short_name": "Ananke",
   "description": "Outil de gestion de projet Kanban gratuit et collaboratif. Organisez vos tâches avec des colonnes personnalisables, drag & drop intuitif, et exportation. Parfait pour les équipes agiles et la méthodologie Kanban.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f4f7f6",
   "theme_color": "#1a73e8",
   "orientation": "any",
-  "categories": ["productivity", "business", "utilities"],
+  "categories": [
+    "productivity",
+    "business",
+    "utilities"
+  ],
   "lang": "fr",
   "dir": "ltr",
   "icons": [
