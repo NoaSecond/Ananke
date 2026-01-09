@@ -148,6 +148,15 @@ document.addEventListener('DOMContentLoaded', () => {
         customFieldsContainer: document.getElementById('task-custom-fields-container'),
         addCustomFieldBtn: document.getElementById('add-custom-field-btn'),
     };
+    const viewTaskModal = document.getElementById('view-task-modal');
+    const viewTaskDisplay = {
+        title: document.getElementById('view-task-title'),
+        desc: document.getElementById('view-task-desc'),
+        tags: document.getElementById('view-task-tags'),
+        customFields: document.getElementById('view-task-custom-fields'),
+        customFieldsSection: document.getElementById('view-task-custom-fields-section'),
+        editBtn: document.getElementById('view-to-edit-btn')
+    };
     const workflowModal = document.getElementById('workflow-modal');
     const workflowForm = {
         id: document.getElementById('workflow-id-input'),
@@ -595,6 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <option value="text" ${!field.type || field.type === 'text' ? 'selected' : ''}>Text</option>
                     <option value="number" ${field.type === 'number' ? 'selected' : ''}>Num</option>
                     <option value="date" ${field.type === 'date' ? 'selected' : ''}>Date</option>
+                    <option value="link" ${field.type === 'link' ? 'selected' : ''}>Link</option>
                 </select>
             `;
 
@@ -602,6 +612,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 inputHtml = `<div style="display:flex; gap: 0.5rem; width: 100%;">${typeSelectorHtml}<input type="date" class="small-input field-value" value="${field.value}" style="flex-grow:1;"></div>`;
             } else if (field.type === 'number') {
                 inputHtml = `<div style="display:flex; gap: 0.5rem; width: 100%;">${typeSelectorHtml}<input type="number" class="small-input field-value" value="${field.value}" placeholder="Value" style="flex-grow:1;"></div>`;
+            } else if (field.type === 'link') {
+                inputHtml = `<div style="display:flex; gap: 0.5rem; width: 100%;">${typeSelectorHtml}<input type="url" class="small-input field-value" value="${field.value}" placeholder="https://..." style="flex-grow:1;"></div>`;
             } else {
                 inputHtml = `<div style="display:flex; gap: 0.5rem; width: 100%;">${typeSelectorHtml}<input type="text" class="small-input field-value" value="${field.value}" placeholder="Value" style="flex-grow:1;"></div>`;
             }
@@ -977,8 +989,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Edit Task (default action or explicit edit button)
-            if (task) {
+            // Edit Task (explicit edit button)
+            if (editTaskBtn) {
                 taskForm.id.value = task.id;
                 taskForm.title.value = task.title;
                 taskForm.description.value = task.description;
@@ -1014,8 +1026,106 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 openModal(taskModal);
+                return;
+            }
+
+            // View Task (default action)
+            if (task) {
+                openViewTaskModal(task, workflow);
             }
         }
+    });
+
+    const openViewTaskModal = (task, workflow) => {
+        currentViewingTask = task;
+        currentViewingWorkflow = workflow;
+
+        viewTaskDisplay.title.textContent = task.title;
+        viewTaskDisplay.desc.textContent = task.description || 'No description provided';
+
+        // Tags
+        viewTaskDisplay.tags.innerHTML = '';
+        if (task.tags && task.tags.length > 0) {
+            task.tags.forEach(tag => {
+                const tagEl = document.createElement('span');
+                tagEl.className = 'tag-pill';
+                tagEl.style.backgroundColor = tag.color;
+                tagEl.textContent = tag.name;
+                viewTaskDisplay.tags.appendChild(tagEl);
+            });
+        } else {
+            viewTaskDisplay.tags.innerHTML = '<span style="opacity: 0.5; font-style: italic;">No tags</span>';
+        }
+
+        // Custom Fields
+        viewTaskDisplay.customFields.innerHTML = '';
+        if (task.customFields && task.customFields.length > 0) {
+            viewTaskDisplay.customFieldsSection.style.display = 'block';
+            task.customFields.forEach(field => {
+                const fieldEl = document.createElement('div');
+                fieldEl.className = 'task-custom-field-small';
+                fieldEl.style.padding = '8px 0';
+                fieldEl.style.opacity = '1';
+
+                let valueHtml = field.value || '-';
+                if (field.type === 'link' && field.value) {
+                    const url = field.value.startsWith('http') ? field.value : `https://${field.value}`;
+                    valueHtml = `<a href="${url}" target="_blank" style="color: var(--primary-color); text-decoration: underline;">${field.value}</a>`;
+                }
+
+                fieldEl.innerHTML = `<strong>${field.name}:</strong> ${valueHtml}`;
+                viewTaskDisplay.customFields.appendChild(fieldEl);
+            });
+        } else {
+            viewTaskDisplay.customFieldsSection.style.display = 'none';
+        }
+
+        openModal(viewTaskModal);
+    };
+
+    let currentViewingTask = null;
+    let currentViewingWorkflow = null;
+
+    viewTaskDisplay.editBtn.addEventListener('click', () => {
+        if (!currentViewingTask || !currentViewingWorkflow) return;
+
+        const task = currentViewingTask;
+        const workflow = currentViewingWorkflow;
+
+        closeModal(viewTaskModal);
+
+        // Prep Edit Modal
+        taskForm.id.value = task.id;
+        taskForm.title.value = task.title;
+        taskForm.description.value = task.description;
+        taskForm.color.value = task.color;
+        taskForm.showTags.checked = task.showTags !== false;
+
+        tempTags = task.tags ? [...task.tags] : [];
+        tempCustomFields = task.customFields ? JSON.parse(JSON.stringify(task.customFields)) : [];
+
+        renderTags(tempTags);
+        renderCustomFields(tempCustomFields);
+
+        taskForm.columnSelect.innerHTML = '';
+        boardData.workflows.forEach(w => {
+            const option = document.createElement('option');
+            option.value = w.id;
+            option.textContent = w.title + (w.locked ? ' (🔒)' : '');
+            option.disabled = (w.locked || workflow.locked) && w.id != workflow.id;
+            if (w.id == workflow.id) option.selected = true;
+            taskForm.columnSelect.appendChild(option);
+        });
+
+        const deleteBtn = document.getElementById('delete-task-btn');
+        if (deleteBtn) {
+            deleteBtn.disabled = !!workflow.locked;
+            deleteBtn.style.opacity = workflow.locked ? '0.5' : '1';
+            deleteBtn.style.cursor = workflow.locked ? 'not-allowed' : 'pointer';
+            deleteBtn.title = workflow.locked ? 'Column is locked' : '';
+        }
+
+        openModal(taskModal);
     });
 
     document.addEventListener('click', (e) => {
@@ -1060,7 +1170,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.target.value = '';
     }, 'Data import'));
 
-    [addModal, taskModal, workflowModal, projectModal, confirmModal].forEach(modal => {
+    [addModal, viewTaskModal, taskModal, workflowModal, projectModal, confirmModal].forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal || e.target.classList.contains('modal-close-btn')) {
                 closeModal(modal);
@@ -1141,7 +1251,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('drop', handleDrop);
 
     // --- Initialization ---
-    const savedTheme = localStorage.getItem('theme');
+    const savedTheme = localStorage.getItem('theme') || 'dark'; // Default to dark
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
         themeToggleBtn.textContent = '☀️';
