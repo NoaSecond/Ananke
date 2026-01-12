@@ -20,7 +20,7 @@
     <meta property="og:title" content="Ananke - Free Collaborative Project Management Board">
     <meta property="og:description"
         content="Organize your projects with our free Kanban tool. Intuitive interface, drag & drop, customizable columns. Ideal for agile task management.">
-    <meta property="og:image" content="/android-chrome-512x512.png">
+    <meta property="og:image" content="/assets/android-chrome-512x512.png">
     <meta property="og:image:width" content="512">
     <meta property="og:image:height" content="512">
     <meta property="og:site_name" content="Ananke">
@@ -31,25 +31,25 @@
     <meta property="twitter:title" content="Ananke - Free Project Management Tool">
     <meta property="twitter:description"
         content="Free Kanban tool to organize your projects. Modern interface, drag & drop, customizable columns. Perfect for agile teams.">
-    <meta property="twitter:image" content="/android-chrome-512x512.png">
+    <meta property="twitter:image" content="/assets/android-chrome-512x512.png">
     <meta property="twitter:creator" content="@NoaSecond">
     <meta property="twitter:site" content="@NoaSecond">
 
     <!-- Additional SEO Meta Tags -->
     <meta name="application-name" content="Ananke">
     <meta name="msapplication-TileColor" content="#1a73e8">
-    <meta name="msapplication-config" content="browserconfig.xml">
+    <meta name="msapplication-config" content="/assets/browserconfig.xml">
     <meta name="format-detection" content="telephone=no">
 
     <!-- Canonical URL -->
     <link rel="canonical" href="/">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
 
     <!-- Web App Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -67,7 +67,7 @@
     <!-- CSS -->
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 
     <!-- Schema.org JSON-LD -->
     <script type="application/ld+json">
@@ -116,15 +116,160 @@
     </script>
 </head>
 
-<body>
+<body class="dark-mode"> <!-- Default Dark Mode as requested -->
+
+    <!-- Auth Overlay -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-card">
+            <h1 style="margin-top:0; color: var(--primary-color);">Ananke</h1>
+            <p style="margin-bottom: 2rem; opacity: 0.7;">Collaborative Project Management</p>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Mot de passe</label>
+                    <input type="password" id="login-password" required placeholder="******">
+                </div>
+                <button type="submit" class="action-btn" style="width: 100%; margin-top: 1rem;">Se connecter</button>
+            </form>
+            <div id="auth-message"
+                style="margin-top: 1rem; color: var(--danger-color); font-size: 0.9rem; min-height: 1.2em;"></div>
+        </div>
+    </div>
+
+    <!-- Setup / Profile Modal -->
+    <div id="setup-modal" class="modal-overlay" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-close-btn" id="setup-close-btn" style="display:none;">&times;</button>
+            <h2 id="setup-title">Configuration du Compte</h2>
+            <p id="setup-desc" style="margin-bottom: 1.5rem; opacity: 0.7;">Veuillez compléter vos informations pour
+                continuer.</p>
+
+            <form id="setup-form">
+                <div style="display: flex; gap: 1rem;">
+                    <div class="form-group" style="flex:1;">
+                        <label for="setup-firstname">Prénom</label>
+                        <input type="text" id="setup-firstname" required>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label for="setup-lastname">Nom</label>
+                        <input type="text" id="setup-lastname" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="setup-email">Email</label>
+                    <input type="email" id="setup-email" required>
+                </div>
+
+                <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid var(--border-color);">
+                <p style="font-size: 0.9rem; margin-bottom: 1rem; font-weight: bold;">Changer le mot de passe</p>
+
+                <div class="form-group">
+                    <label for="setup-password">Nouveau mot de passe</label>
+                    <input type="password" id="setup-password" placeholder="Laisser vide pour ne pas changer">
+                </div>
+                <div class="form-group">
+                    <label for="setup-password-confirm">Confirmer</label>
+                    <input type="password" id="setup-password-confirm">
+                </div>
+                <button type="submit" class="action-btn" style="width: 100%; margin-top: 1rem;">Enregistrer</button>
+            </form>
+            <div id="setup-message" style="margin-top: 1rem; color: var(--danger-color);"></div>
+        </div>
+    </div>
+
+    <!-- User Management Modal -->
+    <div id="user-management-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <button class="modal-close-btn">&times;</button>
+            <h2>Gestion des Utilisateurs</h2>
+
+            <div
+                style="background: var(--bg-color); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+                <h4 style="margin-top:0;">Inviter un utilisateur</h4>
+                <form id="invite-form" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 2; min-width: 200px;">
+                        <label style="font-size: 0.8rem;">Email</label>
+                        <input type="email" id="invite-email" required placeholder="email@example.com"
+                            style="margin:0;">
+                    </div>
+                    <div style="flex: 2; min-width: 150px;">
+                        <label style="font-size: 0.8rem;">Mot de passe prov.</label>
+                        <input type="text" id="invite-password" required placeholder="Temp123" style="margin:0;">
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <label style="font-size: 0.8rem;">Rôle</label>
+                        <select id="invite-role" style="margin:0; height: 42px;">
+                            <option value="reader">Lecteur</option>
+                            <option value="editor">Éditeur</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="action-btn">Inviter</button>
+                </form>
+                <div id="invite-message" style="margin-top:0.5rem; font-size:0.9rem;"></div>
+            </div>
+
+            <div id="user-list"
+                style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+            </div>
+        </div>
+    </div>
+
+
     <header>
         <h1 id="project-title" title="Click to rename project">
             <span id="project-name-display">Ananke</span>
             <span class="material-symbols-outlined edit-icon">edit</span>
         </h1>
         <div class="controls">
-            <button id="add-workflow-btn" aria-label="Add a new Kanban column">➕ Add Column</button>
-            <button id="theme-toggle-btn" aria-label="Toggle between light and dark mode">🌙</button>
+            <button id="add-workflow-btn" class="action-btn">
+                <span class="material-symbols-outlined">add</span>
+                Add Column
+            </button>
+            <div class="settings-container">
+                <button id="settings-toggle-btn" class="secondary-btn circular-btn rotate-hover" title="Paramètres">
+                    <span class="material-symbols-outlined">settings</span>
+                </button>
+                <div id="settings-menu" class="settings-menu hidden">
+                    <div class="settings-header">
+                        <strong id="user-display-name">User Name</strong>
+                        <small id="user-display-role">Role</small>
+                    </div>
+                    <div class="settings-divider"></div>
+                    <button id="profile-btn" class="settings-item">
+                        <span class="material-symbols-outlined">person</span>
+                        Mon Profil
+                    </button>
+                    <button id="manage-users-btn" class="settings-item" style="display: none;">
+                        <span class="material-symbols-outlined">group</span>
+                        Utilisateurs
+                    </button>
+                    <button id="theme-toggle-btn" class="settings-item">
+                        <span class="material-symbols-outlined theme-icon">dark_mode</span>
+                        <span id="theme-text">Mode Sombre</span>
+                    </button>
+                    <div class="settings-divider"></div>
+                    <label for="import-input" id="import-label" class="settings-item"
+                        style="display: none; cursor: pointer;">
+                        <span class="material-symbols-outlined">upload</span>
+                        Importer (.kanban)
+                    </label>
+                    <input type="file" id="import-input" accept=".kanban" style="display: none;">
+                    <button id="export-btn" class="settings-item">
+                        <span class="material-symbols-outlined">download</span>
+                        Exporter (.kanban)
+                    </button>
+                    <div class="settings-divider"></div>
+                    <button id="logout-btn" class="settings-item danger-text">
+                        <span class="material-symbols-outlined">logout</span>
+                        Déconnexion
+                    </button>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -170,11 +315,6 @@
             <span>- Created by <a href="https://noasecond.com" target="_blank" rel="noopener noreferrer"
                     class="author-link">Noa Second</a></span>
         </div>
-        <div class="io-buttons footer-right">
-            <label for="import-input" class="io-btn">Import (.kanban)</label>
-            <input type="file" id="import-input" accept=".kanban" style="display: none;">
-            <button id="export-btn" class="io-btn">Export (.kanban)</button>
-        </div>
     </footer>
 
     <div id="add-modal" class="modal-overlay">
@@ -203,6 +343,8 @@
                 </div>
             </div>
             <div class="modal-body-scroll">
+                <div id="view-task-assignees" class="task-assignees-display" style="margin-bottom: 1rem;"></div>
+
                 <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">
                     Description</h4>
                 <div id="view-task-desc" style="white-space: pre-wrap; margin-bottom: 1.5rem; line-height: 1.5;"></div>
@@ -240,6 +382,27 @@
 
                 <div class="section-divider"></div>
 
+                <!-- Assignees Section -->
+                <div class="assignees-section">
+                    <label>Assignees</label>
+                    <div class="tags-wrapper">
+                        <div id="task-assignees-container" class="tags-container"></div>
+                        <div style="position:relative;">
+                            <button id="add-assignee-btn" class="secondary-btn small-btn circular-btn"
+                                title="Assign User">
+                                <span class="material-symbols-outlined">person_add</span>
+                            </button>
+                            <div id="assignee-picker" class="tag-picker hidden" style="width: 200px;">
+                                <h4>Assign User</h4>
+                                <div id="assignee-list" class="available-tags-list"
+                                    style="flex-direction:column; max-height:150px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
                 <!-- Tags Section -->
                 <div class="tags-section">
                     <label>Tags</label>
@@ -248,24 +411,24 @@
                         <button id="show-tag-picker-btn" class="secondary-btn small-btn circular-btn" title="Add Tag">
                             <span class="material-symbols-outlined">add</span>
                         </button>
+
+                        <!-- Tag Picker (Moved inside wrapper for positioning) -->
+                        <div id="tag-picker" class="tag-picker hidden">
+                            <h4>Select a tag</h4>
+                            <div id="available-tags-list" class="available-tags-list"></div>
+                            <div class="tag-picker-divider">or create new</div>
+                            <div class="create-tag-row">
+                                <input type="text" id="new-tag-name" placeholder="Tag name" class="small-input">
+                                <input type="color" id="new-tag-color" value="#3b82f6" class="color-input-small">
+                                <button id="add-tag-btn" class="action-btn small-btn">Create</button>
+                            </div>
+                        </div>
                     </div>
 
                     <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
                         <input type="checkbox" id="task-show-tags-input" style="width: auto; margin: 0;">
                         <label for="task-show-tags-input" style="margin: 0; font-size: 0.9rem; opacity: 0.9;">Show tags
                             on card</label>
-                    </div>
-
-                    <!-- Tag Picker (Hidden by default) -->
-                    <div id="tag-picker" class="tag-picker hidden">
-                        <h4>Select a tag</h4>
-                        <div id="available-tags-list" class="available-tags-list"></div>
-                        <div class="tag-picker-divider">or create new</div>
-                        <div class="create-tag-row">
-                            <input type="text" id="new-tag-name" placeholder="Tag name" class="small-input">
-                            <input type="color" id="new-tag-color" value="#3b82f6" class="color-input-small">
-                            <button id="add-tag-btn" class="action-btn small-btn">Create</button>
-                        </div>
                     </div>
                 </div>
 
@@ -289,7 +452,7 @@
     </div>
 
     <div id="workflow-modal" class="modal-overlay">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 500px;">
             <button class="modal-close-btn">&times;</button>
             <h2>Edit Column</h2>
             <input type="hidden" id="workflow-id-input">
@@ -297,6 +460,12 @@
             <input type="text" id="workflow-title-input" placeholder="Column title">
             <label for="workflow-color-input">Color</label>
             <input type="color" id="workflow-color-input">
+
+            <div style="margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="workflow-locked-input" style="width: auto;">
+                <label for="workflow-locked-input" style="margin: 0;">Lock Column (Prevents editing tasks)</label>
+            </div>
+
             <div class="modal-actions">
                 <button id="delete-workflow-btn" class="danger-btn">Delete</button>
                 <button id="save-workflow-btn" class="action-btn">Save</button>
@@ -305,11 +474,11 @@
     </div>
 
     <div id="confirm-modal" class="modal-overlay">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
             <button class="modal-close-btn">&times;</button>
             <h2 id="confirm-modal-title">Confirmation</h2>
             <p id="confirm-modal-message">Are you sure?</p>
-            <div class="modal-actions">
+            <div class="modal-actions" style="justify-content: center;">
                 <button id="confirm-modal-cancel-btn" class="secondary-btn">Cancel</button>
                 <button id="confirm-modal-ok-btn" class="danger-btn">Delete</button>
             </div>
@@ -317,7 +486,7 @@
     </div>
 
     <div id="project-modal" class="modal-overlay">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 500px;">
             <button class="modal-close-btn">&times;</button>
             <h2>Rename Project</h2>
             <label for="project-name-input">Project name</label>
@@ -329,7 +498,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script src="script.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="js/app.js"></script>
 </body>
 
 </html>

@@ -1,0 +1,352 @@
+import { elements } from './dom.js';
+import * as API from './api.js';
+import { state } from './state.js';
+import { openModal, closeModal, showConfirm } from './modals.js';
+import { renderBoard, saveData } from './board-ui.js';
+import { Logger } from './utils.js';
+import { trackEvent } from './board-ui.js';
+
+let tempTags = [];
+let tempCustomFields = [];
+let tempAssignees = [];
+let currentViewingTask = null;
+let currentViewingWorkflow = null;
+
+// --- Task Editing Logic ---
+export const openTaskEditModal = (task, workflow) => {
+    elements.taskForm.id.value = task.id;
+    elements.taskForm.title.value = task.title;
+    elements.taskForm.description.value = task.description;
+    elements.taskForm.color.value = task.color;
+    elements.taskForm.showTags.checked = task.showTags !== false;
+
+    tempTags = task.tags ? [...task.tags] : [];
+    tempCustomFields = task.customFields ? JSON.parse(JSON.stringify(task.customFields)) : [];
+    tempAssignees = task.assignees ? [...task.assignees] : [];
+
+    renderTags(tempTags);
+    renderCustomFields(tempCustomFields);
+    renderTaskAssignees();
+    renderAvailableTags();
+
+    elements.taskForm.columnSelect.innerHTML = '';
+    state.boardData.workflows.forEach(w => {
+        const option = document.createElement('option');
+        option.value = w.id;
+        option.textContent = w.title + (w.locked ? ' (🔒)' : '');
+        if (w.id == workflow.id) option.selected = true;
+        elements.taskForm.columnSelect.appendChild(option);
+    });
+
+    openModal(elements.taskModal);
+};
+
+export const initTaskListeners = () => {
+    elements.taskForm.saveBtn.addEventListener('click', () => {
+        const taskId = elements.taskForm.id.value;
+        // Find task across workflows
+        for (const workflow of state.boardData.workflows) {
+            const tIndex = workflow.tasks.findIndex(t => t.id == taskId);
+            if (tIndex !== -1) {
+                const task = workflow.tasks[tIndex];
+                const newWorkflowId = elements.taskForm.columnSelect.value;
+                const targetWorkflow = state.boardData.workflows.find(w => w.id == newWorkflowId);
+
+                task.title = elements.taskForm.title.value;
+                task.description = elements.taskForm.description.value;
+                task.color = elements.taskForm.color.value;
+                task.tags = [...tempTags];
+                task.customFields = [...tempCustomFields];
+                task.assignees = [...tempAssignees];
+                task.showTags = elements.taskForm.showTags.checked;
+
+                if (workflow.id != newWorkflowId && targetWorkflow) {
+                    workflow.tasks.splice(tIndex, 1);
+                    targetWorkflow.tasks.push(task);
+                }
+                break;
+            }
+        }
+        saveData();
+        renderBoard();
+        closeModal(elements.taskModal);
+    });
+
+    elements.taskForm.deleteBtn.addEventListener('click', () => {
+        const taskId = elements.taskForm.id.value;
+        showConfirm('Delete task?', () => {
+            for (const workflow of state.boardData.workflows) {
+                const tIndex = workflow.tasks.findIndex(t => t.id == taskId);
+                if (tIndex !== -1) {
+                    workflow.tasks.splice(tIndex, 1);
+                    break;
+                }
+            }
+            saveData();
+            renderBoard();
+            closeModal(elements.taskModal);
+        });
+    });
+
+    elements.taskForm.duplicateBtn.addEventListener('click', () => {
+        const taskId = elements.taskForm.id.value;
+        for (const workflow of state.boardData.workflows) {
+            const task = workflow.tasks.find(t => t.id == taskId);
+            if (task) {
+                const newTask = JSON.parse(JSON.stringify(task));
+                newTask.id = Date.now();
+                newTask.title = `${task.title} (Copy)`;
+                workflow.tasks.push(newTask);
+                saveData();
+                renderBoard();
+                closeModal(elements.taskModal);
+                break;
+            }
+        }
+    });
+
+    // Tag Logic
+    elements.taskForm.showTagPickerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = elements.taskForm.tagPicker.classList.contains('hidden');
+        toggleTagPicker(!isHidden); // FIX: !isHidden means if TRUE (hidden), show it.
+        // Actually toggleTagPicker param name is 'show'?
+        // Original code: toggleTagPicker(isHidden);
+        // if isHidden is true, we want to show.
+        if (isHidden) {
+            toggleTagPicker(true);
+        } else {
+            toggleTagPicker(false);
+        }
+    });
+
+    elements.taskForm.addTagBtn.addEventListener('click', () => {
+        const name = elements.taskForm.newTagName.value.trim();
+        const color = elements.taskForm.newTagColor.value;
+        if (name) {
+            const newTag = { name, color };
+            if (!state.boardData.tags) state.boardData.tags = [];
+            if (!state.boardData.tags.find(t => t.name === name)) {
+                state.boardData.tags.push(newTag);
+            }
+            tempTags.push(newTag);
+            renderTags(tempTags);
+            elements.taskForm.newTagName.value = '';
+            toggleTagPicker(false);
+        }
+    });
+
+    // Close tag picker when clicking outside
+    document.addEventListener('click', (e) => {
+        if (elements.taskForm.tagPicker && !elements.taskForm.tagPicker.classList.contains('hidden') &&
+            !elements.taskForm.tagPicker.contains(e.target) &&
+            e.target !== elements.taskForm.showTagPickerBtn &&
+            !elements.taskForm.showTagPickerBtn.contains(e.target)) {
+            toggleTagPicker(false);
+        }
+
+        if (elements.assigneePicker && !elements.assigneePicker.classList.contains('hidden') &&
+            !elements.assigneePicker.contains(e.target) &&
+            e.target !== elements.addAssigneeBtn &&
+            !elements.addAssigneeBtn.contains(e.target)) {
+            elements.assigneePicker.classList.add('hidden');
+        }
+    });
+
+    // Custom Fields Listeners
+    elements.taskForm.addCustomFieldBtn.addEventListener('click', () => {
+        tempCustomFields.push({ name: 'New Field', value: '', type: 'text', showOnCard: false });
+        renderCustomFields(tempCustomFields);
+    });
+
+    // Assignee Listeners
+    elements.addAssigneeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        elements.assigneePicker.classList.remove('hidden');
+        renderAssigneePickerList();
+    });
+
+    // View Task Listeners
+    elements.viewTaskDisplay.editBtn.addEventListener('click', () => {
+        closeModal(elements.viewTaskModal);
+        openTaskEditModal(currentViewingTask, currentViewingWorkflow);
+    });
+};
+
+// --- View Task Logic ---
+export const openViewTaskModal = (task, workflow) => {
+    currentViewingTask = task;
+    currentViewingWorkflow = workflow;
+    elements.viewTaskDisplay.title.textContent = task.title;
+    elements.viewTaskDisplay.desc.textContent = task.description || '';
+
+    elements.viewTaskAssignees.innerHTML = (task.assignees || []).map(a => `
+        <div class="task-assignee-avatar" title="${a.name}">${a.name[0].toUpperCase()}</div>
+        <span style="font-size:0.9rem;">${a.name}</span>
+    `).join('');
+
+    elements.viewTaskDisplay.tags.innerHTML = (task.tags || []).map(tag => `<span class="tag-pill" style="background:${tag.color}">${tag.name}</span>`).join('');
+
+    elements.viewTaskDisplay.customFields.innerHTML = (task.customFields || []).map(f => {
+        const val = f.type === 'link' ? `<a href="${f.value}" target="_blank" class="text-primary hover:underline">${f.value}</a>` : f.value;
+        return `<div class="custom-field-view">
+             <span class="field-name">${f.name}:</span>
+             <span class="field-value">${val}</span>
+         </div>`;
+    }).join('');
+
+    openModal(elements.viewTaskModal);
+};
+
+// --- Helpers ---
+const renderTags = (tags) => {
+    elements.taskForm.tagsContainer.innerHTML = '';
+    tags.forEach((tag, index) => {
+        const tagEl = document.createElement('span');
+        tagEl.className = 'tag-pill';
+        tagEl.style.backgroundColor = tag.color;
+        tagEl.innerHTML = `${tag.name} <span class="remove-tag" data-index="${index}">&times;</span>`;
+        tagEl.querySelector('.remove-tag').onclick = (e) => {
+            e.stopPropagation(); // Stop propagation to prevent issues
+            tempTags.splice(index, 1);
+            renderTags(tempTags);
+        };
+        elements.taskForm.tagsContainer.appendChild(tagEl);
+    });
+};
+
+const toggleTagPicker = (show) => {
+    if (show) {
+        elements.taskForm.tagPicker.classList.remove('hidden');
+        renderAvailableTags();
+    } else {
+        elements.taskForm.tagPicker.classList.add('hidden');
+    }
+};
+
+const renderAvailableTags = () => {
+    if (!elements.taskForm.availableTagsList) return;
+    const allTags = state.boardData.tags || [];
+    elements.taskForm.availableTagsList.innerHTML = '';
+
+    allTags.forEach(tag => {
+        const tagEl = document.createElement('div');
+        tagEl.className = 'available-tag-item';
+        tagEl.innerHTML = `<span class="tag-color-dot" style="background-color:${tag.color}"></span> ${tag.name}`;
+        tagEl.onclick = () => {
+            // Check if already added
+            if (!tempTags.find(t => t.name === tag.name)) {
+                tempTags.push(tag);
+                renderTags(tempTags);
+            }
+            toggleTagPicker(false);
+        };
+        elements.taskForm.availableTagsList.appendChild(tagEl);
+    });
+
+    if (elements.taskForm.availableTagsList.children.length === 0) {
+        elements.taskForm.availableTagsList.innerHTML = '<span style="font-size:0.8rem; opacity:0.6; padding:0.5rem;">No other tags available</span>';
+    }
+};
+
+const renderCustomFields = (fields) => {
+    elements.taskForm.customFieldsContainer.innerHTML = '';
+    fields.forEach((field, index) => {
+        const fieldEl = document.createElement('div');
+        fieldEl.className = 'custom-field-item';
+        fieldEl.style.cssText = 'border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 8px; margin-bottom: 0.5rem; background: var(--card-bg);';
+
+        fieldEl.innerHTML = `
+            <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+                <input type="text" class="small-input field-name" value="${field.name}" placeholder="Nom du champ" style="flex: 1; font-weight: 500; font-size: 0.9rem; padding: 0.4rem 0.6rem;">
+                <label class="checkbox-wrapper" title="Afficher sur la carte" style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.8rem; opacity: 0.8; white-space: nowrap;">
+                     <input type="checkbox" class="field-show" ${field.showOnCard ? 'checked' : ''} style="margin:0;">
+                     Show
+                </label>
+                <button class="remove-field-btn" title="Supprimer" style="background:none; border:none; cursor:pointer; font-size: 1.1rem; display: flex; align-items: center; padding: 4px; color: #ef4444 !important;">
+                    <span class="material-symbols-outlined" style="color: #ef4444 !important;">delete</span>
+                </button>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: stretch;">
+                 <select class="small-input field-type" style="width: auto; flex-shrink: 0; padding: 0.4rem 0.2rem; font-size: 0.85rem; max-width: 80px;">
+                    <option value="text" ${field.type === 'text' ? 'selected' : ''}>Texte</option>
+                    <option value="number" ${field.type === 'number' ? 'selected' : ''}>Nombre</option>
+                    <option value="link" ${field.type === 'link' ? 'selected' : ''}>Lien</option>
+                    <option value="date" ${field.type === 'date' ? 'selected' : ''}>Date</option>
+                </select>
+                <input type="text" class="small-input field-value" value="${field.value}" placeholder="Valeur" style="flex-grow: 1; font-size: 0.9rem; padding: 0.4rem 0.6rem; width: 100%;">
+            </div>
+        `;
+
+        // Bind events
+        fieldEl.querySelector('.field-name').oninput = (e) => field.name = e.target.value;
+        fieldEl.querySelector('.field-value').oninput = (e) => field.value = e.target.value;
+        fieldEl.querySelector('.field-type').onchange = (e) => field.type = e.target.value;
+        fieldEl.querySelector('.field-show').onchange = (e) => field.showOnCard = e.target.checked;
+        fieldEl.querySelector('.remove-field-btn').onclick = () => {
+            // Confirm removal? Maybe not needed for simple fields, but good UX. 
+            // User asked for "corbeille" (bin), usually implies instant or confirms. 
+            // Let's do instant for now as per usual UI patterns for dynamic lists in this app.
+            tempCustomFields.splice(index, 1);
+            renderCustomFields(tempCustomFields);
+        };
+
+        elements.taskForm.customFieldsContainer.appendChild(fieldEl);
+    });
+};
+
+const renderTaskAssignees = () => {
+    elements.taskAssigneesContainer.innerHTML = '';
+    tempAssignees.forEach((user, index) => {
+        const el = document.createElement('div');
+        el.className = 'assignee-chip';
+        el.innerHTML = `
+            <div class="assignee-avatar-small">${user.name[0]}</div>
+            <span>${user.name}</span>
+            <span class="remove-assignee">&times;</span>
+        `;
+        el.querySelector('.remove-assignee').onclick = () => {
+            tempAssignees.splice(index, 1);
+            renderTaskAssignees();
+        };
+        elements.taskAssigneesContainer.appendChild(el);
+    });
+};
+
+const renderAssigneePickerList = async () => {
+    elements.assigneeListEl.innerHTML = 'Loading...';
+    try {
+        // We need a list of all users, let's fetch simple list
+        // Assuming API is imported, wait, API is not imported yet. 
+        // I should import API or use existing list if available?
+        // Let's use API.
+        const data = await API.getSimpleList();
+        // Dynamic import to avoid top-level circular dep if any? No, static import is fine generally.
+        // Let's stick to import * as API at top. (Check file imports)
+
+        const users = data.users || [];
+        elements.assigneeListEl.innerHTML = '';
+        users.forEach(u => {
+            const div = document.createElement('div');
+            div.className = 'assignee-item';
+            div.innerHTML = `
+                <div class="assignee-avatar-small">${u.name[0]}</div>
+                <span>${u.name}</span>
+             `;
+            div.onclick = () => {
+                addTempAssignee(u);
+                elements.assigneePicker.classList.add('hidden');
+            };
+            elements.assigneeListEl.appendChild(div);
+        });
+    } catch (e) {
+        elements.assigneeListEl.innerHTML = 'Error loading users';
+    }
+};
+
+const addTempAssignee = (user) => {
+    if (!tempAssignees.find(u => u.id === user.id)) {
+        tempAssignees.push(user);
+        renderTaskAssignees();
+    }
+};
