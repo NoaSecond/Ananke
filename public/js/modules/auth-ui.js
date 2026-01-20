@@ -53,7 +53,7 @@ export function initAuth(initSocketCallback) {
             const messageEl = document.getElementById('setup-message');
 
             if (password && password !== passwordConfirm) {
-                messageEl.textContent = 'Les mots de passe ne correspondent pas';
+                messageEl.textContent = 'Passwords do not match';
                 return;
             }
 
@@ -63,15 +63,15 @@ export function initAuth(initSocketCallback) {
                     state.currentUser = res.user;
                     updateUserUI();
                     elements.setupModal.classList.remove('visible');
-                    Logger.success('Profil mis à jour');
+                    Logger.success('Profile updated');
 
                     if (state.socket && !state.socket.connected) initSocketCallback();
                 } else {
-                    messageEl.textContent = res.error || 'Erreur mise à jour';
+                    messageEl.textContent = res.error || 'Update failed';
                 }
             } catch (err) {
                 console.error(err);
-                messageEl.textContent = 'Erreur réseau';
+                messageEl.textContent = 'Network error';
             }
         });
     }
@@ -87,6 +87,20 @@ export function initAuth(initSocketCallback) {
     if (elements.settingsMenu) {
         elements.settingsMenu.onclick = (e) => e.stopPropagation();
     }
+
+    // Global Click Listener to close menus
+    document.addEventListener('click', (e) => {
+        // Close settings if clicking outside
+        if (elements.settingsMenu && !elements.settingsMenu.classList.contains('hidden')) {
+            if (!e.target.closest('.settings-container')) {
+                elements.settingsMenu.classList.add('hidden');
+            }
+        }
+        // Close workflow menus if clicking outside
+        if (!e.target.closest('.workflow-actions')) {
+            document.querySelectorAll('.workflow-menu').forEach(m => m.classList.remove('visible'));
+        }
+    });
 
     // Profile Button
     if (elements.profileBtn) {
@@ -162,13 +176,13 @@ export function openSetupModal(isFirstTime) {
 
     if (isFirstTime) {
         elements.setupCloseBtn.style.display = 'none';
-        title.textContent = 'Bienvenue sur Ananke';
-        desc.textContent = 'Veuillez configurer votre profil pour commencer.';
+        title.textContent = 'Welcome to Ananke';
+        desc.textContent = 'Please configure your profile to start.';
         if (state.currentUser) document.getElementById('setup-email').value = state.currentUser.email;
     } else {
         elements.setupCloseBtn.style.display = 'block';
-        title.textContent = 'Mon Profil';
-        desc.textContent = 'Mettez à jour vos informations personnelles.';
+        title.textContent = 'My Profile';
+        desc.textContent = 'Update your personal information.';
         if (state.currentUser) {
             document.getElementById('setup-firstname').value = state.currentUser.first_name || '';
             document.getElementById('setup-lastname').value = state.currentUser.last_name || '';

@@ -30,8 +30,8 @@ export async function completeSetup(data) {
     return res.json();
 }
 
-export async function inviteUser(data) {
-    const res = await fetch(`${API_URL}/auth/invite`, {
+export async function createAccount(data) {
+    const res = await fetch(`${API_URL}/auth/create-account`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)

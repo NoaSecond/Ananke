@@ -27,11 +27,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const updateThemeUI = (isDark) => {
             if (isDark) {
                 document.body.classList.add('dark-mode');
-                if (themeText) themeText.textContent = 'Mode Clair';
+                if (themeText) themeText.textContent = 'Light Mode';
                 if (themeIcon) themeIcon.textContent = 'light_mode';
             } else {
                 document.body.classList.remove('dark-mode');
-                if (themeText) themeText.textContent = 'Mode Sombre';
+                if (themeText) themeText.textContent = 'Dark Mode';
                 if (themeIcon) themeIcon.textContent = 'dark_mode';
             }
         };
@@ -52,6 +52,55 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     initTheme();
+
+    // Language Logic
+    const initLanguage = () => {
+        const storedLang = localStorage.getItem('lang') || 'en';
+        const langBtns = document.querySelectorAll('.lang-btn');
+
+        const updateLangUI = (lang) => {
+            langBtns.forEach(btn => {
+                if (btn.dataset.lang === lang) {
+                    btn.style.background = 'var(--primary-color)';
+                    btn.style.color = 'white';
+                } else {
+                    btn.style.background = 'none';
+                    btn.style.color = 'var(--text-color)';
+                }
+            });
+            // Here you would normally trigger a full translation update
+            // For now, we just save the preference
+            localStorage.setItem('lang', lang);
+            if (lang === 'fr') {
+                Logger.info('Langue changée en Français (Rechargement nécessaire pour appliquer partout)');
+            } else {
+                Logger.info('Language changed to English (Reload required to apply everywhere)');
+            }
+        };
+
+        updateLangUI(storedLang);
+
+        langBtns.forEach(btn => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateLangUI(btn.dataset.lang);
+            };
+        });
+
+        // Toggle on row click
+        const langRow = document.getElementById('language-toggle-btn');
+        if (langRow) {
+            langRow.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const current = localStorage.getItem('lang') || 'en';
+                const newLang = current === 'en' ? 'fr' : 'en';
+                updateLangUI(newLang);
+            };
+        }
+    };
+    initLanguage();
 
     // Init Auth (calls initSocket on success)
     initAuth(initSocket);

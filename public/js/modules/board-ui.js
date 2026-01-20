@@ -50,6 +50,18 @@ const generateDynamicKeywords = () => {
 
 export const renderBoard = ErrorHandler.wrapSync(() => {
     Logger.debug('🎨 Rendering Kanban board');
+    const isReader = state.currentUser?.role === 'reader';
+
+    // Toggle global controls based on role
+    if (elements.addWorkflowBtn) {
+        elements.addWorkflowBtn.style.display = isReader ? 'none' : 'inline-flex';
+    }
+    if (elements.projectTitle) {
+        const editIcon = elements.projectTitle.querySelector('.edit-icon');
+        if (editIcon) editIcon.style.display = isReader ? 'none' : 'inline-block';
+        elements.projectTitle.style.cursor = isReader ? 'default' : 'pointer';
+    }
+
     elements.kanbanBoard.innerHTML = '';
     if (!state.boardData.workflows || state.boardData.workflows.length === 0) {
         elements.kanbanBoard.innerHTML = '<p style="text-align: center; width: 100%; opacity: 0.7;">Your board is empty. Add a column to start!</p>';
@@ -63,31 +75,34 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
             const lockIcon = isLocked ? ' <span class="material-symbols-outlined" style="font-size: 1.2em; vertical-align: bottom; opacity: 0.6;" title="Locked">lock</span>' : '';
             const headerClass = isLocked ? 'workflow-header locked' : 'workflow-header';
 
+            const columnActionsHtml = isReader ? '' : `
+                <div class="workflow-actions">
+                    <button class="workflow-menu-btn" title="Column Options" onmousedown="event.stopPropagation()">
+                        <span class="material-symbols-outlined">more_vert</span>
+                    </button>
+                    <div class="workflow-menu">
+                        <button class="edit-workflow-btn" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                            <span class="material-symbols-outlined">edit</span> Edit
+                        </button>
+                        <button class="lock-workflow-btn" data-workflow-id="${workflow.id}">
+                            <span class="material-symbols-outlined">${isLocked ? 'lock_open' : 'lock'}</span> ${isLocked ? 'Unlock' : 'Lock'}
+                        </button>
+                        <button class="duplicate-workflow-btn" data-workflow-id="${workflow.id}">
+                            <span class="material-symbols-outlined">content_copy</span> Duplicate
+                        </button>
+                        <button class="add-task-btn-menu" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                            <span class="material-symbols-outlined">add_task</span> Add Task
+                        </button>
+                        <button class="delete-workflow-btn delete" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                            <span class="material-symbols-outlined">delete</span> Delete
+                        </button>
+                    </div>
+                </div>`;
+
             columnEl.innerHTML = `
                 <div class="${headerClass}" style="border-left: 4px solid ${workflow.color || '#1a73e8'}">
                     <h3>${workflow.title}${lockIcon}</h3>
-                    <div class="workflow-actions">
-                        <button class="workflow-menu-btn" title="Column Options" onmousedown="event.stopPropagation()">
-                            <span class="material-symbols-outlined">more_vert</span>
-                        </button>
-                        <div class="workflow-menu">
-                            <button class="edit-workflow-btn" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                                <span class="material-symbols-outlined">edit</span> Edit
-                            </button>
-                            <button class="lock-workflow-btn" data-workflow-id="${workflow.id}">
-                                <span class="material-symbols-outlined">${isLocked ? 'lock_open' : 'lock'}</span> ${isLocked ? 'Unlock' : 'Lock'}
-                            </button>
-                            <button class="duplicate-workflow-btn" data-workflow-id="${workflow.id}">
-                                <span class="material-symbols-outlined">content_copy</span> Duplicate
-                            </button>
-                            <button class="add-task-btn-menu" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                                <span class="material-symbols-outlined">add_task</span> Add Task
-                            </button>
-                            <button class="delete-workflow-btn delete" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                                <span class="material-symbols-outlined">delete</span> Delete
-                            </button>
-                        </div>
-                    </div>
+                    ${columnActionsHtml}
                 </div>
                 <div class="task-list" data-workflow-id="${workflow.id}"></div>
             `;
@@ -99,7 +114,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                 taskCard.dataset.taskId = task.id;
                 taskCard.style.borderLeftColor = task.color;
 
-                const taskActionsHtml = isLocked ? `
+                const taskActionsHtml = isReader ? '' : (isLocked ? `
                     <div class="task-actions">
                         <button class="task-card-action-btn edit-btn" title="Edit Task">
                             <span class="material-symbols-outlined">edit</span>
@@ -115,7 +130,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                         <button class="task-card-action-btn delete-btn" title="Delete Task">
                             <span class="material-symbols-outlined">delete</span>
                         </button>
-                    </div>`;
+                    </div>`);
 
                 const assigneesHtml = (task.assignees || []).map(a => `
                     <div class="task-assignee-avatar" title="${a.name}">${a.name[0]}</div>
@@ -153,10 +168,13 @@ export const initDragAndDrop = () => {
     state.taskSortables.forEach(s => s.destroy());
     state.taskSortables = [];
 
+    const isReader = state.currentUser?.role === 'reader';
+
     state.columnSortable = new Sortable(elements.kanbanBoard, {
         group: 'columns',
         animation: 150,
         handle: '.workflow-header',
+        disabled: isReader,
         filter: '.locked, .workflow-actions, .workflow-menu-btn, .workflow-menu',
         preventOnFilter: false,
         onStart: () => { state.isDraggingInternal = true; },
@@ -172,7 +190,7 @@ export const initDragAndDrop = () => {
     document.querySelectorAll('.task-list').forEach(list => {
         const workflowId = list.dataset.workflowId;
         const workflow = state.boardData.workflows.find(w => w.id == workflowId);
-        const isLocked = workflow && workflow.locked;
+        const isLocked = (workflow && workflow.locked) || isReader;
 
         const sortable = new Sortable(list, {
             group: {
@@ -181,6 +199,7 @@ export const initDragAndDrop = () => {
                 put: !isLocked
             },
             sort: !isLocked,
+            disabled: isReader,
             animation: 150,
             onStart: () => { state.isDraggingInternal = true; },
             onEnd: (evt) => {
@@ -395,6 +414,7 @@ export const initBoardListeners = () => {
 
     // Project Title Edit
     elements.projectTitle.addEventListener('click', () => {
+        if (state.currentUser?.role === 'reader') return;
         elements.projectNameInput.value = state.boardData.projectName || 'Ananke';
         openModal(elements.projectModal);
     });

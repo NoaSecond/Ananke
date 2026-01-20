@@ -144,18 +144,18 @@
     <div id="setup-modal" class="modal-overlay" style="z-index: 2000;">
         <div class="modal-content" style="max-width: 500px;">
             <button class="modal-close-btn" id="setup-close-btn" style="display:none;">&times;</button>
-            <h2 id="setup-title">Configuration du Compte</h2>
-            <p id="setup-desc" style="margin-bottom: 1.5rem; opacity: 0.7;">Veuillez compléter vos informations pour
-                continuer.</p>
+            <h2 id="setup-title">Account Setup</h2>
+            <p id="setup-desc" style="margin-bottom: 1.5rem; opacity: 0.7;">Please complete your information to
+                continue.</p>
 
             <form id="setup-form">
                 <div style="display: flex; gap: 1rem;">
                     <div class="form-group" style="flex:1;">
-                        <label for="setup-firstname">Prénom</label>
+                        <label for="setup-firstname">First Name</label>
                         <input type="text" id="setup-firstname" required>
                     </div>
                     <div class="form-group" style="flex:1;">
-                        <label for="setup-lastname">Nom</label>
+                        <label for="setup-lastname">Last Name</label>
                         <input type="text" id="setup-lastname" required>
                     </div>
                 </div>
@@ -165,17 +165,17 @@
                 </div>
 
                 <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid var(--border-color);">
-                <p style="font-size: 0.9rem; margin-bottom: 1rem; font-weight: bold;">Changer le mot de passe</p>
+                <p style="font-size: 0.9rem; margin-bottom: 1rem; font-weight: bold;">Change Password</p>
 
                 <div class="form-group">
-                    <label for="setup-password">Nouveau mot de passe</label>
-                    <input type="password" id="setup-password" placeholder="Laisser vide pour ne pas changer">
+                    <label for="setup-password">New Password</label>
+                    <input type="password" id="setup-password" placeholder="Leave blank to keep current">
                 </div>
                 <div class="form-group">
-                    <label for="setup-password-confirm">Confirmer</label>
+                    <label for="setup-password-confirm">Confirm</label>
                     <input type="password" id="setup-password-confirm">
                 </div>
-                <button type="submit" class="action-btn" style="width: 100%; margin-top: 1rem;">Enregistrer</button>
+                <button type="submit" class="action-btn" style="width: 100%; margin-top: 1rem;">Save</button>
             </form>
             <div id="setup-message" style="margin-top: 1rem; color: var(--danger-color);"></div>
         </div>
@@ -185,11 +185,11 @@
     <div id="user-management-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 600px;">
             <button class="modal-close-btn">&times;</button>
-            <h2>Gestion des Utilisateurs</h2>
+            <h2>User Management</h2>
 
             <div
                 style="background: var(--bg-color); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
-                <h4 style="margin-top:0;">Inviter un utilisateur</h4>
+                <h4 style="margin-top:0;">Create Account</h4>
                 <form id="invite-form" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
                     <div style="flex: 2; min-width: 200px;">
                         <label style="font-size: 0.8rem;">Email</label>
@@ -197,18 +197,18 @@
                             style="margin:0;">
                     </div>
                     <div style="flex: 2; min-width: 150px;">
-                        <label style="font-size: 0.8rem;">Mot de passe prov.</label>
+                        <label style="font-size: 0.8rem;">Temp Password</label>
                         <input type="text" id="invite-password" required placeholder="Temp123" style="margin:0;">
                     </div>
                     <div style="flex: 1; min-width: 100px;">
-                        <label style="font-size: 0.8rem;">Rôle</label>
-                        <select id="invite-role" style="margin:0; height: 42px;">
-                            <option value="reader">Lecteur</option>
-                            <option value="editor">Éditeur</option>
+                        <label style="font-size: 0.8rem;">Role</label>
+                        <select id="invite-role" class="role-select" data-role="reader">
+                            <option value="reader">Reader</option>
+                            <option value="editor">Editor</option>
                             <option value="admin">Admin</option>
                         </select>
                     </div>
-                    <button type="submit" class="action-btn">Inviter</button>
+                    <button type="submit" class="action-btn">Create</button>
                 </form>
                 <div id="invite-message" style="margin-top:0.5rem; font-size:0.9rem;"></div>
             </div>
@@ -231,7 +231,7 @@
                 Add Column
             </button>
             <div class="settings-container">
-                <button id="settings-toggle-btn" class="secondary-btn circular-btn rotate-hover" title="Paramètres">
+                <button id="settings-toggle-btn" class="secondary-btn circular-btn rotate-hover" title="Settings">
                     <span class="material-symbols-outlined">settings</span>
                 </button>
                 <div id="settings-menu" class="settings-menu hidden">
@@ -242,31 +242,42 @@
                     <div class="settings-divider"></div>
                     <button id="profile-btn" class="settings-item">
                         <span class="material-symbols-outlined">person</span>
-                        Mon Profil
+                        My Profile
                     </button>
                     <button id="manage-users-btn" class="settings-item" style="display: none;">
                         <span class="material-symbols-outlined">group</span>
-                        Utilisateurs
+                        Users
                     </button>
                     <button id="theme-toggle-btn" class="settings-item">
                         <span class="material-symbols-outlined theme-icon">dark_mode</span>
-                        <span id="theme-text">Mode Sombre</span>
+                        <span id="theme-text">Dark Mode</span>
                     </button>
+                    <div id="language-toggle-btn" class="settings-item"
+                        style="cursor: pointer; justify-content: space-between; padding-right: 1rem;">
+                        <span style="display:flex; align-items:center; gap:10px;"><span
+                                class="material-symbols-outlined">language</span> Language</span>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="lang-btn" data-lang="fr"
+                                style="border:1px solid var(--border-color); background:none; color:var(--text-color); border-radius:4px; padding:2px 6px; cursor:pointer; font-size:0.8rem;">FR</button>
+                            <button class="lang-btn" data-lang="en"
+                                style="border:1px solid var(--border-color); background:var(--primary-color); color:white; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:0.8rem;">EN</button>
+                        </div>
+                    </div>
                     <div class="settings-divider"></div>
                     <label for="import-input" id="import-label" class="settings-item"
                         style="display: none; cursor: pointer;">
                         <span class="material-symbols-outlined">upload</span>
-                        Importer (.kanban)
+                        Import (.kanban)
                     </label>
                     <input type="file" id="import-input" accept=".kanban" style="display: none;">
                     <button id="export-btn" class="settings-item">
                         <span class="material-symbols-outlined">download</span>
-                        Exporter (.kanban)
+                        Export (.kanban)
                     </button>
                     <div class="settings-divider"></div>
                     <button id="logout-btn" class="settings-item danger-text">
                         <span class="material-symbols-outlined">logout</span>
-                        Déconnexion
+                        Logout
                     </button>
                 </div>
             </div>

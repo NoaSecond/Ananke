@@ -74,8 +74,8 @@ const requireRole = (minRole) => {
     }
 };
 
-// INVITE USER (Admin/Owner only)
-router.post('/invite', authenticateToken, requireRole('admin'), (req, res) => {
+// CREATE ACCOUNT (Admin/Owner only)
+router.post('/create-account', authenticateToken, requireRole('admin'), (req, res) => {
     const { email, password, role } = req.body;
 
     if (!email || !password) {
@@ -84,13 +84,6 @@ router.post('/invite', authenticateToken, requireRole('admin'), (req, res) => {
 
     const hash = bcrypt.hashSync(password, 10);
     const userRole = role || 'reader';
-
-    // Prevent Creating Owner unless requester IS Owner? 
-    // Usually only Owner can create Admins/Owners. 
-    // Let's keep it simple: Admins can create Editors/Readers. Only Owner can create Admins?
-    // For now, assume 'admin' includes Owner capabilities for creation, 
-    // check role hierarchy if needed. 
-    // Re-verify logic: Owner > Admin > Editor > Reader. 
 
     db.run("INSERT INTO users (email, password_hash, role, is_setup_complete) VALUES (?, ?, ?, 0)",
         [email, hash, userRole],
@@ -101,7 +94,7 @@ router.post('/invite', authenticateToken, requireRole('admin'), (req, res) => {
                 }
                 return res.status(500).json({ error: err.message });
             }
-            res.json({ id: this.lastID, message: 'Utilisateur invité' });
+            res.json({ id: this.lastID, success: true, message: 'Compte créé avec succès' });
         }
     );
 });

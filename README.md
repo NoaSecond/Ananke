@@ -18,31 +18,20 @@ cd Ananke
 
 ### Option 2: Local Development Server
 ```bash
-# With Python (if installed)
-cd public
-python -m http.server 3000
-
 # With Node.js and serve
 npx serve public -p 3000
-
-# With PHP (if installed)
-cd public
-php -S localhost:3000
-```
-
-### Option 3: Vercel Deployment
-```bash
-# Install the Vercel CLI
-npm install -g vercel
-
-# Deploy
-vercel
-
-# Or in development mode
-vercel dev
 ```
 
 Then open your browser at `http://localhost:3000`
+
+### Default Credentials
+
+For the first connection, use the following credentials to log in as the owner:
+
+- **Email:** `admin@setup.ananke`
+- **Password:** `admin123`
+
+then you can update the account details to your own.
 
 -----
 

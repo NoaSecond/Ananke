@@ -177,6 +177,12 @@ export const initTaskListeners = () => {
 export const openViewTaskModal = (task, workflow) => {
     currentViewingTask = task;
     currentViewingWorkflow = workflow;
+
+    // Hide edit button for readers
+    if (elements.viewTaskDisplay.editBtn) {
+        elements.viewTaskDisplay.editBtn.style.display = state.currentUser?.role === 'reader' ? 'none' : 'flex';
+    }
+
     elements.viewTaskDisplay.title.textContent = task.title;
     elements.viewTaskDisplay.desc.textContent = task.description || '';
 
@@ -258,23 +264,23 @@ const renderCustomFields = (fields) => {
 
         fieldEl.innerHTML = `
             <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
-                <input type="text" class="small-input field-name" value="${field.name}" placeholder="Nom du champ" style="flex: 1; font-weight: 500; font-size: 0.9rem; padding: 0.4rem 0.6rem;">
-                <label class="checkbox-wrapper" title="Afficher sur la carte" style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.8rem; opacity: 0.8; white-space: nowrap;">
+                <input type="text" class="small-input field-name" value="${field.name}" placeholder="Field Name" style="flex: 1; font-weight: 500; font-size: 0.9rem; padding: 0.4rem 0.6rem;">
+                <label class="checkbox-wrapper" title="Show on card" style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.8rem; opacity: 0.8; white-space: nowrap;">
                      <input type="checkbox" class="field-show" ${field.showOnCard ? 'checked' : ''} style="margin:0;">
                      Show
                 </label>
-                <button class="remove-field-btn" title="Supprimer" style="background:none; border:none; cursor:pointer; font-size: 1.1rem; display: flex; align-items: center; padding: 4px; color: #ef4444 !important;">
+                <button class="remove-field-btn" title="Delete" style="background:none; border:none; cursor:pointer; font-size: 1.1rem; display: flex; align-items: center; padding: 4px; color: #ef4444 !important;">
                     <span class="material-symbols-outlined" style="color: #ef4444 !important;">delete</span>
                 </button>
             </div>
             <div style="display: flex; gap: 0.5rem; align-items: stretch;">
                  <select class="small-input field-type" style="width: auto; flex-shrink: 0; padding: 0.4rem 0.2rem; font-size: 0.85rem; max-width: 80px;">
-                    <option value="text" ${field.type === 'text' ? 'selected' : ''}>Texte</option>
-                    <option value="number" ${field.type === 'number' ? 'selected' : ''}>Nombre</option>
-                    <option value="link" ${field.type === 'link' ? 'selected' : ''}>Lien</option>
+                    <option value="text" ${field.type === 'text' ? 'selected' : ''}>Text</option>
+                    <option value="number" ${field.type === 'number' ? 'selected' : ''}>Number</option>
+                    <option value="link" ${field.type === 'link' ? 'selected' : ''}>Link</option>
                     <option value="date" ${field.type === 'date' ? 'selected' : ''}>Date</option>
                 </select>
-                <input type="text" class="small-input field-value" value="${field.value}" placeholder="Valeur" style="flex-grow: 1; font-size: 0.9rem; padding: 0.4rem 0.6rem; width: 100%;">
+                <input type="text" class="small-input field-value" value="${field.value}" placeholder="Value" style="flex-grow: 1; font-size: 0.9rem; padding: 0.4rem 0.6rem; width: 100%;">
             </div>
         `;
 

@@ -1326,10 +1326,118 @@ body.auth-mode footer {
     transition: all 0.2s ease;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus {
     border-color: var(--primary-color);
     outline: none;
     box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+/* Custom Select Styling */
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    padding-right: 2.5rem !important;
+    cursor: pointer;
+}
+
+.small-select,
+.role-select {
+    padding: 0.4rem 2rem 0.4rem 0.75rem !important;
+    font-size: 0.75rem;
+    font-weight: 700;
+    height: 32px !important;
+    width: auto !important;
+    min-width: 100px;
+    border-radius: 8px;
+    background-position: right 0.6rem center;
+    background-size: 0.75rem;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+}
+
+.role-select:hover {
+    border-color: var(--primary-color);
+    background-color: var(--card-bg);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.role-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.role-select[data-role="admin"] {
+    border-color: rgba(239, 68, 68, 0.4);
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444 !important;
+}
+
+.role-select[data-role="editor"] {
+    border-color: rgba(26, 115, 232, 0.4);
+    background-color: rgba(26, 115, 232, 0.1);
+    color: var(--primary-color) !important;
+}
+
+.role-select[data-role="reader"] {
+    border-color: rgba(148, 163, 184, 0.4);
+    background-color: rgba(148, 163, 184, 0.1);
+    color: #94a3b8 !important;
+}
+
+.role-select option {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.role-badge {
+    padding: 0 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+    height: 32px;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+}
+
+.role-badge.owner {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+.delete-user-btn {
+    background-color: transparent !important;
+    color: var(--danger-color) !important;
+    border: 1px solid var(--danger-color) !important;
+    padding: 4px 12px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.delete-user-btn:hover {
+    background-color: var(--danger-color) !important;
+    color: white !important;
 }
 
 .user-row {

@@ -36,14 +36,14 @@ async function reset() {
             data TEXT
         )`);
 
-        const hashedPassword = await bcrypt.hash('AdminAnanke', 10);
+        const hashedPassword = await bcrypt.hash('admin123', 10);
         db.run(`INSERT INTO users (email, password_hash, first_name, last_name, role, is_setup_complete) 
                 VALUES ('admin@setup.ananke', ?, '', '', 'owner', 0)`, [hashedPassword]);
 
         db.run(`INSERT INTO board_store (id, data) VALUES (1, ?)`, [JSON.stringify(defaultData)]);
 
         console.log('Database reset complete.');
-        console.log('Admin user: admin@setup.ananke / AdminAnanke');
+        console.log('Admin user: admin@setup.ananke / admin123');
         db.close();
     });
 }
