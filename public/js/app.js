@@ -9,6 +9,7 @@ import { initWorkflowListeners } from './modules/workflow-ui.js';
 import { initUserManagement } from './modules/user-ui.js';
 import * as API from './modules/api.js';
 import { initThemeListeners, applyBackground } from './modules/theme-ui.js';
+import { initSearch } from './modules/search-ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     Logger.info('🚀 Ananke application started');
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initWorkflowListeners();
     initUserManagement();
     initThemeListeners();
+    initSearch();
 
     // Theme Logic
     const initTheme = () => {

@@ -99,4 +99,7 @@ export const elements = {
     bgImageUpload: document.getElementById('bg-image-upload'),
     resetBgBtn: document.getElementById('reset-bg-btn'),
     saveBgBtn: document.getElementById('save-bg-btn'),
+    // Search
+    searchInput: document.getElementById('global-search'),
+    searchAutocomplete: document.getElementById('search-autocomplete-list'),
 };
