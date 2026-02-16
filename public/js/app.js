@@ -8,6 +8,7 @@ import { initTaskListeners } from './modules/task-ui.js';
 import { initWorkflowListeners } from './modules/workflow-ui.js';
 import { initUserManagement } from './modules/user-ui.js';
 import * as API from './modules/api.js';
+import { initThemeListeners, applyBackground } from './modules/theme-ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     Logger.info('🚀 Ananke application started');
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTaskListeners();
     initWorkflowListeners();
     initUserManagement();
+    initThemeListeners();
 
     // Theme Logic
     const initTheme = () => {
@@ -114,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await API.getBoard();
             if (data && data.workflows) {
                 state.boardData = data;
+                applyBackground(state.boardData.background);
                 renderBoard();
             }
         } catch (e) {
@@ -125,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.socket.on('boardUpdate', (data) => {
             if (!state.isDraggingInternal) {
                 state.boardData = data;
+                applyBackground(state.boardData.background);
                 renderBoard();
             }
         });

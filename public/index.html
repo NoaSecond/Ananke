@@ -252,6 +252,10 @@
                         <span class="material-symbols-outlined theme-icon">dark_mode</span>
                         <span id="theme-text">Dark Mode</span>
                     </button>
+                    <button id="bg-customize-btn" class="settings-item">
+                        <span class="material-symbols-outlined">palette</span>
+                        Background
+                    </button>
                     <div id="language-toggle-btn" class="settings-item"
                         style="cursor: pointer; justify-content: space-between; padding-right: 1rem;">
                         <span style="display:flex; align-items:center; gap:10px;"><span
@@ -464,6 +468,67 @@
                 <button id="delete-task-btn" class="danger-btn">Delete</button>
                 <button id="duplicate-task-btn" class="secondary-btn">Duplicate</button>
                 <button id="save-task-btn" class="action-btn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background Customization Modal -->
+    <div id="bg-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-close-btn">&times;</button>
+            <h2>Customize Background</h2>
+            <p style="opacity: 0.7; font-size: 0.9rem; margin-bottom: 1.5rem;">Choose a custom look for your workspace.
+            </p>
+
+            <div class="bg-preview" id="bg-preview">Preview</div>
+
+            <div class="bg-options">
+                <div class="bg-option-section">
+                    <h4>Solid Color</h4>
+                    <input type="color" id="bg-color-picker"
+                        style="width: 100%; height: 40px; cursor: pointer; padding: 0; border: none; border-radius: 8px;">
+                </div>
+
+                <div class="bg-option-section">
+                    <h4>Gradient Presets</h4>
+                    <div class="gradient-presets">
+                        <button class="gradient-btn" data-value="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></button>
+                        <button class="gradient-btn" data-value="linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)"
+                            style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);"></button>
+                        <button class="gradient-btn" data-value="linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)"
+                            style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);"></button>
+                        <button class="gradient-btn" data-value="linear-gradient(135deg, #f6d365 0%, #fda085 100%)"
+                            style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);"></button>
+                        <button class="gradient-btn" data-value="linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)"
+                            style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);"></button>
+                        <button class="gradient-btn" data-value="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+                            style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"></button>
+                    </div>
+                </div>
+
+                <div class="bg-option-section">
+                    <h4>Image URL</h4>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="bg-image-url" placeholder="https://images.unsplash.com/..."
+                            style="flex: 1;">
+                        <button id="bg-image-apply-btn" class="secondary-btn small-btn">Apply</button>
+                    </div>
+                </div>
+
+                <div class="bg-option-section">
+                    <h4>Custom Image</h4>
+                    <label for="bg-image-upload" class="action-btn secondary-btn"
+                        style="display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+                        <span class="material-symbols-outlined">upload</span> Import Image
+                    </label>
+                    <input type="file" id="bg-image-upload" accept="image/*" style="display: none;">
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 2rem;">
+                <button id="reset-bg-btn" class="secondary-btn">Reset to Default</button>
+                <button id="save-bg-btn" class="action-btn">Save Changes</button>
             </div>
         </div>
     </div>

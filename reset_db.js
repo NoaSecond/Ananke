@@ -13,7 +13,8 @@ const defaultData = {
         { id: 2, title: 'In Progress', color: '#f97316', tasks: [] },
         { id: 3, title: 'To Test', color: '#3b82f6', tasks: [] },
         { id: 4, title: 'Done', color: '#22c55e', tasks: [] }
-    ]
+    ],
+    background: { type: 'gradient', value: 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)' }
 };
 
 async function reset() {
