@@ -1,7 +1,9 @@
+require('dotenv').config();
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 
-const db = new sqlite3.Database('./ananke.db');
+const dbPath = process.env.DB_PATH || './ananke.db';
+const db = new sqlite3.Database(dbPath);
 
 const defaultData = {
     projectName: 'Nouveau Projet',
