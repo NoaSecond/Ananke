@@ -4,6 +4,7 @@ import { Logger, ErrorHandler } from './utils.js';
 import { openTaskEditModal, openViewTaskModal } from './task-ui.js';
 import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
+import { handleSearch } from './search-ui.js';
 
 export const trackEvent = (action, category = 'Kanban', label = null, value = null) => {
     if (typeof gtag !== 'undefined') {
@@ -158,6 +159,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
     initDragAndDrop();
     generateDynamicKeywords();
     updateProjectTitle();
+    handleSearch();
 }, 'Board rendering');
 
 export const initDragAndDrop = () => {

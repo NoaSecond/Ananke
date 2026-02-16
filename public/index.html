@@ -225,6 +225,18 @@
             <span id="project-name-display">Ananke</span>
             <span class="material-symbols-outlined edit-icon">edit</span>
         </h1>
+
+        <div class="search-container" id="search-container">
+            <div class="search-wrapper">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input type="text" id="global-search" placeholder="Search (Tag: Person: )" autocomplete="off">
+                <div class="search-shortcut">
+                    <span class="shortcut-key">Ctrl</span>+<span class="shortcut-key">K</span>
+                </div>
+            </div>
+            <div id="search-autocomplete-list" class="autocomplete-list hidden"></div>
+        </div>
+
         <div class="controls">
             <button id="add-workflow-btn" class="action-btn">
                 <span class="material-symbols-outlined">add</span>

@@ -1826,3 +1826,119 @@ body.has-custom-bg {
     background-position: center !important;
     background-attachment: fixed !important;
 }
+
+/* --- Search Bar --- */
+.search-container {
+    flex: 1;
+    max-width: 480px;
+    margin: 0 1.5rem;
+    position: relative;
+}
+
+.search-wrapper {
+    display: flex;
+    align-items: center;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0 0.8rem;
+    height: 38px;
+    transition: all 0.2s ease;
+}
+
+.search-wrapper:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
+}
+
+.search-icon {
+    font-size: 1.2rem !important;
+    opacity: 0.5;
+    margin-right: 0.6rem;
+}
+
+#global-search {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    width: 100%;
+    outline: none;
+}
+
+.search-shortcut {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 2px 5px;
+    font-size: 0.7rem;
+    color: var(--text-color);
+    opacity: 0.6;
+    margin-left: 0.5rem;
+    pointer-events: none;
+    user-select: none;
+    font-weight: bold;
+}
+
+.autocomplete-list {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.autocomplete-list.hidden {
+    display: none;
+}
+
+.autocomplete-item {
+    padding: 0.8rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.autocomplete-item:hover, .autocomplete-item.selected {
+    background: var(--border-color);
+}
+
+.autocomplete-item .item-type {
+    font-size: 0.65rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: var(--primary-color);
+    background: rgba(26, 115, 232, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    min-width: 55px;
+    text-align: center;
+}
+
+.autocomplete-item .item-value {
+    font-size: 0.9rem;
+}
+
+.task-card.hidden-by-search {
+    display: none !important;
+}
+
+@media (max-width: 800px) {
+    .search-container {
+        order: 3;
+        max-width: 100%;
+        margin: 0.5rem 0;
+        flex-basis: 100%;
+    }
+}
