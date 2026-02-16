@@ -13,6 +13,7 @@ If you have Node.js installed, you can run the full application (with backend an
 git clone https://github.com/NoaSecond/Ananke
 cd Ananke
 npm install
+node reset_db.js
 npm start
 ```
 
@@ -37,6 +38,7 @@ npm install -g pm2
 git clone https://github.com/NoaSecond/Ananke
 cd Ananke
 npm install
+node reset_db.js
 ```
 
 #### 3. Run with PM2

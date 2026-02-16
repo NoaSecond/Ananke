@@ -19,6 +19,10 @@ export const openTaskEditModal = (task, workflow) => {
     elements.taskForm.description.value = task.description;
     elements.taskForm.color.value = task.color;
     elements.taskForm.showTags.checked = task.showTags !== false;
+    elements.taskForm.showDesc.checked = task.showDescriptionOnCard !== false;
+
+    // Trigger auto-resize
+    autoResizeTextarea(elements.taskForm.description);
 
     tempTags = task.tags ? [...task.tags] : [];
     tempCustomFields = task.customFields ? JSON.parse(JSON.stringify(task.customFields)) : [];
@@ -59,6 +63,7 @@ export const initTaskListeners = () => {
                 task.customFields = [...tempCustomFields];
                 task.assignees = [...tempAssignees];
                 task.showTags = elements.taskForm.showTags.checked;
+                task.showDescriptionOnCard = elements.taskForm.showDesc.checked;
 
                 if (workflow.id != newWorkflowId && targetWorkflow) {
                     workflow.tasks.splice(tIndex, 1);
@@ -171,6 +176,16 @@ export const initTaskListeners = () => {
         closeModal(elements.viewTaskModal);
         openTaskEditModal(currentViewingTask, currentViewingWorkflow);
     });
+
+    // Auto-resize textarea listener
+    elements.taskForm.description.addEventListener('input', (e) => {
+        autoResizeTextarea(e.target);
+    });
+};
+
+const autoResizeTextarea = (el) => {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
 };
 
 // --- View Task Logic ---
@@ -184,7 +199,7 @@ export const openViewTaskModal = (task, workflow) => {
     }
 
     elements.viewTaskDisplay.title.textContent = task.title;
-    elements.viewTaskDisplay.desc.textContent = task.description || '';
+    elements.viewTaskDisplay.desc.innerHTML = task.description ? marked.parse(task.description) : '';
 
     elements.viewTaskAssignees.innerHTML = (task.assignees || []).map(a => `
         <div class="task-assignee-avatar" title="${a.name}">${a.name[0].toUpperCase()}</div>

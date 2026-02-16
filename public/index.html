@@ -358,7 +358,7 @@
 
                 <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">
                     Description</h4>
-                <div id="view-task-desc" style="white-space: pre-wrap; margin-bottom: 1.5rem; line-height: 1.5;"></div>
+                <div id="view-task-desc" style="margin-bottom: 1.5rem; line-height: 1.5;"></div>
 
                 <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">Tags</h4>
                 <div id="view-task-tags" class="tags-container" style="margin-bottom: 1.5rem;"></div>
@@ -387,6 +387,11 @@
 
                 <label for="task-desc-input">Description</label>
                 <textarea id="task-desc-input" rows="4" placeholder="Description..."></textarea>
+                <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="task-show-desc-input" style="width: auto; margin: 0;">
+                    <label for="task-show-desc-input" style="margin: 0; font-size: 0.9rem; opacity: 0.9;">Show
+                        description on card</label>
+                </div>
 
                 <label for="task-color-input">Strip Color</label>
                 <input type="color" id="task-color-input">
@@ -441,6 +446,7 @@
                         <label for="task-show-tags-input" style="margin: 0; font-size: 0.9rem; opacity: 0.9;">Show tags
                             on card</label>
                     </div>
+
                 </div>
 
                 <div class="section-divider"></div>
@@ -509,6 +515,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script type="module" src="js/app.js"></script>
 </body>

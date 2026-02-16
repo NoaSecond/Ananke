@@ -7,6 +7,7 @@ import { initBoardListeners, renderBoard } from './modules/board-ui.js';
 import { initTaskListeners } from './modules/task-ui.js';
 import { initWorkflowListeners } from './modules/workflow-ui.js';
 import { initUserManagement } from './modules/user-ui.js';
+import * as API from './modules/api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     Logger.info('🚀 Ananke application started');
@@ -105,8 +106,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Init Auth (calls initSocket on success)
     initAuth(initSocket);
 
-    function initSocket() {
+    async function initSocket() {
         if (state.socket) return;
+
+        // Fetch initial data via REST for reliability
+        try {
+            const data = await API.getBoard();
+            if (data && data.workflows) {
+                state.boardData = data;
+                renderBoard();
+            }
+        } catch (e) {
+            Logger.debug('Rest API board fetch failed, relying on socket');
+        }
+
         state.socket = io();
 
         state.socket.on('boardUpdate', (data) => {

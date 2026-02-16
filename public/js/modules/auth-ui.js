@@ -65,7 +65,7 @@ export function initAuth(initSocketCallback) {
                     elements.setupModal.classList.remove('visible');
                     Logger.success('Profile updated');
 
-                    if (state.socket && !state.socket.connected) initSocketCallback();
+                    if (!state.socket) initSocketCallback();
                 } else {
                     messageEl.textContent = res.error || 'Update failed';
                 }
@@ -138,10 +138,9 @@ function handleLoginSuccess(user, initSocketCallback) {
     hideAuth();
     updateUserUI();
 
+    if (initSocketCallback) initSocketCallback();
     if (!user.is_setup_complete) {
         openSetupModal(true);
-    } else {
-        if (initSocketCallback) initSocketCallback();
     }
 }
 
