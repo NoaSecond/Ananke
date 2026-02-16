@@ -62,3 +62,9 @@ export async function deleteUser(id) {
     const res = await fetch(`${API_URL}/auth/users/${id}`, { method: 'DELETE' });
     return res.json();
 }
+
+export async function getBoard() {
+    const res = await fetch(`${API_URL}/board`);
+    if (res.ok) return res.json();
+    throw new Error('Failed to fetch board');
+}

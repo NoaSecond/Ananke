@@ -143,7 +143,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                         ${task.showTags !== false ? (task.tags || []).map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color};" title="${tag.name}">${tag.name}</span>`).join('') : ''}
                     </div>
                     <div class="task-assignees-display">${assigneesHtml}</div>
-                    <p>${task.description}</p>
+                    ${(task.showDescriptionOnCard !== false && task.description) ? `<div class="task-card-description">${marked.parse(task.description)}</div>` : ''}
                     ${(task.customFields || []).filter(f => f.showOnCard).map(f => {
                     const val = f.type === 'link' ? `<a href="${f.value}" target="_blank" onclick="event.stopPropagation()" style="color: var(--primary-color); text-decoration: underline;">${f.value}</a>` : f.value;
                     return `<div class="task-custom-field-small"><strong>${f.name}:</strong> ${val}</div>`;

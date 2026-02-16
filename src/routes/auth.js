@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../config/database');
 const router = express.Router();
 
-const JWT_SECRET = 'ananke-secret-key-prod-rev2';
+const JWT_SECRET = process.env.JWT_SECRET || 'ananke-secret-key-prod-rev2';
 
 // Login
 router.post('/login', (req, res) => {

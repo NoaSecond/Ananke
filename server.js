@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require("socket.io");
@@ -10,6 +11,8 @@ const jwt = require('jsonwebtoken');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+
+const JWT_SECRET = process.env.JWT_SECRET || 'ananke-secret-key-prod-rev2';
 
 app.use(express.json());
 app.use(cookieParser());
@@ -52,7 +55,6 @@ io.use((socket, next) => {
     if (!token) return next(new Error("Authentication error"));
 
     const jwtToken = token.split('=')[1];
-    const JWT_SECRET = 'ananke-secret-key-prod-rev2'; // Should match auth.js
 
     jwt.verify(jwtToken, JWT_SECRET, (err, decoded) => {
         if (err) return next(new Error("Authentication error"));
