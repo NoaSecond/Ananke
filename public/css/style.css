@@ -1,3 +1,8 @@
+html {
+    background-color: var(--bg-color);
+    /* Default dark to match :root */
+}
+
 * {
     box-sizing: border-box;
 }
@@ -16,10 +21,10 @@
 }
 
 body.light-mode {
-    --bg-color: #f4f7f6;
+    --bg-color: #ebedef;
     --text-color: #333;
     --header-bg: #ffffff;
-    --border-color: #e0e0e0;
+    --border-color: #d1d5db;
     --card-bg: #ffffff;
     --shadow-color: rgba(0, 0, 0, 0.05);
 }
@@ -202,6 +207,12 @@ main {
     flex-direction: column;
     max-height: calc(100vh - 12rem);
     min-width: 280px;
+    position: relative;
+    /* Ensure it stays a positioning context if needed */
+}
+
+.workflow-column:has(.workflow-menu.visible) {
+    z-index: 101;
 }
 
 .workflow-header {
@@ -224,7 +235,17 @@ main {
     margin: 0;
 }
 
+.task-list-wrapper {
+    flex: 1;
+    overflow: hidden;
+    border-radius: 0 0 12px 12px;
+    display: flex;
+    flex-direction: column;
+}
+
 .task-list {
+    flex: 1;
+    /* Ensures the list fills the available space */
     min-height: 100px;
     padding: 1rem;
     overflow-y: auto;
@@ -310,30 +331,42 @@ main {
     height: 8px;
 }
 
+.task-list::-webkit-scrollbar-track {
+    background: #ffffff00 !important;
+    border-radius: 0 0 12px 0;
+    border-top: 10px solid transparent;
+    border-bottom: 14px solid transparent;
+}
+
 ::-webkit-scrollbar-track {
-    background: var(--bg-color);
+    background: #ffffff00 !important;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #ccc;
+    background: #e0e0e0;
     border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #bbb;
+    background: #d0d0d0;
+    background-clip: content-box;
 }
 
 body.dark-mode ::-webkit-scrollbar-thumb {
-    background: #444;
+    background: #666;
+    background-clip: content-box;
 }
 
 body.dark-mode ::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: #777;
+    background-clip: content-box;
 }
 
 /* --- Tâches --- */
 .task-card {
-    background-color: var(--bg-color);
+    background-color: var(--card-bg);
     padding: 1rem;
     border-radius: 8px;
     margin-bottom: 0.75rem;
@@ -1480,6 +1513,31 @@ select {
 .user-info small {
     font-size: 0.8rem;
     opacity: 0.6;
+}
+
+.assignee-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    background: rgba(255, 255, 255, 0.03);
+    margin-bottom: 4px;
+}
+
+.assignee-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
+}
+
+body.light-mode .assignee-item {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+body.light-mode .assignee-item:hover {
+    background: rgba(0, 0, 0, 0.05);
 }
 
 .assignee-chip {

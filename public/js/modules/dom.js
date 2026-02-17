@@ -31,6 +31,7 @@ export const elements = {
         addTagBtn: document.getElementById('add-tag-btn'),
         showTags: document.getElementById('task-show-tags-input'),
         showDesc: document.getElementById('task-show-desc-input'),
+        showAssignees: document.getElementById('task-show-assignees-input'),
         showTagPickerBtn: document.getElementById('show-tag-picker-btn'),
         tagPicker: document.getElementById('tag-picker'),
         availableTagsList: document.getElementById('available-tags-list'),

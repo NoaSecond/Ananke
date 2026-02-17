@@ -9,7 +9,7 @@ export const closeModal = (modal) => {
 };
 
 export const initModals = () => {
-    [elements.addModal, elements.viewTaskModal, elements.taskModal, elements.workflowModal, elements.projectModal, elements.confirmModal, elements.userManagementModal].forEach(modal => {
+    [elements.addModal, elements.viewTaskModal, elements.taskModal, elements.workflowModal, elements.projectModal, elements.confirmModal, elements.userManagementModal, elements.bgModal].forEach(modal => {
         if (!modal) return;
         modal.addEventListener('click', (e) => {
             if (e.target === modal || e.target.classList.contains('modal-close-btn')) {

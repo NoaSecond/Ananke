@@ -20,6 +20,7 @@ export const openTaskEditModal = (task, workflow) => {
     elements.taskForm.color.value = task.color;
     elements.taskForm.showTags.checked = task.showTags !== false;
     elements.taskForm.showDesc.checked = task.showDescriptionOnCard !== false;
+    elements.taskForm.showAssignees.checked = task.showAssigneesOnCard !== false;
 
     // Trigger auto-resize
     autoResizeTextarea(elements.taskForm.description);
@@ -64,6 +65,7 @@ export const initTaskListeners = () => {
                 task.assignees = [...tempAssignees];
                 task.showTags = elements.taskForm.showTags.checked;
                 task.showDescriptionOnCard = elements.taskForm.showDesc.checked;
+                task.showAssigneesOnCard = elements.taskForm.showAssignees.checked;
 
                 if (workflow.id != newWorkflowId && targetWorkflow) {
                     workflow.tasks.splice(tIndex, 1);
@@ -252,8 +254,9 @@ const renderAvailableTags = () => {
 
     allTags.forEach(tag => {
         const tagEl = document.createElement('div');
-        tagEl.className = 'available-tag-item';
-        tagEl.innerHTML = `<span class="tag-color-dot" style="background-color:${tag.color}"></span> ${tag.name}`;
+        tagEl.className = 'tag-option';
+        tagEl.style.backgroundColor = tag.color;
+        tagEl.textContent = tag.name;
         tagEl.onclick = () => {
             // Check if already added
             if (!tempTags.find(t => t.name === tag.name)) {
