@@ -105,7 +105,9 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     <h3>${workflow.title}${lockIcon}</h3>
                     ${columnActionsHtml}
                 </div>
-                <div class="task-list" data-workflow-id="${workflow.id}"></div>
+                <div class="task-list-wrapper">
+                    <div class="task-list" data-workflow-id="${workflow.id}"></div>
+                </div>
             `;
 
             const taskList = columnEl.querySelector('.task-list');
@@ -143,7 +145,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     <div class="task-tags-display">
                         ${task.showTags !== false ? (task.tags || []).map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color};" title="${tag.name}">${tag.name}</span>`).join('') : ''}
                     </div>
-                    <div class="task-assignees-display">${assigneesHtml}</div>
+                    ${task.showAssigneesOnCard !== false ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
                     ${(task.showDescriptionOnCard !== false && task.description) ? `<div class="task-card-description">${marked.parse(task.description)}</div>` : ''}
                     ${(task.customFields || []).filter(f => f.showOnCard).map(f => {
                     const val = f.type === 'link' ? `<a href="${f.value}" target="_blank" onclick="event.stopPropagation()" style="color: var(--primary-color); text-decoration: underline;">${f.value}</a>` : f.value;
