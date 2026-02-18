@@ -512,9 +512,24 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
     opacity: 0.8;
 }
 
-.footer-right.io-buttons {
+.footer-right {
     display: flex;
     gap: 1rem;
+    align-items: center;
+}
+
+.version-tag {
+    font-size: 0.75rem;
+    opacity: 0.5;
+    background: var(--border-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-family: monospace;
+    transition: opacity 0.2s;
+}
+
+.version-tag:hover {
+    opacity: 0.8;
 }
 
 /* --- Boutons IO & Actions --- */
