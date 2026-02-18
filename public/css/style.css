@@ -719,14 +719,15 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
 }
 
 /* Better Color Input */
-input[type="color"]#task-color-input {
+/* Better Color Input */
+input[type="color"]#task-color-input,
+input[type="color"]#bg-color-picker,
+input[type="color"]#workflow-color-input {
     -webkit-appearance: none;
     appearance: none;
     border: none;
     width: 100%;
-    /* Full width */
     height: 50px;
-    /* Taller */
     padding: 0;
     margin: 0;
     cursor: pointer;
@@ -735,11 +736,20 @@ input[type="color"]#task-color-input {
     overflow: hidden;
 }
 
-input[type="color"]#task-color-input::-webkit-color-swatch-wrapper {
+input[type="color"]#bg-color-picker,
+input[type="color"]#workflow-color-input {
+    height: 40px;
+}
+
+#task-color-input::-webkit-color-swatch-wrapper,
+#bg-color-picker::-webkit-color-swatch-wrapper,
+#workflow-color-input::-webkit-color-swatch-wrapper {
     padding: 0;
 }
 
-input[type="color"]#task-color-input::-webkit-color-swatch {
+#task-color-input::-webkit-color-swatch,
+#bg-color-picker::-webkit-color-swatch,
+#workflow-color-input::-webkit-color-swatch {
     border: none;
     border-radius: 8px;
     border: 1px solid var(--border-color);
