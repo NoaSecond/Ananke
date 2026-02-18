@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     background: '<span class="material-symbols-outlined">palette</span> Arrière-plan',
                     export: '<span class="material-symbols-outlined">download</span> Exporter (.kanban)',
                     logout: '<span class="material-symbols-outlined">logout</span> Déconnexion',
-                    searchPlaceholder: 'Rechercher (Tag: Personne: )'
+                    searchPlaceholder: 'Rechercher (Tag: Person: )'
                 }
             };
 
