@@ -45,6 +45,9 @@ node reset_db.js
 
 # Start the application with PM2 on a specific port
 PORT=8975 pm2 start npm --name "Ananke" -- start
+
+# Update the application with PM2
+git pull && npm install && pm2 restart Ananke
 ```
 
 Ensure that port forwarding is properly configured on your router and that firewall rules allow the required traffic if applicable.
