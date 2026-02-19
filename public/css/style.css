@@ -235,6 +235,13 @@ main {
     margin: 0;
 }
 
+.card-count {
+    font-size: 0.85rem;
+    padding: 2px 4px;
+    opacity: 0.5;
+    font-weight: 500;
+}
+
 .task-list-wrapper {
     flex: 1;
     overflow: hidden;
