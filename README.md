@@ -21,10 +21,12 @@ npm install
 node reset_db.js
 
 # Start the application on a specific port
-PORT=8975 npm start
+npm start
 ```
 
-The app will be accessible at `http://localhost:8975`.
+The app will be accessible at `http://localhost:3000`.
+
+Log in using the [default credentials](#default-credentials).
 
 ### 2. VPS / Dedicated Server (with PM2)
 To deploy Ananke on your own server for production:
@@ -53,6 +55,8 @@ git pull && npm install && pm2 restart Ananke
 Ensure that port forwarding is properly configured on your router and that firewall rules allow the required traffic if applicable.
 
 The app will be accessible at `http://localhost:8975`, or via your server’s IP/Domain address using the chosen PORT.
+
+Log in using the [default credentials](#default-credentials).
 
 -----
 
