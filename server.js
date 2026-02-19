@@ -10,11 +10,14 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    maxHttpBufferSize: 1e8 // 100MB
+});
 
 const JWT_SECRET = process.env.JWT_SECRET || 'ananke-secret-key-prod-rev2';
 
-app.use(express.json());
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
