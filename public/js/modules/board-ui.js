@@ -102,8 +102,11 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
 
             columnEl.innerHTML = `
                 <div class="${headerClass}" style="border-left: 4px solid ${workflow.color || '#1a73e8'}">
-                    <h3>${workflow.title}${lockIcon}</h3>
-                    ${columnActionsHtml}
+                    <h3 style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${workflow.title}${lockIcon}</h3>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+                        ${workflow.tasks.length > 0 ? `<span class="card-count">${workflow.tasks.length}</span>` : ''}
+                        ${columnActionsHtml}
+                    </div>
                 </div>
                 <div class="task-list-wrapper">
                     <div class="task-list" data-workflow-id="${workflow.id}"></div>

@@ -235,6 +235,13 @@ main {
     margin: 0;
 }
 
+.card-count {
+    font-size: 0.85rem;
+    padding: 2px 4px;
+    opacity: 0.5;
+    font-weight: 500;
+}
+
 .task-list-wrapper {
     flex: 1;
     overflow: hidden;
@@ -2050,4 +2057,151 @@ body.has-custom-bg {
 
 .bmc-link .material-symbols-outlined {
     font-variation-settings: 'FILL' 1;
+}
+
+/* --- Media Gallery --- */
+.media-section {
+    margin-top: 1rem;
+}
+
+.media-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.media-item {
+    position: relative;
+    aspect-ratio: 16/9;
+    background: var(--bg-color);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.media-item img,
+.media-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.media-actions-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 10;
+    pointer-events: none;
+    /* Let clicks pass through by default */
+}
+
+.media-item:hover .media-actions-overlay,
+.media-view-item:hover .media-actions-overlay {
+    opacity: 1;
+    pointer-events: auto;
+    /* Enable buttons only on hover */
+}
+
+.media-btn {
+    background: white;
+    color: #1a1a1b;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+    pointer-events: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    /* Always clickable within or below the overlay */
+}
+
+
+.media-btn:hover {
+    transform: scale(1.1);
+    background: #ffffff;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.media-btn.delete {
+    background: #ef4444;
+    color: white;
+}
+
+.media-btn.delete:hover {
+    background: #dc2626;
+}
+
+.media-btn.download-btn {
+    background: var(--primary-color, #3b82f6);
+    color: white;
+}
+
+.media-btn.download-btn:hover {
+    background: #2563eb;
+}
+
+
+.media-upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--bg-color);
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+.media-upload-label:hover {
+    border-color: var(--primary-color);
+    opacity: 1;
+    background: var(--card-bg);
+}
+
+.media-upload-label .material-symbols-outlined {
+    font-size: 32px;
+}
+
+.media-view-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.media-view-item {
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s;
+}
+
+.media-view-item:hover {
+    transform: scale(1.02);
+}
+
+.media-view-item img,
+.media-view-item video {
+    width: 100%;
+    display: block;
 }
