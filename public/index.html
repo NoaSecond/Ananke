@@ -392,6 +392,12 @@
                         Custom Fields</h4>
                     <div id="view-task-custom-fields" class="custom-fields-container"></div>
                 </div>
+
+                <div id="view-task-media-section" style="margin-top: 1.5rem;">
+                    <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">Media
+                    </h4>
+                    <div id="view-task-media-gallery" class="media-view-gallery"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -409,6 +415,11 @@
             <div class="modal-body-scroll">
                 <input type="hidden" id="task-id-input">
 
+                <label for="task-color-input">Strip Color</label>
+                <input type="color" id="task-color-input">
+
+                <div class="section-divider"></div>
+
                 <label for="task-desc-input">Description</label>
                 <textarea id="task-desc-input" rows="4" placeholder="Description..."></textarea>
                 <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
@@ -417,8 +428,19 @@
                         description on card</label>
                 </div>
 
-                <label for="task-color-input">Strip Color</label>
-                <input type="color" id="task-color-input">
+                <div class="section-divider"></div>
+
+                <!-- Media Section -->
+                <div class="media-section">
+                    <label>Media (Images / Videos)</label>
+                    <label for="task-media-upload" class="media-upload-label">
+                        <span class="material-symbols-outlined">cloud_upload</span>
+                        <span>Click to upload or drag & drop</span>
+                        <small style="opacity:0.6;">Images or Videos</small>
+                    </label>
+                    <input type="file" id="task-media-upload" accept="image/*,video/*" multiple style="display: none;">
+                    <div id="task-media-gallery" class="media-gallery"></div>
+                </div>
 
                 <div class="section-divider"></div>
 

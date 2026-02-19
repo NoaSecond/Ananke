@@ -9,6 +9,7 @@ import { trackEvent } from './board-ui.js';
 let tempTags = [];
 let tempCustomFields = [];
 let tempAssignees = [];
+let tempMedia = [];
 let currentViewingTask = null;
 let currentViewingWorkflow = null;
 
@@ -28,11 +29,13 @@ export const openTaskEditModal = (task, workflow) => {
     tempTags = task.tags ? [...task.tags] : [];
     tempCustomFields = task.customFields ? JSON.parse(JSON.stringify(task.customFields)) : [];
     tempAssignees = task.assignees ? [...task.assignees] : [];
+    tempMedia = task.media ? [...task.media] : [];
 
     renderTags(tempTags);
     renderCustomFields(tempCustomFields);
     renderTaskAssignees();
     renderAvailableTags();
+    renderMediaGallery(tempMedia, elements.taskForm.mediaGallery, true);
 
     elements.taskForm.columnSelect.innerHTML = '';
     state.boardData.workflows.forEach(w => {
@@ -63,6 +66,7 @@ export const initTaskListeners = () => {
                 task.tags = [...tempTags];
                 task.customFields = [...tempCustomFields];
                 task.assignees = [...tempAssignees];
+                task.media = [...tempMedia];
                 task.showTags = elements.taskForm.showTags.checked;
                 task.showDescriptionOnCard = elements.taskForm.showDesc.checked;
                 task.showAssigneesOnCard = elements.taskForm.showAssignees.checked;
@@ -183,6 +187,25 @@ export const initTaskListeners = () => {
     elements.taskForm.description.addEventListener('input', (e) => {
         autoResizeTextarea(e.target);
     });
+
+    // Media Upload
+    if (elements.taskForm.mediaUpload) {
+        elements.taskForm.mediaUpload.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                const type = file.type.startsWith('image/') ? 'image' : (file.type.startsWith('video/') ? 'video' : null);
+                if (!type) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    tempMedia.push({ type, data: event.target.result });
+                    renderMediaGallery(tempMedia, elements.taskForm.mediaGallery, true);
+                };
+                reader.readAsDataURL(file);
+            });
+            e.target.value = '';
+        });
+    }
 };
 
 const autoResizeTextarea = (el) => {
@@ -218,8 +241,12 @@ export const openViewTaskModal = (task, workflow) => {
          </div>`;
     }).join('');
 
+    renderMediaGallery(task.media || [], elements.viewTaskDisplay.mediaGallery, false);
+
     openModal(elements.viewTaskModal);
 };
+
+
 
 // --- Helpers ---
 const renderTags = (tags) => {
@@ -373,4 +400,68 @@ const addTempAssignee = (user) => {
         tempAssignees.push(user);
         renderTaskAssignees();
     }
+};
+
+const renderMediaGallery = (media, container, isEditable = false) => {
+    if (!container) return;
+    container.innerHTML = '';
+    media.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = isEditable ? 'media-item' : 'media-view-item';
+
+        let content = '';
+        if (item.type === 'image') {
+            content = `<img src="${item.data}" alt="Media ${index}">`;
+        } else if (item.type === 'video') {
+            content = `<video src="${item.data}" ${!isEditable ? 'controls' : ''}></video>`;
+        }
+
+        // Actions Overlay
+        content += `
+            <div class="media-actions-overlay">
+                <button class="media-btn download-btn" title="Download">
+                    <span class="material-symbols-outlined">download</span>
+                </button>
+                ${isEditable ? `
+                <button class="media-btn delete-btn delete" title="Delete">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>` : ''}
+            </div>`;
+
+        div.innerHTML = content;
+
+        // Download Logic
+        div.querySelector('.download-btn').onclick = (e) => {
+            e.stopPropagation();
+            const a = document.createElement('a');
+            a.href = item.data;
+            a.download = `media-${index}-${Date.now()}.${item.type === 'image' ? 'png' : 'mp4'}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        if (isEditable) {
+            div.querySelector('.delete-btn').onclick = (e) => {
+                e.stopPropagation();
+                tempMedia.splice(index, 1);
+                renderMediaGallery(tempMedia, container, true);
+            };
+        } else {
+            // Only open preview if clicking the actual image/video, not the overlay/buttons
+            const mediaEl = div.querySelector('img, video');
+            if (mediaEl) {
+                mediaEl.style.cursor = 'pointer';
+                mediaEl.onclick = (e) => {
+                    e.stopPropagation();
+                    if (item.type === 'image') {
+                        const win = window.open();
+                        win.document.write(`<body style="margin:0; background:#000; display:flex; align-items:center; justify-content:center; height:100vh;"><img src="${item.data}" style="max-width:100%; max-height:100%; object-fit:contain;"></body>`);
+                    }
+                };
+            }
+        }
+
+        container.appendChild(div);
+    });
 };

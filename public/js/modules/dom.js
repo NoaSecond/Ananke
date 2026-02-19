@@ -37,6 +37,8 @@ export const elements = {
         availableTagsList: document.getElementById('available-tags-list'),
         customFieldsContainer: document.getElementById('task-custom-fields-container'),
         addCustomFieldBtn: document.getElementById('add-custom-field-btn'),
+        mediaUpload: document.getElementById('task-media-upload'),
+        mediaGallery: document.getElementById('task-media-gallery'),
     },
     viewTaskModal: document.getElementById('view-task-modal'),
     viewTaskDisplay: {
@@ -45,6 +47,7 @@ export const elements = {
         tags: document.getElementById('view-task-tags'),
         customFields: document.getElementById('view-task-custom-fields'),
         customFieldsSection: document.getElementById('view-task-custom-fields-section'),
+        mediaGallery: document.getElementById('view-task-media-gallery'),
         editBtn: document.getElementById('view-to-edit-btn')
     },
     workflowModal: document.getElementById('workflow-modal'),
