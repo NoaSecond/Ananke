@@ -95,12 +95,12 @@ function updatePreview(bg) {
 
     if (bg.type === 'color') {
         preview.style.backgroundColor = bg.value;
-    } else if (bg.type === 'gradient' || bg.type === 'image') {
+    } else if (bg.type === 'gradient') {
         preview.style.background = bg.value;
-        if (bg.type === 'image') {
-            preview.style.backgroundSize = 'cover';
-            preview.style.backgroundPosition = 'center';
-        }
+    } else if (bg.type === 'image') {
+        preview.style.background = `url(${bg.value})`;
+        preview.style.backgroundSize = 'cover';
+        preview.style.backgroundPosition = 'center';
     } else {
         preview.textContent = 'Default';
         preview.style.background = 'var(--bg-color)';
