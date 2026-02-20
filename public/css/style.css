@@ -2314,3 +2314,50 @@ body.has-custom-bg {
 .task-card-footer-item span {
     line-height: 1;
 }
+
+.view-section-title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1.5rem 0 1rem 0;
+    opacity: 0.6;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-color);
+    white-space: nowrap;
+}
+
+.view-section-title::after {
+    content: "";
+    flex: 1;
+    height: 3px;
+    background: var(--border-color);
+    border-radius: 10px;
+}
+
+/* --- Custom Fields View --- */
+.custom-fields-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.custom-field-view {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.custom-field-view .field-name {
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.custom-field-view .field-value {
+    color: var(--text-color);
+    line-height: 1.4;
+}
