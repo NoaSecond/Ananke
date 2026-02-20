@@ -2205,3 +2205,52 @@ body.has-custom-bg {
     width: 100%;
     display: block;
 }
+
+/* --- Drag and Drop Enhancements --- */
+.drag-handle {
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.4;
+    transition: opacity 0.2s, transform 0.2s;
+    user-select: none;
+    color: inherit;
+}
+
+.drag-handle:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.tag-pill .drag-handle {
+    margin-right: 2px;
+}
+
+.tag-pill.sortable-ghost,
+.custom-field-item.sortable-ghost,
+.tag-option.sortable-ghost {
+    opacity: 0.2;
+    background: var(--primary-color) !important;
+    border: 2px dashed var(--primary-color) !important;
+}
+
+.tag-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    margin: 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tag-option:hover {
+    filter: brightness(1.1);
+    transform: translateX(4px);
+}
