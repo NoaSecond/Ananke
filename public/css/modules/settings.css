@@ -1,0 +1,155 @@
+/* --- Settings Menu --- */
+.settings-container {
+    position: relative;
+}
+
+.settings-menu {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    min-width: 240px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    padding: 0.6rem;
+    z-index: 1000;
+    backdrop-filter: blur(12px);
+    transform-origin: top right;
+    transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.settings-menu.hidden {
+    display: none;
+    opacity: 0;
+    transform: scale(0.95) translateY(-5px);
+    pointer-events: none;
+}
+
+.settings-header {
+    padding: 0.8rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    text-align: left;
+    align-items: flex-start;
+}
+
+.settings-header strong {
+    font-size: 1rem;
+    color: var(--text-color);
+    letter-spacing: -0.01em;
+}
+
+.settings-header small {
+    font-size: 0.8rem;
+    opacity: 0.5;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.settings-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 0.5rem 0.5rem;
+    opacity: 0.6;
+}
+
+.settings-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.85rem;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 0.95rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.settings-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(4px);
+}
+
+body.light-mode .settings-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.settings-item .material-symbols-outlined {
+    font-size: 20px;
+    width: 24px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.settings-item.danger-text {
+    color: var(--danger-color);
+}
+
+.settings-item.danger-text:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.settings-item.danger-text .material-symbols-outlined {
+    color: var(--danger-color);
+}
+
+/* --- Background Customization --- */
+.bg-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.bg-option-section h4 {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.gradient-presets {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 0.75rem;
+}
+
+.gradient-btn {
+    height: 40px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+    padding: 0;
+}
+
+.gradient-btn:hover {
+    transform: scale(1.05);
+}
+
+.gradient-btn.active {
+    border-color: var(--primary-color);
+}
+
+.bg-preview {
+    width: 100%;
+    height: 100px;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    border: 2px dashed var(--border-color);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color);
+    opacity: 0.6;
+}

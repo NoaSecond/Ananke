@@ -1,0 +1,257 @@
+/* --- Responsive Design --- */
+
+/* Tablettes et petits écrans (768px et moins) */
+@media (max-width: 768px) {
+    header {
+        padding: 0.75rem 1rem;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    header h1 {
+        font-size: 1.1rem;
+    }
+
+    .controls {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    #kanban-board {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+        overflow-x: visible;
+    }
+
+    .workflow-column {
+        flex: 1 1 auto;
+        max-height: none;
+        min-height: 200px;
+    }
+
+    .workflow-header {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .task-list {
+        padding: 0.75rem;
+    }
+
+    #app-footer {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .footer-left {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .io-buttons {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .io-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .modal-content {
+        margin: 1rem;
+        padding: 1.5rem;
+        max-width: calc(100vw - 2rem);
+    }
+
+    .modal-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .modal-actions button {
+        width: 100%;
+    }
+
+    .notification {
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+}
+
+/* Smartphones (480px et moins) */
+@media (max-width: 480px) {
+    header {
+        padding: 0.5rem;
+    }
+
+    header h1 {
+        font-size: 1rem;
+    }
+
+    .controls button {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+
+    #kanban-board {
+        padding: 0.5rem;
+        gap: 0.75rem;
+    }
+
+    .workflow-column {
+        border-radius: 8px;
+    }
+
+    .workflow-header {
+        padding: 0.5rem;
+    }
+
+    .workflow-header h3 {
+        font-size: 0.9rem;
+    }
+
+    .task-list {
+        padding: 0.5rem;
+    }
+
+    .task-card {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        border-radius: 6px;
+    }
+
+    .task-card h4 {
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .task-card p {
+        font-size: 0.8rem;
+    }
+
+    .workflow-menu {
+        width: 150px;
+        right: -50px;
+    }
+
+    .workflow-menu button {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    #app-footer {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .footer-left span {
+        font-size: 0.8rem;
+    }
+
+    .modal-content {
+        padding: 1rem;
+        border-radius: 8px;
+    }
+
+    .modal-content h2 {
+        font-size: 1.1rem;
+    }
+
+    .modal-content input,
+    .modal-content textarea {
+        padding: 0.5rem;
+        font-size: 1rem;
+    }
+
+    .modal-close-btn {
+        top: 8px;
+        right: 12px;
+    }
+
+    button,
+    .io-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Très petits écrans (320px et moins) */
+@media (max-width: 320px) {
+    header {
+        padding: 0.25rem;
+    }
+
+    header h1 {
+        font-size: 0.9rem;
+    }
+
+    #kanban-board {
+        padding: 0.25rem;
+        gap: 0.5rem;
+    }
+
+    .workflow-column {
+        border-radius: 6px;
+    }
+
+    .task-card {
+        padding: 0.5rem;
+        border-radius: 4px;
+    }
+
+    .task-card h4 {
+        font-size: 0.8rem;
+    }
+
+    .task-card p {
+        font-size: 0.75rem;
+    }
+
+    .modal-content {
+        margin: 0.5rem;
+        padding: 0.75rem;
+    }
+
+    .workflow-menu {
+        width: 130px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Mode paysage sur mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    #kanban-board {
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 0.75rem;
+    }
+
+    .workflow-column {
+        flex: 0 0 250px;
+        max-height: calc(100vh - 8rem);
+    }
+
+    header {
+        flex-direction: row;
+        padding: 0.5rem 1rem;
+    }
+
+    .controls {
+        flex-direction: row;
+    }
+}
+
+@media (max-width: 800px) {
+    .search-container {
+        order: 3;
+        max-width: 100%;
+        margin: 0.5rem 0;
+        flex-basis: 100%;
+    }
+}

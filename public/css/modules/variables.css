@@ -1,0 +1,21 @@
+/* --- Variables & Thèmes --- */
+:root {
+    --bg-color: #121212;
+    --text-color: #f1f1f1;
+    --header-bg: #1e1e1e;
+    --border-color: #333;
+    --card-bg: #1e1e1e;
+    --shadow-color: rgba(0, 0, 0, 0.2);
+    --accent-color: #007bff;
+    --primary-color: #1a73e8;
+    --danger-color: #ef4444;
+}
+
+body.light-mode {
+    --bg-color: #ebedef;
+    --text-color: #333;
+    --header-bg: #ffffff;
+    --border-color: #d1d5db;
+    --card-bg: #ffffff;
+    --shadow-color: rgba(0, 0, 0, 0.05);
+}
