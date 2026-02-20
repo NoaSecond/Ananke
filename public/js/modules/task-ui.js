@@ -206,6 +206,43 @@ export const initTaskListeners = () => {
             e.target.value = '';
         });
     }
+
+    // Discussion Listeners
+    if (elements.viewTaskDisplay.sendCommentBtn) {
+        elements.viewTaskDisplay.sendCommentBtn.addEventListener('click', () => {
+            const text = elements.viewTaskDisplay.commentInput.value.trim();
+            if (text && currentViewingTask) {
+                // Find task in current board data to avoid stale reference
+                let taskToUpdate = null;
+                for (const workflow of state.boardData.workflows) {
+                    taskToUpdate = workflow.tasks.find(t => t.id == currentViewingTask.id);
+                    if (taskToUpdate) break;
+                }
+
+                if (taskToUpdate) {
+                    if (!taskToUpdate.comments) taskToUpdate.comments = [];
+                    taskToUpdate.comments.push({
+                        author: state.currentUser?.name || 'Anonymous',
+                        text: text,
+                        timestamp: Date.now()
+                    });
+                    elements.viewTaskDisplay.commentInput.value = '';
+                    renderComments(taskToUpdate);
+                    saveData();
+                    // Update the reference we hold to the new one
+                    currentViewingTask = taskToUpdate;
+                }
+            }
+        });
+    }
+
+    if (elements.viewTaskDisplay.commentInput) {
+        elements.viewTaskDisplay.commentInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                elements.viewTaskDisplay.sendCommentBtn.click();
+            }
+        });
+    }
 };
 
 const autoResizeTextarea = (el) => {
@@ -242,8 +279,33 @@ export const openViewTaskModal = (task, workflow) => {
     }).join('');
 
     renderMediaGallery(task.media || [], elements.viewTaskDisplay.mediaGallery, false);
+    renderComments(task);
 
     openModal(elements.viewTaskModal);
+};
+
+export const refreshTaskView = () => {
+    if (!currentViewingTask || !elements.viewTaskModal.classList.contains('visible')) return;
+
+    let latestTask = null;
+    let latestWorkflow = null;
+    for (const workflow of state.boardData.workflows) {
+        latestTask = workflow.tasks.find(t => t.id == currentViewingTask.id);
+        if (latestTask) {
+            latestWorkflow = workflow;
+            break;
+        }
+    }
+
+    if (latestTask) {
+        currentViewingTask = latestTask;
+        currentViewingWorkflow = latestWorkflow;
+        renderComments(latestTask);
+        // Also update comment count on the task card if we want to be thorough, 
+        // but renderBoard() already does that.
+    } else {
+        closeModal(elements.viewTaskModal);
+    }
 };
 
 
@@ -508,4 +570,32 @@ const renderMediaGallery = (media, container, isEditable = false) => {
 
         container.appendChild(div);
     });
+};
+const renderComments = (task) => {
+    const container = elements.viewTaskDisplay.commentsList;
+    if (!container) return;
+
+    const comments = task.comments || [];
+    container.innerHTML = comments.length === 0 ?
+        `<p style="opacity: 0.5; font-size: 0.9rem; font-style: italic;">${localStorage.getItem('lang') === 'fr' ? 'Aucun commentaire pour le moment.' : 'No comments yet.'}</p>` : '';
+
+    comments.forEach(comment => {
+        const div = document.createElement('div');
+        div.className = 'comment-item';
+        div.style.cssText = 'background: var(--card-bg); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color);';
+
+        const date = new Date(comment.timestamp).toLocaleString();
+
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                <strong style="font-size: 0.85rem; color: var(--primary-color);">${comment.author}</strong>
+                <small style="opacity: 0.5; font-size: 0.75rem;">${date}</small>
+            </div>
+            <div style="font-size: 0.9rem; line-height: 1.4; white-space: pre-wrap;">${comment.text}</div>
+        `;
+        container.appendChild(div);
+    });
+
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
 };

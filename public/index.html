@@ -398,6 +398,25 @@
                     </h4>
                     <div id="view-task-media-gallery" class="media-view-gallery"></div>
                 </div>
+
+                <div class="section-divider"></div>
+
+                <div id="view-task-discussion-section" style="margin-top: 1.5rem;">
+                    <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">
+                        Discussion</h4>
+                    <div id="task-comments-list" class="comments-list"
+                        style="margin-bottom: 1rem; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.5rem;">
+                    </div>
+                    <div class="comment-input-wrapper"
+                        style="display: flex; gap: 0.5rem; background: var(--bg-color); padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <input type="text" id="task-comment-input" placeholder="Write a comment..."
+                            style="flex: 1; border: none; background: transparent; color: var(--text-color); outline: none; padding: 0.25rem 0.5rem;">
+                        <button id="send-comment-btn" class="action-btn circular-btn"
+                            style="padding: 0.4rem; min-width: 36px; min-height: 36px; display: flex; align-items: center; justify-content: center;">
+                            <span class="material-symbols-outlined" style="font-size: 20px;">send</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
