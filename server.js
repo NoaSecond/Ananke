@@ -7,6 +7,9 @@ const cookieParser = require('cookie-parser');
 const db = require('./src/config/database');
 const { router: authRouter, authenticateToken } = require('./src/routes/auth');
 const jwt = require('jsonwebtoken');
+const morgan = require('morgan');
+const logger = require('./src/utils/logger');
+const { describeChanges } = require('./src/utils/boardDiff');
 
 const app = express();
 const server = http.createServer(app);
@@ -20,6 +23,20 @@ app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// HTTP Logging
+app.use(morgan((tokens, req, res) => {
+    const status = tokens.status(req, res);
+    const color = status >= 500 ? 'red' : status >= 400 ? 'yellow' : status >= 300 ? 'cyan' : 'green';
+    return [
+        require('picocolors').gray(`[${new Date().toISOString()}]`),
+        require('picocolors').cyan('HTTP:'),
+        tokens.method(req, res),
+        tokens.url(req, res),
+        require('picocolors')[color](status),
+        tokens['response-time'](req, res), 'ms'
+    ].join(' ');
+}));
 
 // Routes
 app.use('/api/auth', authRouter);
@@ -38,12 +55,37 @@ app.post('/api/board', authenticateToken, (req, res) => {
     const roles = ['editor', 'admin', 'owner'];
     if (!roles.includes(req.user.role)) return res.sendStatus(403);
 
-    const data = JSON.stringify(req.body);
-    db.run("UPDATE board_store SET data = ? WHERE id = 1", [data], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
-        // Also broadcast? usually handled via socket
-        io.emit('boardUpdate', req.body);
+    const newBoardData = req.body;
+
+    // Get current board to compare changes
+    db.get("SELECT data FROM board_store WHERE id = 1", (err, row) => {
+        if (err) {
+            logger.error(`Error fetching board for diff (API): ${err.message}`);
+            return res.status(500).json({ error: err.message });
+        }
+
+        const oldBoardData = row ? JSON.parse(row.data) : { workflows: [] };
+        const changes = describeChanges(oldBoardData, newBoardData);
+
+        const dataStr = JSON.stringify(newBoardData);
+        db.run("UPDATE board_store SET data = ? WHERE id = 1", [dataStr], (err) => {
+            if (err) {
+                logger.error(`Error saving board to DB (API): ${err.message}`);
+                return res.status(500).json({ error: err.message });
+            }
+
+            // Log the changes
+            if (changes.length > 0) {
+                changes.forEach(change => {
+                    logger.info(`Modification via API by ${req.user.name}: ${change}`);
+                });
+            } else {
+                logger.info(`Board updated via API by ${req.user.name}`);
+            }
+
+            res.json({ success: true });
+            io.emit('boardUpdate', newBoardData);
+        });
     });
 });
 
@@ -67,7 +109,7 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.user.name} (${socket.user.role})`);
+    logger.socket(`User connected: ${socket.user.name} (${socket.user.role}) [ID: ${socket.id}]`);
 
     // Send initial board data
     db.get("SELECT data FROM board_store WHERE id = 1", (err, row) => {
@@ -81,27 +123,51 @@ io.on('connection', (socket) => {
         // RBAC Check for Edit
         const canEdit = ['editor', 'admin', 'owner'].includes(socket.user.role);
         if (!canEdit) {
-            console.log(`User ${socket.user.name} tried to edit but is ${socket.user.role}`);
-            return; // Ignore
+            logger.warn(`Unauthorized edit attempt: User ${socket.user.name} tried to update board but is ${socket.user.role}`);
+            return;
         }
 
-        // Save to DB
-        const dataStr = JSON.stringify(newBoardData);
-        db.run("UPDATE board_store SET data = ? WHERE id = 1", [dataStr], (err) => {
-            if (err) console.error(err);
-            // Broadcast to all OTHER clients (or all?)
-            // Usually we broadcast to all including sender to confirm sync, or just others.
-            // Let's broadcast to all to ensure consistency.
-            io.emit('boardUpdate', newBoardData);
+        // Get current board to compare changes
+        db.get("SELECT data FROM board_store WHERE id = 1", (err, row) => {
+            if (err) {
+                logger.error(`Error fetching board for diff: ${err.message}`);
+                return;
+            }
+
+            const oldBoardData = row ? JSON.parse(row.data) : { workflows: [] };
+            const changes = describeChanges(oldBoardData, newBoardData);
+
+            // Save to DB
+            const dataStr = JSON.stringify(newBoardData);
+            db.run("UPDATE board_store SET data = ? WHERE id = 1", [dataStr], (err) => {
+                if (err) {
+                    logger.error(`Error saving board to DB: ${err.message}`);
+                    return;
+                }
+
+                // Log the changes
+                if (changes.length > 0) {
+                    changes.forEach(change => {
+                        logger.info(`Modification by ${socket.user.name}: ${change}`);
+                    });
+                } else {
+                    // Could be a minor change not caught by describeChanges (like colors)
+                    logger.info(`Board updated by ${socket.user.name} (minor changes)`);
+                }
+
+                // Broadcast to all clients
+                io.emit('boardUpdate', newBoardData);
+            });
         });
     });
 
-    socket.on('disconnect', () => {
-        console.log('User disconnected');
+    socket.on('disconnect', (reason) => {
+        logger.socket(`User disconnected: ${socket.user.name} (${reason})`);
     });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    logger.success(`Server running on http://localhost:${PORT}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
