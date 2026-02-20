@@ -191,10 +191,15 @@ export const initDragAndDrop = () => {
         group: 'columns',
         animation: 150,
         handle: '.workflow-header',
+        draggable: '.workflow-column',
         disabled: isReader,
         filter: '.locked, .workflow-actions, .workflow-menu-btn, .workflow-menu',
         preventOnFilter: false,
         onStart: () => { state.isDraggingInternal = true; },
+        onMove: (evt) => {
+            // Prevent dragging column into a task list or any other nested container
+            if (evt.to !== elements.kanbanBoard) return false;
+        },
         onEnd: (evt) => {
             state.isDraggingInternal = false;
             const [movedItem] = state.boardData.workflows.splice(evt.oldIndex, 1);
@@ -216,9 +221,14 @@ export const initDragAndDrop = () => {
                 put: !isLocked
             },
             sort: !isLocked,
+            draggable: '.task-card',
             disabled: isReader,
             animation: 150,
             onStart: () => { state.isDraggingInternal = true; },
+            onMove: (evt) => {
+                // Prevent dragging a task into something that is not a task list
+                if (!evt.to.classList.contains('task-list')) return false;
+            },
             onEnd: (evt) => {
                 state.isDraggingInternal = false;
                 const taskId = evt.item.dataset.taskId;

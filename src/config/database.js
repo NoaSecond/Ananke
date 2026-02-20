@@ -1,13 +1,14 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const logger = require('../utils/logger');
 
 const dbPath = process.env.DB_PATH ? path.resolve(process.env.DB_PATH) : path.resolve(__dirname, '../../ananke.db');
 
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
-        console.error('Error opening database', err.message);
+        logger.error('Error opening database:', err.message);
     } else {
-        console.log('Connected to the SQLite database.');
+        logger.success(`Connected to the SQLite database at: ${dbPath}`);
         initDb();
     }
 });
@@ -55,7 +56,7 @@ function initDb() {
                     background: { type: 'gradient', value: 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)' }
                 });
                 db.run("INSERT INTO board_store (id, data) VALUES (1, ?)", [defaultData]);
-                console.log('Initialized board_store with default data.');
+                logger.info('Initialized board_store with default data.');
             }
         });
     });

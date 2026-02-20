@@ -1,0 +1,291 @@
+/* --- Modales General --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    z-index: 1000;
+}
+
+.modal-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: var(--bg-color);
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 800px;
+    position: relative;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.visible .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+}
+
+.modal-content label {
+    display: block;
+    margin: 1rem 0 0.5rem;
+}
+
+.modal-content input,
+.modal-content textarea {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 8px;
+}
+
+.modal-content textarea {
+    resize: none;
+    overflow-y: hidden;
+    min-height: 100px;
+}
+
+.modal-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    border-top: none !important;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-color);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.modal-close-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .modal-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-close-btn .material-symbols-outlined {
+    font-size: 24px;
+}
+
+/* --- Task Modal Custom Styles --- */
+.task-modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    padding: 0;
+    overflow: hidden;
+}
+
+.modal-header-custom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    gap: 1rem;
+}
+
+.modal-title-input {
+    font-size: 1.2rem;
+    font-weight: bold;
+    border: 1px solid transparent;
+    background: transparent;
+    flex-grow: 1;
+    padding: 0.5rem;
+    color: var(--text-color);
+    border-radius: 6px;
+    transition: border-color 0.2s, background-color 0.2s;
+    height: 42px;
+    box-sizing: border-box;
+}
+
+.modal-title-input:hover {
+    background-color: var(--card-bg);
+}
+
+.modal-title-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background-color: var(--card-bg);
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.column-select {
+    padding: 0 2rem 0 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    max-width: 200px;
+    height: 42px;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+/* Color Inputs */
+input[type="color"]#task-color-input,
+input[type="color"]#bg-color-picker,
+input[type="color"]#workflow-color-input {
+    -webkit-appearance: none;
+    appearance: none;
+    border: none;
+    width: 100%;
+    height: 50px;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    background: none;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+input[type="color"]#bg-color-picker,
+input[type="color"]#workflow-color-input {
+    height: 40px;
+}
+
+#task-color-input::-webkit-color-swatch-wrapper,
+#bg-color-picker::-webkit-color-swatch-wrapper,
+#workflow-color-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+#task-color-input::-webkit-color-swatch,
+#bg-color-picker::-webkit-color-swatch,
+#workflow-color-input::-webkit-color-swatch {
+    border: none;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.relative-close {
+    position: static;
+    font-size: 1.5rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    width: 32px;
+}
+
+.modal-body-scroll {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.modal-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    border-top: none !important;
+}
+
+.modal-actions {
+    padding: 1rem 1.5rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 0;
+    background-color: var(--bg-color);
+}
+
+/* Modal Enhancements */
+#setup-modal {
+    z-index: 10001;
+}
+
+/* View Task Description */
+#view-task-desc {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
+#view-task-desc pre {
+    white-space: pre-wrap;
+    word-break: break-all;
+    background: var(--bg-color);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    overflow-x: auto;
+}
+
+#view-task-desc img {
+    max-width: 100%;
+    height: auto;
+}
+
+.field-type-select {
+    width: 80px;
+}
+
+.small-input {
+    padding: 0.4rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    flex-grow: 1;
+}
+
+.color-input-small {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 40px;
+    height: 34px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 6px;
+}
+
+.color-input-small::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.color-input-small::-webkit-color-swatch {
+    border: none;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}

@@ -6,8 +6,9 @@ Sitemap: /sitemap.xml
 
 # Performance optimization - Block crawling of assets
 User-agent: *
-Disallow: /style.css
-Disallow: /script.js
+Disallow: /css/main.css
+Disallow: /css/modules/
+Disallow: /js/
 Disallow: /*.png$
 Disallow: /*.ico$
 Disallow: /*.svg$

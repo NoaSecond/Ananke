@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -67,7 +67,7 @@
     <!-- CSS -->
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/main.css">
 
     <!-- Schema.org JSON-LD -->
     <script type="application/ld+json">
@@ -95,7 +95,7 @@
         },
         "datePublished": "2025-01-26",
         "dateModified": "2026-02-20",
-        "version": "2.8.2",
+        "version": "2.8.3",
         "downloadUrl": "https://github.com/NoaSecond/Ananke",
         "featureList": [
             "Interactive Kanban Board",
@@ -184,7 +184,7 @@
     <!-- User Management Modal -->
     <div id="user-management-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 600px;">
-            <button class="modal-close-btn">&times;</button>
+            <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2>User Management</h2>
 
             <div
@@ -348,13 +348,13 @@
             </a>
         </div>
         <div class="footer-right">
-            <span class="version-tag">v2.8.2</span>
+            <span class="version-tag">v2.8.3</span>
         </div>
     </footer>
 
     <div id="add-modal" class="modal-overlay">
         <div class="modal-content">
-            <button class="modal-close-btn">&times;</button>
+            <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2 id="add-modal-title"></h2>
             <input type="hidden" id="add-modal-type">
             <input type="hidden" id="add-modal-workflow-id">
@@ -374,36 +374,35 @@
                     <button id="view-to-edit-btn" class="icon-only-btn" title="Edit Task">
                         <span class="material-symbols-outlined">edit</span>
                     </button>
-                    <button class="modal-close-btn relative-close">&times;</button>
+                    <button class="modal-close-btn relative-close"><span
+                            class="material-symbols-outlined">close</span></button>
                 </div>
             </div>
             <div class="modal-body-scroll">
                 <div id="view-task-assignees" class="task-assignees-display" style="margin-bottom: 1rem;"></div>
 
-                <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">
-                    Description</h4>
-                <div id="view-task-desc" style="margin-bottom: 1.5rem; line-height: 1.5;"></div>
+                <div id="view-task-desc-section">
+                    <h4 class="view-section-title">Description</h4>
+                    <div id="view-task-desc" style="margin-bottom: 1.5rem; line-height: 1.5;"></div>
+                </div>
 
-                <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">Tags</h4>
-                <div id="view-task-tags" class="tags-container" style="margin-bottom: 1.5rem;"></div>
+                <div id="view-task-tags-section">
+                    <h4 class="view-section-title">Tags</h4>
+                    <div id="view-task-tags" class="tags-container" style="margin-bottom: 1.5rem;"></div>
+                </div>
 
                 <div id="view-task-custom-fields-section">
-                    <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">
-                        Custom Fields</h4>
+                    <h4 class="view-section-title">Custom Fields</h4>
                     <div id="view-task-custom-fields" class="custom-fields-container"></div>
                 </div>
 
                 <div id="view-task-media-section" style="margin-top: 1.5rem;">
-                    <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">Media
-                    </h4>
+                    <h4 class="view-section-title">Media</h4>
                     <div id="view-task-media-gallery" class="media-view-gallery"></div>
                 </div>
 
-                <div class="section-divider"></div>
-
                 <div id="view-task-discussion-section" style="margin-top: 1.5rem;">
-                    <h4 style="margin-bottom: 0.5rem; opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">
-                        Discussion</h4>
+                    <h4 class="view-section-title">Discussion</h4>
                     <div id="task-comments-list" class="comments-list"
                         style="margin-bottom: 1rem; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.5rem;">
                     </div>
@@ -427,7 +426,8 @@
                 <input type="text" id="task-title-input" class="modal-title-input" placeholder="Task Title">
                 <div class="header-controls">
                     <select id="task-column-select" class="column-select" title="Move to column"></select>
-                    <button class="modal-close-btn relative-close">&times;</button>
+                    <button class="modal-close-btn relative-close"><span
+                            class="material-symbols-outlined">close</span></button>
                 </div>
             </div>
 
@@ -541,7 +541,7 @@
     <!-- Background Customization Modal -->
     <div id="bg-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 500px;">
-            <button class="modal-close-btn">&times;</button>
+            <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2>Customize Background</h2>
             <p style="opacity: 0.7; font-size: 0.9rem; margin-bottom: 1.5rem;">Choose a custom look for your workspace.
             </p>
@@ -600,7 +600,7 @@
 
     <div id="workflow-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 500px;">
-            <button class="modal-close-btn">&times;</button>
+            <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2>Edit Column</h2>
             <input type="hidden" id="workflow-id-input">
             <label for="workflow-title-input">Title</label>
@@ -622,7 +622,7 @@
 
     <div id="confirm-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <button class="modal-close-btn">&times;</button>
+            <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2 id="confirm-modal-title">Confirmation</h2>
             <p id="confirm-modal-message">Are you sure?</p>
             <div class="modal-actions" style="justify-content: center;">
@@ -634,7 +634,7 @@
 
     <div id="project-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 500px;">
-            <button class="modal-close-btn">&times;</button>
+            <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2>Rename Project</h2>
             <label for="project-name-input">Project name</label>
             <input type="text" id="project-name-input" placeholder="Project name">

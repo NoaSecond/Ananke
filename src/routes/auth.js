@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/database');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'ananke-secret-key-prod-rev2';
@@ -10,12 +11,17 @@ const JWT_SECRET = process.env.JWT_SECRET || 'ananke-secret-key-prod-rev2';
 router.post('/login', (req, res) => {
     const { email, password } = req.body;
     db.get("SELECT * FROM users WHERE email = ?", [email], (err, user) => {
-        if (err) return res.status(500).json({ error: err.message });
+        if (err) {
+            logger.error(`Database error during login: ${err.message}`);
+            return res.status(500).json({ error: err.message });
+        }
         if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+            logger.warn(`Failed login attempt for email: ${email}`);
             return res.status(401).json({ error: 'Identifiants invalides' });
         }
 
         const displayName = user.first_name ? `${user.first_name} ${user.last_name}` : (user.name || user.email);
+        logger.info(`User logged in: ${displayName} (${user.role})`);
 
         const token = jwt.sign(
             { id: user.id, role: user.role, name: displayName, is_setup_complete: user.is_setup_complete },
@@ -90,10 +96,13 @@ router.post('/create-account', authenticateToken, requireRole('admin'), (req, re
         function (err) {
             if (err) {
                 if (err.message.includes('UNIQUE constraint failed')) {
+                    logger.warn(`Account creation failed: email already exists (${email})`);
                     return res.status(409).json({ error: 'Email déjà utilisé' });
                 }
+                logger.error(`Database error during account creation: ${err.message}`);
                 return res.status(500).json({ error: err.message });
             }
+            logger.success(`Account created: ${email} with role ${userRole} (by ${req.user.name})`);
             res.json({ id: this.lastID, success: true, message: 'Compte créé avec succès' });
         }
     );
@@ -144,6 +153,7 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
 
 // Logout
 router.post('/logout', (req, res) => {
+    logger.info('User logging out');
     res.clearCookie('token');
     res.json({ success: true });
 });

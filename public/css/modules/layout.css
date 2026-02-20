@@ -1,0 +1,143 @@
+/* --- Header --- */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1.25rem;
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+header h1:hover {
+    color: var(--primary-color);
+}
+
+.edit-icon {
+    font-size: 1.1rem;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    color: var(--primary-color);
+}
+
+header h1:hover .edit-icon {
+    opacity: 0.7;
+}
+
+header h1:active .edit-icon {
+    transform: scale(0.9);
+}
+
+.controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* --- Kanban Board --- */
+main {
+    flex-grow: 1;
+}
+
+#kanban-board {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    overflow-x: auto;
+    align-items: flex-start;
+}
+
+/* --- Footer --- */
+#app-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-color);
+    background-color: var(--header-bg);
+}
+
+.footer-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.footer-left a {
+    color: var(--accent-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.footer-left a.author-link {
+    color: inherit;
+    font-weight: inherit;
+}
+
+.footer-left span {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.footer-right {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.version-tag {
+    font-size: 0.75rem;
+    opacity: 0.5;
+    background: var(--border-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-family: monospace;
+    transition: opacity 0.2s;
+}
+
+.version-tag:hover {
+    opacity: 0.8;
+}
+
+/* --- Custom Background Layout Adjustments --- */
+body.has-custom-bg #kanban-board {
+    background: transparent !important;
+}
+
+body.has-custom-bg header,
+body.has-custom-bg #app-footer,
+body.has-custom-bg .workflow-column {
+    background-color: rgba(30, 30, 30, 0.75) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.light-mode.has-custom-bg header,
+body.light-mode.has-custom-bg #app-footer,
+body.light-mode.has-custom-bg .workflow-column {
+    background-color: rgba(255, 255, 255, 0.75) !important;
+}
+
+body.has-custom-bg {
+    background-size: cover !important;
+    background-position: center !important;
+    background-attachment: fixed !important;
+}
