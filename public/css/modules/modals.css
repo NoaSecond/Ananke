@@ -24,11 +24,15 @@
     background: var(--bg-color);
     padding: 2rem;
     border-radius: 12px;
-    width: 90%;
-    max-width: 800px;
+    width: min(95vw, 800px);
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
     position: relative;
     transform: scale(0.9);
     transition: transform 0.3s ease;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
 }
 
 .modal-overlay.visible .modal-content {
@@ -103,7 +107,8 @@ body.dark-mode .modal-close-btn:hover {
 .task-modal-content {
     display: flex;
     flex-direction: column;
-    max-height: 90vh;
+    width: min(95vw, 1000px);
+    max-height: 95vh;
     padding: 0;
     overflow: hidden;
 }

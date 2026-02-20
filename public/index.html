@@ -142,7 +142,7 @@
 
     <!-- Setup / Profile Modal -->
     <div id="setup-modal" class="modal-overlay" style="z-index: 2000;">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="width: min(95vw, 500px);">
             <button class="modal-close-btn" id="setup-close-btn" style="display:none;">&times;</button>
             <h2 id="setup-title">Account Setup</h2>
             <p id="setup-desc" style="margin-bottom: 1.5rem; opacity: 0.7;">Please complete your information to
@@ -183,7 +183,7 @@
 
     <!-- User Management Modal -->
     <div id="user-management-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-content" style="width: min(95vw, 700px);">
             <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2>User Management</h2>
 
@@ -540,7 +540,7 @@
 
     <!-- Background Customization Modal -->
     <div id="bg-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="width: min(95vw, 600px);">
             <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2>Customize Background</h2>
             <p style="opacity: 0.7; font-size: 0.9rem; margin-bottom: 1.5rem;">Choose a custom look for your workspace.
@@ -583,8 +583,8 @@
 
                 <div class="bg-option-section">
                     <h4>Custom Image</h4>
-                    <label for="bg-image-upload" class="action-btn secondary-btn"
-                        style="display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+                    <label for="bg-image-upload" class="io-btn secondary-btn"
+                        style="display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; width: 100%; box-sizing: border-box;">
                         <span class="material-symbols-outlined">upload</span> Import Image
                     </label>
                     <input type="file" id="bg-image-upload" accept="image/*" style="display: none;">
@@ -599,7 +599,7 @@
     </div>
 
     <div id="workflow-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="width: min(95vw, 500px);">
             <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2>Edit Column</h2>
             <input type="hidden" id="workflow-id-input">
@@ -621,7 +621,7 @@
     </div>
 
     <div id="confirm-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <div class="modal-content" style="width: min(95vw, 450px); text-align: center;">
             <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2 id="confirm-modal-title">Confirmation</h2>
             <p id="confirm-modal-message">Are you sure?</p>
@@ -633,7 +633,7 @@
     </div>
 
     <div id="project-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="width: min(95vw, 500px);">
             <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2>Rename Project</h2>
             <label for="project-name-input">Project name</label>
