@@ -1,6 +1,6 @@
 {
   "name": "ananke",
-  "version": "2.8.0",
+  "version": "2.8.1",
   "description": "Hosted Collaborative Kanban Board",
   "main": "server.js",
   "scripts": {
@@ -11,15 +11,17 @@
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
     "dotenv": "^17.3.1",
-    "express": "^4.18.2",
+    "express": "^5.2.1",
     "jsonwebtoken": "^9.0.2",
-    "socket.io": "^4.7.4",
+    "socket.io": "^4.8.3",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.13"
   },
   "overrides": {
-    "tar": "^7.5.9"
+    "tar": "^7.5.9",
+    "minimatch": "^10.2.1",
+    "glob": "^11.0.1"
   }
 }
