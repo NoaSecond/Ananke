@@ -576,7 +576,8 @@ body.light-mode .assignee-item:hover {
     opacity: 0.7;
 }
 
-.media-upload-label:hover {
+.media-upload-label:hover,
+.media-upload-label.drag-active {
     border-color: var(--primary-color);
     opacity: 1;
     background: var(--card-bg);

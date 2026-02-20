@@ -143,7 +143,9 @@
     <!-- Setup / Profile Modal -->
     <div id="setup-modal" class="modal-overlay" style="z-index: 2000;">
         <div class="modal-content" style="width: min(95vw, 500px);">
-            <button class="modal-close-btn" id="setup-close-btn" style="display:none;">&times;</button>
+            <button class="modal-close-btn" id="setup-close-btn" style="display:none;">
+                <span class="material-symbols-outlined">close</span>
+            </button>
             <h2 id="setup-title">Account Setup</h2>
             <p id="setup-desc" style="margin-bottom: 1.5rem; opacity: 0.7;">Please complete your information to
                 continue.</p>
@@ -583,9 +585,10 @@
 
                 <div class="bg-option-section">
                     <h4>Custom Image</h4>
-                    <label for="bg-image-upload" class="io-btn secondary-btn"
-                        style="display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; width: 100%; box-sizing: border-box;">
-                        <span class="material-symbols-outlined">upload</span> Import Image
+                    <label for="bg-image-upload" class="media-upload-label" id="bg-upload-dropzone">
+                        <span class="material-symbols-outlined">cloud_upload</span>
+                        <span>Click or drag & drop image</span>
+                        <small style="opacity:0.6;">PNG, JPG, WebP...</small>
                     </label>
                     <input type="file" id="bg-image-upload" accept="image/*" style="display: none;">
                 </div>

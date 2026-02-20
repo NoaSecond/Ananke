@@ -51,6 +51,26 @@ header h1:active .edit-icon {
     flex-wrap: wrap;
 }
 
+#add-workflow-btn {
+    height: 38px;
+    background: transparent;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 10px;
+    padding: 0 1.25rem;
+    font-weight: 600;
+    gap: 8px;
+}
+
+#add-workflow-btn:hover {
+    background: var(--primary-color);
+    color: white !important;
+}
+
+#add-workflow-btn .material-symbols-outlined {
+    font-size: 1.2rem;
+}
+
 /* --- Kanban Board --- */
 main {
     flex-grow: 1;

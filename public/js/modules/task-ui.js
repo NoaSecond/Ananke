@@ -190,9 +190,8 @@ export const initTaskListeners = () => {
 
     // Media Upload
     if (elements.taskForm.mediaUpload) {
-        elements.taskForm.mediaUpload.addEventListener('change', (e) => {
-            const files = Array.from(e.target.files);
-            files.forEach(file => {
+        const processFiles = (files) => {
+            Array.from(files).forEach(file => {
                 const type = file.type.startsWith('image/') ? 'image' : (file.type.startsWith('video/') ? 'video' : null);
                 if (!type) return;
 
@@ -203,8 +202,34 @@ export const initTaskListeners = () => {
                 };
                 reader.readAsDataURL(file);
             });
+        };
+
+        elements.taskForm.mediaUpload.addEventListener('change', (e) => {
+            processFiles(e.target.files);
             e.target.value = '';
         });
+
+        const mediaDropzone = document.querySelector('.media-upload-label[for="task-media-upload"]');
+        if (mediaDropzone) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                mediaDropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                mediaDropzone.addEventListener(eventName, () => mediaDropzone.classList.add('drag-active'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                mediaDropzone.addEventListener(eventName, () => mediaDropzone.classList.remove('drag-active'), false);
+            });
+
+            mediaDropzone.addEventListener('drop', (e) => {
+                processFiles(e.dataTransfer.files);
+            }, false);
+        }
     }
 
     // Discussion Listeners
