@@ -261,24 +261,40 @@ export const openViewTaskModal = (task, workflow) => {
     }
 
     elements.viewTaskDisplay.title.textContent = task.title;
-    elements.viewTaskDisplay.desc.innerHTML = task.description ? marked.parse(task.description) : '';
+
+    // Conditionally show/hide sections
+    const hasDesc = !!task.description;
+    elements.viewTaskDisplay.descSection.style.display = hasDesc ? 'block' : 'none';
+    if (hasDesc) elements.viewTaskDisplay.desc.innerHTML = marked.parse(task.description);
 
     elements.viewTaskAssignees.innerHTML = (task.assignees || []).map(a => `
         <div class="task-assignee-avatar" title="${a.name}">${a.name[0].toUpperCase()}</div>
         <span style="font-size:0.9rem;">${a.name}</span>
     `).join('');
 
-    elements.viewTaskDisplay.tags.innerHTML = (task.tags || []).map(tag => `<span class="tag-pill" style="background:${tag.color}">${tag.name}</span>`).join('');
+    const hasTags = (task.tags || []).length > 0;
+    elements.viewTaskDisplay.tagsSection.style.display = hasTags ? 'block' : 'none';
+    if (hasTags) {
+        elements.viewTaskDisplay.tags.innerHTML = task.tags.map(tag => `<span class="tag-pill" style="background:${tag.color}">${tag.name}</span>`).join('');
+    }
 
-    elements.viewTaskDisplay.customFields.innerHTML = (task.customFields || []).map(f => {
-        const val = f.type === 'link' ? `<a href="${f.value}" target="_blank" class="text-primary hover:underline">${f.value}</a>` : f.value;
-        return `<div class="custom-field-view">
-             <span class="field-name">${f.name}:</span>
-             <span class="field-value">${val}</span>
-         </div>`;
-    }).join('');
+    const hasCustomFields = (task.customFields || []).length > 0;
+    elements.viewTaskDisplay.customFieldsSection.style.display = hasCustomFields ? 'block' : 'none';
+    if (hasCustomFields) {
+        elements.viewTaskDisplay.customFields.innerHTML = task.customFields.map(f => {
+            const val = f.type === 'link' ? `<a href="${f.value}" target="_blank" class="text-primary hover:underline">${f.value}</a>` : f.value;
+            return `<div class="custom-field-view">
+                 <span class="field-name">${f.name}:</span>
+                 <span class="field-value">${val}</span>
+             </div>`;
+        }).join('');
+    }
 
-    renderMediaGallery(task.media || [], elements.viewTaskDisplay.mediaGallery, false);
+    const hasMedia = (task.media || []).length > 0;
+    elements.viewTaskDisplay.mediaSection.style.display = hasMedia ? 'block' : 'none';
+    if (hasMedia) {
+        renderMediaGallery(task.media, elements.viewTaskDisplay.mediaGallery, false);
+    }
     renderComments(task);
 
     openModal(elements.viewTaskModal);

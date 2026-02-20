@@ -44,10 +44,13 @@ export const elements = {
     viewTaskDisplay: {
         title: document.getElementById('view-task-title'),
         desc: document.getElementById('view-task-desc'),
+        descSection: document.getElementById('view-task-desc-section'),
         tags: document.getElementById('view-task-tags'),
+        tagsSection: document.getElementById('view-task-tags-section'),
         customFields: document.getElementById('view-task-custom-fields'),
         customFieldsSection: document.getElementById('view-task-custom-fields-section'),
         mediaGallery: document.getElementById('view-task-media-gallery'),
+        mediaSection: document.getElementById('view-task-media-section'),
         editBtn: document.getElementById('view-to-edit-btn'),
         commentsList: document.getElementById('task-comments-list'),
         commentInput: document.getElementById('task-comment-input'),
