@@ -142,13 +142,23 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     <div class="task-assignee-avatar" title="${a.name}">${a.name[0]}</div>
                 `).join('');
 
+                const commentsCount = (task.comments || []).length;
+                const commentsHtml = commentsCount > 0 ? `
+                    <div class="task-card-footer-item" title="${commentsCount} comments">
+                        <span class="material-symbols-outlined" style="font-size: 1rem;">forum</span>
+                        <span>${commentsCount}</span>
+                    </div>` : '';
+
                 taskCard.innerHTML = `
                     ${taskActionsHtml}
                     <h4>${task.title}</h4>
                     <div class="task-tags-display">
                         ${task.showTags !== false ? (task.tags || []).map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color};" title="${tag.name}">${tag.name}</span>`).join('') : ''}
                     </div>
-                    ${task.showAssigneesOnCard !== false ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
+                    <div class="task-card-footer">
+                        ${task.showAssigneesOnCard !== false ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
+                        ${commentsHtml}
+                    </div>
                     ${(task.showDescriptionOnCard !== false && task.description) ? `<div class="task-card-description">${marked.parse(task.description)}</div>` : ''}
                     ${(task.customFields || []).filter(f => f.showOnCard).map(f => {
                     const val = f.type === 'link' ? `<a href="${f.value}" target="_blank" onclick="event.stopPropagation()" style="color: var(--primary-color); text-decoration: underline;">${f.value}</a>` : f.value;

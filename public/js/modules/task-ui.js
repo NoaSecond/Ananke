@@ -206,6 +206,43 @@ export const initTaskListeners = () => {
             e.target.value = '';
         });
     }
+
+    // Discussion Listeners
+    if (elements.viewTaskDisplay.sendCommentBtn) {
+        elements.viewTaskDisplay.sendCommentBtn.addEventListener('click', () => {
+            const text = elements.viewTaskDisplay.commentInput.value.trim();
+            if (text && currentViewingTask) {
+                // Find task in current board data to avoid stale reference
+                let taskToUpdate = null;
+                for (const workflow of state.boardData.workflows) {
+                    taskToUpdate = workflow.tasks.find(t => t.id == currentViewingTask.id);
+                    if (taskToUpdate) break;
+                }
+
+                if (taskToUpdate) {
+                    if (!taskToUpdate.comments) taskToUpdate.comments = [];
+                    taskToUpdate.comments.push({
+                        author: state.currentUser?.name || 'Anonymous',
+                        text: text,
+                        timestamp: Date.now()
+                    });
+                    elements.viewTaskDisplay.commentInput.value = '';
+                    renderComments(taskToUpdate);
+                    saveData();
+                    // Update the reference we hold to the new one
+                    currentViewingTask = taskToUpdate;
+                }
+            }
+        });
+    }
+
+    if (elements.viewTaskDisplay.commentInput) {
+        elements.viewTaskDisplay.commentInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                elements.viewTaskDisplay.sendCommentBtn.click();
+            }
+        });
+    }
 };
 
 const autoResizeTextarea = (el) => {
@@ -242,8 +279,33 @@ export const openViewTaskModal = (task, workflow) => {
     }).join('');
 
     renderMediaGallery(task.media || [], elements.viewTaskDisplay.mediaGallery, false);
+    renderComments(task);
 
     openModal(elements.viewTaskModal);
+};
+
+export const refreshTaskView = () => {
+    if (!currentViewingTask || !elements.viewTaskModal.classList.contains('visible')) return;
+
+    let latestTask = null;
+    let latestWorkflow = null;
+    for (const workflow of state.boardData.workflows) {
+        latestTask = workflow.tasks.find(t => t.id == currentViewingTask.id);
+        if (latestTask) {
+            latestWorkflow = workflow;
+            break;
+        }
+    }
+
+    if (latestTask) {
+        currentViewingTask = latestTask;
+        currentViewingWorkflow = latestWorkflow;
+        renderComments(latestTask);
+        // Also update comment count on the task card if we want to be thorough, 
+        // but renderBoard() already does that.
+    } else {
+        closeModal(elements.viewTaskModal);
+    }
 };
 
 
@@ -255,7 +317,13 @@ const renderTags = (tags) => {
         const tagEl = document.createElement('span');
         tagEl.className = 'tag-pill';
         tagEl.style.backgroundColor = tag.color;
-        tagEl.innerHTML = `${tag.name} <span class="remove-tag" data-index="${index}">&times;</span>`;
+        tagEl.style.display = 'flex';
+        tagEl.style.alignItems = 'center';
+        tagEl.innerHTML = `
+            <span class="material-symbols-outlined drag-handle" style="font-size: 14px; margin-right: 4px;">drag_indicator</span>
+            ${tag.name} 
+            <span class="remove-tag" data-index="${index}">&times;</span>
+        `;
         tagEl.querySelector('.remove-tag').onclick = (e) => {
             e.stopPropagation(); // Stop propagation to prevent issues
             tempTags.splice(index, 1);
@@ -263,6 +331,19 @@ const renderTags = (tags) => {
         };
         elements.taskForm.tagsContainer.appendChild(tagEl);
     });
+
+    if (tags.length > 1) {
+        new Sortable(elements.taskForm.tagsContainer, {
+            animation: 150,
+            handle: '.drag-handle',
+            onEnd: (evt) => {
+                const [movedItem] = tempTags.splice(evt.oldIndex, 1);
+                tempTags.splice(evt.newIndex, 0, movedItem);
+                // We don't re-render here to keep the drag-and-drop smooth,
+                // but the tempTags array is now in the correct order.
+            }
+        });
+    }
 };
 
 const toggleTagPicker = (show) => {
@@ -279,11 +360,14 @@ const renderAvailableTags = () => {
     const allTags = state.boardData.tags || [];
     elements.taskForm.availableTagsList.innerHTML = '';
 
-    allTags.forEach(tag => {
+    allTags.forEach((tag, index) => {
         const tagEl = document.createElement('div');
         tagEl.className = 'tag-option';
         tagEl.style.backgroundColor = tag.color;
-        tagEl.textContent = tag.name;
+        tagEl.innerHTML = `
+            <span class="material-symbols-outlined drag-handle" style="font-size: 18px; opacity: 0.7;" onmousedown="event.stopPropagation()">drag_indicator</span>
+            <span style="flex: 1;">${tag.name}</span>
+        `;
         tagEl.onclick = () => {
             // Check if already added
             if (!tempTags.find(t => t.name === tag.name)) {
@@ -294,6 +378,19 @@ const renderAvailableTags = () => {
         };
         elements.taskForm.availableTagsList.appendChild(tagEl);
     });
+
+    if (allTags.length > 1) {
+        new Sortable(elements.taskForm.availableTagsList, {
+            animation: 150,
+            handle: '.drag-handle',
+            onEnd: (evt) => {
+                const [movedItem] = state.boardData.tags.splice(evt.oldIndex, 1);
+                state.boardData.tags.splice(evt.newIndex, 0, movedItem);
+                saveData();
+                renderBoard();
+            }
+        });
+    }
 
     if (elements.taskForm.availableTagsList.children.length === 0) {
         elements.taskForm.availableTagsList.innerHTML = '<span style="font-size:0.8rem; opacity:0.6; padding:0.5rem;">No other tags available</span>';
@@ -309,6 +406,7 @@ const renderCustomFields = (fields) => {
 
         fieldEl.innerHTML = `
             <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+                <span class="material-symbols-outlined drag-handle" style="font-size: 18px; color: var(--text-color); opacity: 0.5;">drag_indicator</span>
                 <input type="text" class="small-input field-name" value="${field.name}" placeholder="Field Name" style="flex: 1; font-weight: 500; font-size: 0.9rem; padding: 0.4rem 0.6rem;">
                 <label class="checkbox-wrapper" title="Show on card" style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.8rem; opacity: 0.8; white-space: nowrap;">
                      <input type="checkbox" class="field-show" ${field.showOnCard ? 'checked' : ''} style="margin:0;">
@@ -335,15 +433,23 @@ const renderCustomFields = (fields) => {
         fieldEl.querySelector('.field-type').onchange = (e) => field.type = e.target.value;
         fieldEl.querySelector('.field-show').onchange = (e) => field.showOnCard = e.target.checked;
         fieldEl.querySelector('.remove-field-btn').onclick = () => {
-            // Confirm removal? Maybe not needed for simple fields, but good UX. 
-            // User asked for "corbeille" (bin), usually implies instant or confirms. 
-            // Let's do instant for now as per usual UI patterns for dynamic lists in this app.
             tempCustomFields.splice(index, 1);
             renderCustomFields(tempCustomFields);
         };
 
         elements.taskForm.customFieldsContainer.appendChild(fieldEl);
     });
+
+    if (fields.length > 1) {
+        new Sortable(elements.taskForm.customFieldsContainer, {
+            animation: 150,
+            handle: '.drag-handle',
+            onEnd: (evt) => {
+                const [movedItem] = tempCustomFields.splice(evt.oldIndex, 1);
+                tempCustomFields.splice(evt.newIndex, 0, movedItem);
+            }
+        });
+    }
 };
 
 const renderTaskAssignees = () => {
@@ -464,4 +570,32 @@ const renderMediaGallery = (media, container, isEditable = false) => {
 
         container.appendChild(div);
     });
+};
+const renderComments = (task) => {
+    const container = elements.viewTaskDisplay.commentsList;
+    if (!container) return;
+
+    const comments = task.comments || [];
+    container.innerHTML = comments.length === 0 ?
+        `<p style="opacity: 0.5; font-size: 0.9rem; font-style: italic;">${localStorage.getItem('lang') === 'fr' ? 'Aucun commentaire pour le moment.' : 'No comments yet.'}</p>` : '';
+
+    comments.forEach(comment => {
+        const div = document.createElement('div');
+        div.className = 'comment-item';
+        div.style.cssText = 'background: var(--card-bg); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color);';
+
+        const date = new Date(comment.timestamp).toLocaleString();
+
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                <strong style="font-size: 0.85rem; color: var(--primary-color);">${comment.author}</strong>
+                <small style="opacity: 0.5; font-size: 0.75rem;">${date}</small>
+            </div>
+            <div style="font-size: 0.9rem; line-height: 1.4; white-space: pre-wrap;">${comment.text}</div>
+        `;
+        container.appendChild(div);
+    });
+
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
 };

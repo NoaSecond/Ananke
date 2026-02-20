@@ -48,7 +48,10 @@ export const elements = {
         customFields: document.getElementById('view-task-custom-fields'),
         customFieldsSection: document.getElementById('view-task-custom-fields-section'),
         mediaGallery: document.getElementById('view-task-media-gallery'),
-        editBtn: document.getElementById('view-to-edit-btn')
+        editBtn: document.getElementById('view-to-edit-btn'),
+        commentsList: document.getElementById('task-comments-list'),
+        commentInput: document.getElementById('task-comment-input'),
+        sendCommentBtn: document.getElementById('send-comment-btn')
     },
     workflowModal: document.getElementById('workflow-modal'),
     workflowForm: {

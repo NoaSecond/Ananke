@@ -4,7 +4,7 @@ import { elements } from './modules/dom.js';
 import { initModals } from './modules/modals.js';
 import { initAuth } from './modules/auth-ui.js';
 import { initBoardListeners, renderBoard } from './modules/board-ui.js';
-import { initTaskListeners } from './modules/task-ui.js';
+import { initTaskListeners, refreshTaskView } from './modules/task-ui.js';
 import { initWorkflowListeners } from './modules/workflow-ui.js';
 import { initUserManagement } from './modules/user-ui.js';
 import * as API from './modules/api.js';
@@ -87,7 +87,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     background: '<span class="material-symbols-outlined">palette</span> Background',
                     export: '<span class="material-symbols-outlined">download</span> Export (.kanban)',
                     logout: '<span class="material-symbols-outlined">logout</span> Logout',
-                    searchPlaceholder: 'Search (Tag: Person: )'
+                    searchPlaceholder: 'Search (Tag: Person: )',
+                    discussion: 'Discussion',
+                    commentPlaceholder: 'Write a comment...'
                 },
                 fr: {
                     addColumn: '<span class="material-symbols-outlined">add</span> Ajouter Colonne',
@@ -96,7 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     background: '<span class="material-symbols-outlined">palette</span> Arrière-plan',
                     export: '<span class="material-symbols-outlined">download</span> Exporter (.kanban)',
                     logout: '<span class="material-symbols-outlined">logout</span> Déconnexion',
-                    searchPlaceholder: 'Rechercher (Tag: Person: )'
+                    searchPlaceholder: 'Rechercher (Tag: Person: )',
+                    discussion: 'Discussion',
+                    commentPlaceholder: 'Écrire un commentaire...'
                 }
             };
 
@@ -121,6 +125,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const inputSearch = document.getElementById('global-search');
             if (inputSearch) inputSearch.placeholder = t.searchPlaceholder;
+
+            const discussionHeader = document.querySelector('#view-task-discussion-section h4');
+            if (discussionHeader) discussionHeader.textContent = t.discussion;
+
+            const commentInput = document.getElementById('task-comment-input');
+            if (commentInput) commentInput.placeholder = t.commentPlaceholder;
 
             if (lang === 'fr') {
                 Logger.info('Langue changée en Français');
@@ -178,6 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.boardData = data;
                 applyBackground(state.boardData.background);
                 renderBoard();
+                refreshTaskView();
             }
         });
 
