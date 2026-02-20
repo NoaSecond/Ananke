@@ -2182,18 +2182,29 @@ body.has-custom-bg {
 }
 
 .media-view-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
     gap: 15px;
     margin-bottom: 20px;
+    padding-bottom: 5px;
+}
+
+.media-view-gallery::-webkit-scrollbar-track {
+    background: transparent !important;
+    margin: 0 10px;
 }
 
 .media-view-item {
+    flex: 0 0 auto;
+    height: 180px;
+    /* Bit taller to see more */
     border-radius: 12px;
     overflow: hidden;
     cursor: pointer;
     border: 1px solid var(--border-color);
     transition: transform 0.2s;
+    background: var(--bg-color);
 }
 
 .media-view-item:hover {
@@ -2202,7 +2213,9 @@ body.has-custom-bg {
 
 .media-view-item img,
 .media-view-item video {
-    width: 100%;
+    height: 100%;
+    width: auto;
+    max-width: none;
     display: block;
 }
 
@@ -2267,8 +2280,15 @@ body.has-custom-bg {
 }
 
 @keyframes commentFadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .task-card-footer {
@@ -2293,13 +2313,4 @@ body.has-custom-bg {
 
 .task-card-footer-item span {
     line-height: 1;
-}
-
-.comments-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.comments-list::-webkit-scrollbar-thumb {
-    background: #666;
-    border-radius: 10px;
 }
