@@ -649,10 +649,28 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
     right: 15px;
     background: none;
     border: none;
-    font-size: 2rem;
     cursor: pointer;
     color: var(--text-color);
     padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.modal-close-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .modal-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-close-btn .material-symbols-outlined {
+    font-size: 24px;
 }
 
 /* --- Task Modal Custom Styles --- */
@@ -1278,7 +1296,6 @@ input[type="color"]#workflow-color-input {
     .modal-close-btn {
         top: 8px;
         right: 12px;
-        font-size: 1.5rem;
     }
 
     button,
