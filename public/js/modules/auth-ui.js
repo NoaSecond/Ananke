@@ -196,10 +196,43 @@ function handleLoginSuccess(user, initSocketCallback) {
     state.currentUser = user;
     hideAuth();
     updateUserUI();
+    checkVersion(user);
 
     if (initSocketCallback) initSocketCallback();
     if (!user.is_setup_complete) {
         openSetupModal(true);
+    }
+}
+
+async function checkVersion(user) {
+    if (!['admin', 'owner'].includes(user.role)) return;
+    try {
+        const localRes = await fetch('/api/version');
+        const localData = await localRes.json();
+        const localVersion = localData.version;
+
+        const remoteRes = await fetch('https://raw.githubusercontent.com/NoaSecond/Ananke/main/package.json?t=' + Date.now());
+        const remoteData = await remoteRes.json();
+        const remoteVersion = remoteData.version;
+
+        if (localVersion !== remoteVersion && !document.getElementById('version-warning')) {
+            const headerControls = document.querySelector('.controls');
+            if (headerControls) {
+                const warningBtn = document.createElement('div');
+                warningBtn.id = 'version-warning';
+                warningBtn.style.color = 'var(--danger-color)';
+                warningBtn.style.display = 'flex';
+                warningBtn.style.alignItems = 'center';
+                warningBtn.style.gap = '0.5rem';
+                warningBtn.style.fontWeight = 'bold';
+                warningBtn.style.marginRight = '1rem';
+                warningBtn.title = `Update available: ${remoteVersion}`;
+                warningBtn.innerHTML = '<span class="material-symbols-outlined">update</span> Update available';
+                headerControls.insertBefore(warningBtn, headerControls.firstChild);
+            }
+        }
+    } catch (e) {
+        console.error('Failed to check version', e);
     }
 }
 

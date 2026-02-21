@@ -49,6 +49,18 @@ app.get('/api/board', authenticateToken, (req, res) => {
     });
 });
 
+const fs = require('fs');
+
+app.get('/api/version', async (req, res) => {
+    try {
+        const pkgData = await fs.promises.readFile(path.join(__dirname, 'package.json'), 'utf8');
+        const pkg = JSON.parse(pkgData);
+        res.json({ version: pkg.version });
+    } catch (e) {
+        res.status(500).json({ error: 'Could not read version' });
+    }
+});
+
 // Save Board API (for fallback or specific actions)
 app.post('/api/board', authenticateToken, (req, res) => {
     // Determine permissions based on role? (Editors+)
