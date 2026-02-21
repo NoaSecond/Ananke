@@ -268,6 +268,37 @@ export const initTaskListeners = () => {
             }
         });
     }
+
+    // Toggle checklist item from view modal
+    document.addEventListener('change', (e) => {
+        if (e.target.classList.contains('checklist-view-toggle')) {
+            const fieldName = e.target.dataset.field;
+            const idx = e.target.dataset.idx;
+            const isChecked = e.target.checked;
+
+            if (currentViewingTask) {
+                for (const workflow of state.boardData.workflows) {
+                    const taskToUpdate = workflow.tasks.find(t => t.id == currentViewingTask.id);
+                    if (taskToUpdate && taskToUpdate.customFields) {
+                        const field = taskToUpdate.customFields.find(f => f.name === fieldName);
+                        if (field && field.type === 'checklist') {
+                            let items = [];
+                            try { items = typeof field.value === 'string' ? JSON.parse(field.value) : (field.value || []); } catch (err) { items = []; }
+                            if (items[idx]) {
+                                items[idx].checked = isChecked;
+                                field.value = JSON.stringify(items);
+                                saveData();
+                                renderBoard();
+                                openViewTaskModal(taskToUpdate, workflow);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    });
+
 };
 
 const autoResizeTextarea = (el) => {
@@ -312,10 +343,31 @@ export const openViewTaskModal = (task, workflow) => {
     elements.viewTaskDisplay.customFieldsSection.style.display = hasCustomFields ? 'block' : 'none';
     if (hasCustomFields) {
         elements.viewTaskDisplay.customFields.innerHTML = task.customFields.map(f => {
-            const val = f.type === 'link' ? `<a href="${f.value}" target="_blank" class="text-primary hover:underline">${f.value}</a>` : f.value;
-            return `<div class="custom-field-view">
+            let val = f.value;
+            if (f.type === 'link') {
+                val = `<a href="${f.value}" target="_blank" class="text-primary hover:underline">${f.value}</a>`;
+            } else if (f.type === 'checklist') {
+                let items = [];
+                try { items = typeof f.value === 'string' ? JSON.parse(f.value) : (f.value || []); } catch (e) { items = []; }
+                let progress = items.length ? Math.round((items.filter(i => i.checked).length / items.length) * 100) : 0;
+
+                val = `
+                <div style="margin-top: 4px; width: 100%;">
+                    <div style="font-size: 0.8rem; background: var(--border-color); border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 8px;">
+                        <div style="background: var(--primary-color); width: ${progress}%; height: 100%; transition: width 0.3s;"></div>
+                    </div>
+                    ${items.map((item, i) => `
+                        <div style="display:flex; align-items:flex-start; gap:6px; margin-bottom: 4px;">
+                            <input type="checkbox" class="checklist-view-toggle cursor-pointer" style="margin-top:2px; width:16px; height:16px; flex-shrink:0;" data-field="${f.name.replace(/"/g, '&quot;')}" data-idx="${i}" ${item.checked ? 'checked' : ''} ${state.currentUser?.role === 'reader' ? 'disabled' : ''}>
+                            <span style="font-size: 0.9rem; line-height: 1.2; padding-top:2px; ${item.checked ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${item.text}</span>
+                        </div>
+                    `).join('')}
+                </div>`;
+            }
+
+            return `<div class="custom-field-view" ${f.type === 'checklist' ? 'style="flex-direction: column; align-items: flex-start;"' : ''}>
                  <span class="field-name">${f.name}:</span>
-                 <span class="field-value">${val}</span>
+                 <span class="field-value" style="${f.type === 'checklist' ? 'width: 100%;' : ''}">${val}</span>
              </div>`;
         }).join('');
     }
@@ -450,10 +502,32 @@ const renderCustomFields = (fields) => {
         fieldEl.className = 'custom-field-item';
         fieldEl.style.cssText = 'border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 8px; margin-bottom: 0.5rem; background: var(--card-bg);';
 
+        let valueContent = '';
+        if (field.type === 'checklist') {
+            let items = [];
+            try { items = typeof field.value === 'string' ? JSON.parse(field.value) : (field.value || []); } catch (e) { items = []; }
+            valueContent = `
+                <div style="flex-grow:1; display:flex; flex-direction:column; gap:4px; margin-top: 4px;">
+                    ${items.map((item, i) => `
+                        <div style="display:flex; gap:4px; align-items:center;">
+                            <input type="text" value="${item.text.replace(/"/g, '&quot;')}" class="chk-text small-input" data-idx="${i}" style="flex:1; padding: 0.2rem 0.4rem; min-width: 0;">
+                            <input type="checkbox" ${item.checked ? 'checked' : ''} class="chk-state" data-idx="${i}" style="margin:0; width:18px; height:18px; flex-shrink:0; cursor:pointer;">
+                            <button class="remove-chk-btn" data-idx="${i}" style="background:none; border:none; color:var(--danger-color); cursor:pointer; font-size:1.2rem; flex-shrink:0;">&times;</button>
+                        </div>
+                    `).join('')}
+                    <button class="add-chk-btn secondary-btn small-btn" style="align-self:flex-start; margin-top:4px;">+ Add Item</button>
+                    <!-- hidden input to store actual value for generic pipelines if needed -->
+                    <input type="hidden" class="field-value" value='${field.value.replace(/'/g, '&#39;')}'>
+                </div>
+            `;
+        } else {
+            valueContent = `<input type="text" class="small-input field-value" value="${field.value.replace(/"/g, '&quot;')}" placeholder="Value" style="flex-grow: 1; font-size: 0.9rem; padding: 0.4rem 0.6rem; width: 100%;">`;
+        }
+
         fieldEl.innerHTML = `
             <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
                 <span class="material-symbols-outlined drag-handle" style="font-size: 18px; color: var(--text-color); opacity: 0.5;">drag_indicator</span>
-                <input type="text" class="small-input field-name" value="${field.name}" placeholder="Field Name" style="flex: 1; font-weight: 500; font-size: 0.9rem; padding: 0.4rem 0.6rem;">
+                <input type="text" class="small-input field-name" value="${field.name.replace(/"/g, '&quot;')}" placeholder="Field Name" style="flex: 1; font-weight: 500; font-size: 0.9rem; padding: 0.4rem 0.6rem;">
                 <label class="checkbox-wrapper" title="Show on card" style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.8rem; opacity: 0.8; white-space: nowrap;">
                      <input type="checkbox" class="field-show" ${field.showOnCard ? 'checked' : ''} style="margin:0;">
                      Show
@@ -468,15 +542,46 @@ const renderCustomFields = (fields) => {
                     <option value="number" ${field.type === 'number' ? 'selected' : ''}>Number</option>
                     <option value="link" ${field.type === 'link' ? 'selected' : ''}>Link</option>
                     <option value="date" ${field.type === 'date' ? 'selected' : ''}>Date</option>
+                    <option value="checklist" ${field.type === 'checklist' ? 'selected' : ''}>Checklist</option>
                 </select>
-                <input type="text" class="small-input field-value" value="${field.value}" placeholder="Value" style="flex-grow: 1; font-size: 0.9rem; padding: 0.4rem 0.6rem; width: 100%;">
+                ${valueContent}
             </div>
         `;
 
         // Bind events
         fieldEl.querySelector('.field-name').oninput = (e) => field.name = e.target.value;
-        fieldEl.querySelector('.field-value').oninput = (e) => field.value = e.target.value;
-        fieldEl.querySelector('.field-type').onchange = (e) => field.type = e.target.value;
+        if (field.type === 'checklist') {
+            let items = [];
+            try { items = typeof field.value === 'string' ? JSON.parse(field.value) : (field.value || []); } catch (e) { items = []; }
+
+            fieldEl.querySelectorAll('.chk-state').forEach(el => {
+                el.onchange = (e) => { items[e.target.dataset.idx].checked = e.target.checked; field.value = JSON.stringify(items); };
+            });
+            fieldEl.querySelectorAll('.chk-text').forEach(el => {
+                el.oninput = (e) => { items[e.target.dataset.idx].text = e.target.value; field.value = JSON.stringify(items); };
+            });
+            fieldEl.querySelectorAll('.remove-chk-btn').forEach(el => {
+                el.onclick = (e) => { e.preventDefault(); items.splice(e.target.dataset.idx, 1); field.value = JSON.stringify(items); renderCustomFields(tempCustomFields); };
+            });
+            const addBtn = fieldEl.querySelector('.add-chk-btn');
+            if (addBtn) {
+                addBtn.onclick = (e) => { e.preventDefault(); items.push({ text: '', checked: false }); field.value = JSON.stringify(items); renderCustomFields(tempCustomFields); };
+            }
+        } else {
+            const valInput = fieldEl.querySelector('.field-value');
+            if (valInput) valInput.oninput = (e) => field.value = e.target.value;
+        }
+
+        fieldEl.querySelector('.field-type').onchange = (e) => {
+            field.type = e.target.value;
+            if (field.type === 'checklist' && (!field.value || typeof field.value !== 'string' || !field.value.startsWith('['))) {
+                field.value = JSON.stringify([{ text: 'Item 1', checked: false }]); // Default
+            } else if (field.type !== 'checklist') {
+                field.value = ''; // Reset value to avoid json breaking text input
+            }
+            renderCustomFields(tempCustomFields);
+        };
+
         fieldEl.querySelector('.field-show').onchange = (e) => field.showOnCard = e.target.checked;
         fieldEl.querySelector('.remove-field-btn').onclick = () => {
             tempCustomFields.splice(index, 1);

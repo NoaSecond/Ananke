@@ -167,7 +167,17 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     </div>
                     ${(task.showDescriptionOnCard !== false && task.description) ? `<div class="task-card-description">${marked.parse(task.description)}</div>` : ''}
                     ${(task.customFields || []).filter(f => f.showOnCard).map(f => {
-                    const val = f.type === 'link' ? `<a href="${f.value}" target="_blank" onclick="event.stopPropagation()" style="color: var(--primary-color); text-decoration: underline;">${f.value}</a>` : f.value;
+                    let val = f.value;
+                    if (f.type === 'link') {
+                        val = `<a href="${f.value}" target="_blank" onclick="event.stopPropagation()" style="color: var(--primary-color); text-decoration: underline;">${f.value}</a>`;
+                    } else if (f.type === 'checklist') {
+                        let items = [];
+                        try { items = typeof f.value === 'string' ? JSON.parse(f.value) : (f.value || []); } catch (e) { items = []; }
+                        let checked = items.filter(i => i.checked).length;
+                        let progress = items.length ? Math.round((checked / items.length) * 100) : 0;
+                        val = `<span style="display:inline-flex; align-items:center; gap:4px; font-size:0.8rem; margin-left:4px;"><span class="material-symbols-outlined" style="font-size:14px; color:${progress === 100 ? 'var(--success-color)' : 'inherit'}">checklist</span>${checked}/${items.length}</span>`;
+                        return `<div class="task-custom-field-small" style="display:flex; align-items:center;"><strong>${f.name}:</strong> ${val}</div>`;
+                    }
                     return `<div class="task-custom-field-small"><strong>${f.name}:</strong> ${val}</div>`;
                 }).join('')}
                 `;
