@@ -45,7 +45,8 @@ router.post('/login', (req, res) => {
                 email: user.email,
                 first_name: user.first_name,
                 last_name: user.last_name,
-                is_setup_complete: user.is_setup_complete
+                is_setup_complete: user.is_setup_complete,
+                avatar_url: user.avatar_url
             }
         });
     });
@@ -110,7 +111,7 @@ router.post('/create-account', authenticateToken, requireRole('admin'), (req, re
 
 // COMPLETE SETUP / UPDATE PROFILE
 router.post('/complete-setup', authenticateToken, (req, res) => {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, avatar_url } = req.body;
     const userId = req.user.id;
 
     if (!firstName || !lastName || !email) {
@@ -124,6 +125,11 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
         const hash = bcrypt.hashSync(password, 10);
         query += ", password_hash = ?";
         params.push(hash);
+    }
+
+    if (avatar_url !== undefined) {
+        query += ", avatar_url = ?";
+        params.push(avatar_url);
     }
 
     query += " WHERE id = ?";
@@ -160,7 +166,7 @@ router.post('/logout', (req, res) => {
 
 // Get Current User
 router.get('/me', authenticateToken, (req, res) => {
-    db.get("SELECT id, first_name, last_name, email, role, is_setup_complete FROM users WHERE id = ?", [req.user.id], (err, row) => {
+    db.get("SELECT id, first_name, last_name, email, role, is_setup_complete, avatar_url FROM users WHERE id = ?", [req.user.id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (row) {
             const displayName = row.first_name ? `${row.first_name} ${row.last_name}` : row.email;
@@ -173,7 +179,7 @@ router.get('/me', authenticateToken, (req, res) => {
 
 // List Users
 router.get('/users', authenticateToken, requireRole('admin'), (req, res) => {
-    db.all("SELECT id, first_name, last_name, email, role, is_setup_complete FROM users", (err, rows) => {
+    db.all("SELECT id, first_name, last_name, email, role, is_setup_complete, avatar_url FROM users", (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         const users = rows.map(u => ({
             ...u,
@@ -216,11 +222,12 @@ router.delete('/users/:id', authenticateToken, requireRole('admin'), (req, res) 
 
 // List Simple (Assignees)
 router.get('/list', authenticateToken, (req, res) => {
-    db.all("SELECT id, first_name, last_name, email FROM users", (err, rows) => {
+    db.all("SELECT id, first_name, last_name, email, avatar_url FROM users", (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         const users = rows.map(u => ({
             id: u.id,
-            name: u.first_name ? `${u.first_name} ${u.last_name}` : u.email
+            name: u.first_name ? `${u.first_name} ${u.last_name}` : u.email,
+            avatar_url: u.avatar_url
         }));
         res.json({ users: users });
     });

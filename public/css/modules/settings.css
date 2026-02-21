@@ -29,10 +29,10 @@
 .settings-header {
     padding: 0.8rem 1rem;
     display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
+    flex-direction: row;
+    gap: 0.75rem;
     text-align: left;
-    align-items: flex-start;
+    align-items: center;
 }
 
 .settings-header strong {

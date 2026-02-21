@@ -24,6 +24,7 @@ function initDb() {
             last_name TEXT,
             role TEXT DEFAULT 'reader',
             is_setup_complete INTEGER DEFAULT 0,
+            avatar_url TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`, (err) => {
             if (!err) {
@@ -32,6 +33,7 @@ function initDb() {
                 db.run("ALTER TABLE users ADD COLUMN first_name TEXT", () => { });
                 db.run("ALTER TABLE users ADD COLUMN last_name TEXT", () => { });
                 db.run("ALTER TABLE users ADD COLUMN is_setup_complete INTEGER DEFAULT 0", () => { });
+                db.run("ALTER TABLE users ADD COLUMN avatar_url TEXT", () => { });
             }
         });
 
