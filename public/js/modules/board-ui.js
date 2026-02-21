@@ -5,7 +5,7 @@ import { openTaskEditModal, openViewTaskModal } from './task-ui.js';
 import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
 import { handleSearch } from './search-ui.js';
-import { getInitials } from './utils.js';
+import { getInitials, getContrastYIQ } from './utils.js';
 
 export const trackEvent = (action, category = 'Kanban', label = null, value = null) => {
     if (typeof gtag !== 'undefined') {
@@ -159,7 +159,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     ${taskActionsHtml}
                     <h4>${task.title}</h4>
                     <div class="task-tags-display">
-                        ${task.showTags !== false ? (task.tags || []).map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color};" title="${tag.name}">${tag.name}</span>`).join('') : ''}
+                        ${task.showTags !== false ? (task.tags || []).map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color}; color: ${getContrastYIQ(tag.color || '#3b82f6')};" title="${tag.name}">${tag.name}</span>`).join('') : ''}
                     </div>
                     <div class="task-card-footer">
                         ${task.showAssigneesOnCard !== false ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
@@ -167,7 +167,17 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     </div>
                     ${(task.showDescriptionOnCard !== false && task.description) ? `<div class="task-card-description">${marked.parse(task.description)}</div>` : ''}
                     ${(task.customFields || []).filter(f => f.showOnCard).map(f => {
-                    const val = f.type === 'link' ? `<a href="${f.value}" target="_blank" onclick="event.stopPropagation()" style="color: var(--primary-color); text-decoration: underline;">${f.value}</a>` : f.value;
+                    let val = f.value;
+                    if (f.type === 'link') {
+                        val = `<a href="${f.value}" target="_blank" onclick="event.stopPropagation()" style="color: var(--primary-color); text-decoration: underline;">${f.value}</a>`;
+                    } else if (f.type === 'checklist') {
+                        let items = [];
+                        try { items = typeof f.value === 'string' ? JSON.parse(f.value) : (f.value || []); } catch (e) { items = []; }
+                        let checked = items.filter(i => i.checked).length;
+                        let progress = items.length ? Math.round((checked / items.length) * 100) : 0;
+                        val = `<span style="display:inline-flex; align-items:center; gap:4px; font-size:0.8rem; margin-left:4px;"><span class="material-symbols-outlined" style="font-size:14px; color:${progress === 100 ? 'var(--success-color)' : 'inherit'}">checklist</span>${checked}/${items.length}</span>`;
+                        return `<div class="task-custom-field-small" style="display:flex; align-items:center;"><strong>${f.name}:</strong> ${val}</div>`;
+                    }
                     return `<div class="task-custom-field-small"><strong>${f.name}:</strong> ${val}</div>`;
                 }).join('')}
                 `;
