@@ -224,21 +224,24 @@
                     <div style="flex: 2; min-width: 200px;">
                         <label style="font-size: 0.8rem;">Email</label>
                         <input type="email" id="invite-email" required placeholder="email@example.com"
-                            style="margin:0;">
+                            style="margin:0; height: 44px; box-sizing: border-box;">
                     </div>
                     <div style="flex: 2; min-width: 150px;">
                         <label style="font-size: 0.8rem;">Temp Password</label>
-                        <input type="text" id="invite-password" required placeholder="Temp123" style="margin:0;">
+                        <input type="text" id="invite-password" required placeholder="Temp123"
+                            style="margin:0; height: 44px; box-sizing: border-box;">
                     </div>
                     <div style="flex: 1; min-width: 100px;">
                         <label style="font-size: 0.8rem;">Role</label>
-                        <select id="invite-role" class="role-select" data-role="reader">
+                        <select id="invite-role" class="role-select" data-role="reader"
+                            style="height: 44px !important; width: 100% !important; box-sizing: border-box; font-size: 0.85rem;">
                             <option value="reader">Reader</option>
                             <option value="editor">Editor</option>
                             <option value="admin">Admin</option>
                         </select>
                     </div>
-                    <button type="submit" class="action-btn">Create</button>
+                    <button type="submit" class="action-btn"
+                        style="height: 44px; box-sizing: border-box; flex-shrink: 0;">Create</button>
                 </form>
                 <div id="invite-message" style="margin-top:0.5rem; font-size:0.9rem;"></div>
             </div>
