@@ -167,15 +167,21 @@
                 </div>
 
                 <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid var(--border-color);">
-                <p style="font-size: 0.9rem; margin-bottom: 1rem; font-weight: bold;">Change Password</p>
 
-                <div class="form-group">
-                    <label for="setup-password">New Password</label>
-                    <input type="password" id="setup-password" placeholder="Leave blank to keep current">
-                </div>
-                <div class="form-group">
-                    <label for="setup-password-confirm">Confirm</label>
-                    <input type="password" id="setup-password-confirm">
+                <button type="button" id="toggle-password-btn" class="secondary-btn"
+                    style="width: 100%; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">lock</span> Change Password
+                </button>
+
+                <div id="password-change-section" style="display: none;">
+                    <div class="form-group">
+                        <label for="setup-password">New Password</label>
+                        <input type="password" id="setup-password" placeholder="Leave blank to keep current">
+                    </div>
+                    <div class="form-group">
+                        <label for="setup-password-confirm">Confirm</label>
+                        <input type="password" id="setup-password-confirm">
+                    </div>
                 </div>
                 <button type="submit" class="action-btn" style="width: 100%; margin-top: 1rem;">Save</button>
             </form>

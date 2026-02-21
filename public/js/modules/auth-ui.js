@@ -109,6 +109,16 @@ export function initAuth(initSocketCallback) {
             openSetupModal(false);
         };
     }
+
+    // Password Toggle Button
+    const togglePasswordBtn = document.getElementById('toggle-password-btn');
+    const passwordSection = document.getElementById('password-change-section');
+    if (togglePasswordBtn && passwordSection) {
+        togglePasswordBtn.addEventListener('click', () => {
+            const isHidden = passwordSection.style.display === 'none';
+            passwordSection.style.display = isHidden ? 'block' : 'none';
+        });
+    }
 }
 
 async function checkAuth(initSocketCallback) {
@@ -172,6 +182,11 @@ export function openSetupModal(isFirstTime) {
     // Reset form
     elements.setupForm.reset();
     messageEl.textContent = '';
+
+    const passwordSection = document.getElementById('password-change-section');
+    if (passwordSection) {
+        passwordSection.style.display = 'none';
+    }
 
     if (isFirstTime) {
         elements.setupCloseBtn.style.display = 'none';
