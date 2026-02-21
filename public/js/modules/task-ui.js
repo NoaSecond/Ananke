@@ -3,7 +3,7 @@ import * as API from './api.js';
 import { state } from './state.js';
 import { openModal, closeModal, showConfirm } from './modals.js';
 import { renderBoard, saveData } from './board-ui.js';
-import { Logger, getInitials } from './utils.js';
+import { Logger, getInitials, getContrastYIQ } from './utils.js';
 import { trackEvent } from './board-ui.js';
 
 let tempTags = [];
@@ -304,6 +304,11 @@ export const initTaskListeners = () => {
 const autoResizeTextarea = (el) => {
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
+
+    const showDescWrapper = elements.taskForm.showDesc.closest('div');
+    if (showDescWrapper) {
+        showDescWrapper.style.display = el.value.trim().length > 0 ? 'flex' : 'none';
+    }
 };
 
 // --- View Task Logic ---
@@ -336,7 +341,7 @@ export const openViewTaskModal = (task, workflow) => {
     const hasTags = (task.tags || []).length > 0;
     elements.viewTaskDisplay.tagsSection.style.display = hasTags ? 'block' : 'none';
     if (hasTags) {
-        elements.viewTaskDisplay.tags.innerHTML = task.tags.map(tag => `<span class="tag-pill" style="background:${tag.color}">${tag.name}</span>`).join('');
+        elements.viewTaskDisplay.tags.innerHTML = task.tags.map(tag => `<span class="tag-pill" style="background:${tag.color}; color:${getContrastYIQ(tag.color)}">${tag.name}</span>`).join('');
     }
 
     const hasCustomFields = (task.customFields || []).length > 0;
@@ -412,15 +417,17 @@ export const refreshTaskView = () => {
 const renderTags = (tags) => {
     elements.taskForm.tagsContainer.innerHTML = '';
     tags.forEach((tag, index) => {
+        const textColor = getContrastYIQ(tag.color || '#3b82f6');
         const tagEl = document.createElement('span');
         tagEl.className = 'tag-pill';
         tagEl.style.backgroundColor = tag.color;
+        tagEl.style.color = textColor;
         tagEl.style.display = 'flex';
         tagEl.style.alignItems = 'center';
         tagEl.innerHTML = `
-            <span class="material-symbols-outlined drag-handle" style="font-size: 14px; margin-right: 4px;">drag_indicator</span>
+            <span class="material-symbols-outlined drag-handle" style="font-size: 14px; margin-right: 4px; color:${textColor}">drag_indicator</span>
             ${tag.name} 
-            <span class="remove-tag" data-index="${index}">&times;</span>
+            <span class="remove-tag" data-index="${index}" style="color:${textColor}">&times;</span>
         `;
         tagEl.querySelector('.remove-tag').onclick = (e) => {
             e.stopPropagation(); // Stop propagation to prevent issues
@@ -442,6 +449,11 @@ const renderTags = (tags) => {
             }
         });
     }
+
+    const showTagsWrapper = elements.taskForm.showTags.closest('div');
+    if (showTagsWrapper) {
+        showTagsWrapper.style.display = tempTags.length > 0 ? 'flex' : 'none';
+    }
 };
 
 const toggleTagPicker = (show) => {
@@ -459,11 +471,13 @@ const renderAvailableTags = () => {
     elements.taskForm.availableTagsList.innerHTML = '';
 
     allTags.forEach((tag, index) => {
+        const textColor = getContrastYIQ(tag.color || '#3b82f6');
         const tagEl = document.createElement('div');
         tagEl.className = 'tag-option';
         tagEl.style.backgroundColor = tag.color;
+        tagEl.style.color = textColor;
         tagEl.innerHTML = `
-            <span class="material-symbols-outlined drag-handle" style="font-size: 18px; opacity: 0.7;" onmousedown="event.stopPropagation()">drag_indicator</span>
+            <span class="material-symbols-outlined drag-handle" style="font-size: 18px; opacity: 0.7; color:${textColor}" onmousedown="event.stopPropagation()">drag_indicator</span>
             <span style="flex: 1;">${tag.name}</span>
         `;
         tagEl.onclick = () => {
@@ -622,6 +636,11 @@ const renderTaskAssignees = () => {
         };
         elements.taskAssigneesContainer.appendChild(el);
     });
+
+    const showAssigneesWrapper = elements.taskForm.showAssignees.closest('div');
+    if (showAssigneesWrapper) {
+        showAssigneesWrapper.style.display = tempAssignees.length > 0 ? 'flex' : 'none';
+    }
 };
 
 const renderAssigneePickerList = async () => {

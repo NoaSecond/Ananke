@@ -5,7 +5,7 @@ import { openTaskEditModal, openViewTaskModal } from './task-ui.js';
 import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
 import { handleSearch } from './search-ui.js';
-import { getInitials } from './utils.js';
+import { getInitials, getContrastYIQ } from './utils.js';
 
 export const trackEvent = (action, category = 'Kanban', label = null, value = null) => {
     if (typeof gtag !== 'undefined') {
@@ -159,7 +159,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     ${taskActionsHtml}
                     <h4>${task.title}</h4>
                     <div class="task-tags-display">
-                        ${task.showTags !== false ? (task.tags || []).map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color};" title="${tag.name}">${tag.name}</span>`).join('') : ''}
+                        ${task.showTags !== false ? (task.tags || []).map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color}; color: ${getContrastYIQ(tag.color || '#3b82f6')};" title="${tag.name}">${tag.name}</span>`).join('') : ''}
                     </div>
                     <div class="task-card-footer">
                         ${task.showAssigneesOnCard !== false ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
