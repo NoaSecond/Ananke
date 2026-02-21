@@ -3,7 +3,7 @@ import * as API from './api.js';
 import { state } from './state.js';
 import { openModal, closeModal, showConfirm } from './modals.js';
 import { renderBoard, saveData } from './board-ui.js';
-import { Logger } from './utils.js';
+import { Logger, getInitials } from './utils.js';
 import { trackEvent } from './board-ui.js';
 
 let tempTags = [];
@@ -190,9 +190,8 @@ export const initTaskListeners = () => {
 
     // Media Upload
     if (elements.taskForm.mediaUpload) {
-        elements.taskForm.mediaUpload.addEventListener('change', (e) => {
-            const files = Array.from(e.target.files);
-            files.forEach(file => {
+        const processFiles = (files) => {
+            Array.from(files).forEach(file => {
                 const type = file.type.startsWith('image/') ? 'image' : (file.type.startsWith('video/') ? 'video' : null);
                 if (!type) return;
 
@@ -203,8 +202,34 @@ export const initTaskListeners = () => {
                 };
                 reader.readAsDataURL(file);
             });
+        };
+
+        elements.taskForm.mediaUpload.addEventListener('change', (e) => {
+            processFiles(e.target.files);
             e.target.value = '';
         });
+
+        const mediaDropzone = document.querySelector('.media-upload-label[for="task-media-upload"]');
+        if (mediaDropzone) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                mediaDropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                mediaDropzone.addEventListener(eventName, () => mediaDropzone.classList.add('drag-active'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                mediaDropzone.addEventListener(eventName, () => mediaDropzone.classList.remove('drag-active'), false);
+            });
+
+            mediaDropzone.addEventListener('drop', (e) => {
+                processFiles(e.dataTransfer.files);
+            }, false);
+        }
     }
 
     // Discussion Listeners
@@ -267,10 +292,15 @@ export const openViewTaskModal = (task, workflow) => {
     elements.viewTaskDisplay.descSection.style.display = hasDesc ? 'block' : 'none';
     if (hasDesc) elements.viewTaskDisplay.desc.innerHTML = marked.parse(task.description);
 
-    elements.viewTaskAssignees.innerHTML = (task.assignees || []).map(a => `
-        <div class="task-assignee-avatar" title="${a.name}">${a.name[0].toUpperCase()}</div>
-        <span style="font-size:0.9rem;">${a.name}</span>
-    `).join('');
+    elements.viewTaskAssignees.innerHTML = (task.assignees || []).map(a => {
+        const isCurrentUser = state.currentUser && (a.id === state.currentUser.id || a.name === state.currentUser.name);
+        const currentUserObj = isCurrentUser ? state.currentUser : a;
+        const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : a.avatar_url;
+        return `
+            ${avatarUrl ? `<img src="${avatarUrl}" class="task-assignee-avatar" title="${currentUserObj.name}" style="object-fit: cover;">` : `<div class="task-assignee-avatar" title="${currentUserObj.name}">${getInitials(currentUserObj)}</div>`}
+            <span style="font-size:0.9rem;">${currentUserObj.name}</span>
+        `;
+    }).join('');
 
     const hasTags = (task.tags || []).length > 0;
     elements.viewTaskDisplay.tagsSection.style.display = hasTags ? 'block' : 'none';
@@ -473,9 +503,12 @@ const renderTaskAssignees = () => {
     tempAssignees.forEach((user, index) => {
         const el = document.createElement('div');
         el.className = 'assignee-chip';
+        const isCurrentUser = state.currentUser && (user.id === state.currentUser.id || user.name === state.currentUser.name);
+        const currentUserObj = isCurrentUser ? state.currentUser : user;
+        const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : user.avatar_url;
         el.innerHTML = `
-            <div class="assignee-avatar-small">${user.name[0]}</div>
-            <span>${user.name}</span>
+            ${avatarUrl ? `<img src="${avatarUrl}" class="assignee-avatar-small" style="object-fit: cover;">` : `<div class="assignee-avatar-small">${getInitials(currentUserObj)}</div>`}
+            <span>${currentUserObj.name}</span>
             <span class="remove-assignee">&times;</span>
         `;
         el.querySelector('.remove-assignee').onclick = () => {
@@ -502,9 +535,12 @@ const renderAssigneePickerList = async () => {
         users.forEach(u => {
             const div = document.createElement('div');
             div.className = 'assignee-item';
+            const isCurrentUser = state.currentUser && (u.id === state.currentUser.id || u.name === state.currentUser.name);
+            const currentUserObj = isCurrentUser ? state.currentUser : u;
+            const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : u.avatar_url;
             div.innerHTML = `
-                <div class="assignee-avatar-small">${u.name[0]}</div>
-                <span>${u.name}</span>
+                ${avatarUrl ? `<img src="${avatarUrl}" class="assignee-avatar-small" style="object-fit: cover;">` : `<div class="assignee-avatar-small">${getInitials(currentUserObj)}</div>`}
+                <span>${currentUserObj.name}</span>
              `;
             div.onclick = () => {
                 addTempAssignee(u);

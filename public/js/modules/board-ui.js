@@ -5,6 +5,7 @@ import { openTaskEditModal, openViewTaskModal } from './task-ui.js';
 import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
 import { handleSearch } from './search-ui.js';
+import { getInitials } from './utils.js';
 
 export const trackEvent = (action, category = 'Kanban', label = null, value = null) => {
     if (typeof gtag !== 'undefined') {
@@ -138,9 +139,14 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                         </button>
                     </div>`);
 
-                const assigneesHtml = (task.assignees || []).map(a => `
-                    <div class="task-assignee-avatar" title="${a.name}">${a.name[0]}</div>
-                `).join('');
+                const assigneesHtml = (task.assignees || []).map(a => {
+                    const isCurrentUser = state.currentUser && (a.id === state.currentUser.id || a.name === state.currentUser.name);
+                    const currentUserObj = isCurrentUser ? state.currentUser : a;
+                    const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : a.avatar_url;
+                    return avatarUrl
+                        ? `<img src="${avatarUrl}" class="task-assignee-avatar" title="${currentUserObj.name}" style="object-fit: cover;">`
+                        : `<div class="task-assignee-avatar" title="${currentUserObj.name}">${getInitials(currentUserObj)}</div>`;
+                }).join('');
 
                 const commentsCount = (task.comments || []).length;
                 const commentsHtml = commentsCount > 0 ? `

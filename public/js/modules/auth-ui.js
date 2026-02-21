@@ -1,7 +1,11 @@
 import { elements } from './dom.js';
 import * as API from './api.js';
 import { state } from './state.js';
-import { Logger } from './utils.js';
+import { Logger, getInitials } from './utils.js';
+import { renderBoard } from './board-ui.js';
+import { refreshSearchUsers } from './search-ui.js';
+
+let currentAvatarUrl = null;
 
 export function initAuth(initSocketCallback) {
     checkAuth(initSocketCallback);
@@ -38,7 +42,41 @@ export function initAuth(initSocketCallback) {
     if (elements.setupCloseBtn) {
         elements.setupCloseBtn.onclick = () => {
             elements.setupModal.classList.remove('visible');
+            currentAvatarUrl = null; // reset
         };
+    }
+
+    // Avatar Upload Listener
+    const avatarUploadInput = document.getElementById('setup-avatar-upload');
+    const avatarImg = document.getElementById('setup-avatar-img');
+    const avatarInitials = document.getElementById('setup-avatar-initials');
+    const avatarRemoveBtn = document.getElementById('setup-avatar-remove');
+
+    if (avatarUploadInput) {
+        avatarUploadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    currentAvatarUrl = event.target.result;
+                    avatarImg.src = currentAvatarUrl;
+                    avatarImg.style.display = 'block';
+                    avatarInitials.style.display = 'none';
+                    if (avatarRemoveBtn) avatarRemoveBtn.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    if (avatarRemoveBtn) {
+        avatarRemoveBtn.addEventListener('click', () => {
+            currentAvatarUrl = ''; // Empty string so backend removes it
+            avatarImg.src = '';
+            avatarImg.style.display = 'none';
+            avatarInitials.style.display = 'block';
+            avatarRemoveBtn.style.display = 'none';
+        });
     }
 
     // Setup Form Listener
@@ -58,10 +96,21 @@ export function initAuth(initSocketCallback) {
             }
 
             try {
-                const res = await API.completeSetup({ firstName, lastName, email, password });
+                const res = await API.completeSetup({ firstName, lastName, email, password, avatar_url: currentAvatarUrl });
                 if (res.success) {
                     state.currentUser = res.user;
                     updateUserUI();
+
+                    // Refresh the board to reflect new name/avatar
+                    if (elements.kanbanBoard && state.boardData) {
+                        try {
+                            renderBoard();
+                            await refreshSearchUsers();
+                        } catch (e) {
+                            console.error('Failed to trigger board re-render', e);
+                        }
+                    }
+
                     elements.setupModal.classList.remove('visible');
                     Logger.success('Profile updated');
 
@@ -108,6 +157,16 @@ export function initAuth(initSocketCallback) {
             elements.settingsMenu.classList.add('hidden');
             openSetupModal(false);
         };
+    }
+
+    // Password Toggle Button
+    const togglePasswordBtn = document.getElementById('toggle-password-btn');
+    const passwordSection = document.getElementById('password-change-section');
+    if (togglePasswordBtn && passwordSection) {
+        togglePasswordBtn.addEventListener('click', () => {
+            const isHidden = passwordSection.style.display === 'none';
+            passwordSection.style.display = isHidden ? 'block' : 'none';
+        });
     }
 }
 
@@ -161,6 +220,19 @@ export function updateUserUI() {
     } else {
         elements.importLabel.style.display = 'none';
     }
+
+    const settingsAvatarContainer = document.getElementById('settings-user-avatar');
+    if (settingsAvatarContainer) {
+        if (state.currentUser.avatar_url) {
+            settingsAvatarContainer.innerHTML = `<img src="${state.currentUser.avatar_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            settingsAvatarContainer.style.background = 'transparent';
+        } else {
+            settingsAvatarContainer.innerHTML = getInitials(state.currentUser);
+            settingsAvatarContainer.style.background = 'var(--primary-color)';
+            settingsAvatarContainer.style.color = 'white';
+            settingsAvatarContainer.style.border = '2px solid var(--card-bg)';
+        }
+    }
 }
 
 export function openSetupModal(isFirstTime) {
@@ -172,6 +244,34 @@ export function openSetupModal(isFirstTime) {
     // Reset form
     elements.setupForm.reset();
     messageEl.textContent = '';
+
+    const passwordSection = document.getElementById('password-change-section');
+    if (passwordSection) {
+        passwordSection.style.display = 'none';
+    }
+
+    // Handle avatar
+    const avatarImg = document.getElementById('setup-avatar-img');
+    const avatarInitials = document.getElementById('setup-avatar-initials');
+    const avatarRemoveBtn = document.getElementById('setup-avatar-remove');
+    currentAvatarUrl = state.currentUser ? state.currentUser.avatar_url : null;
+
+    if (avatarImg && avatarInitials) {
+        if (currentAvatarUrl) {
+            avatarImg.src = currentAvatarUrl;
+            avatarImg.style.display = 'block';
+            avatarInitials.style.display = 'none';
+            if (avatarRemoveBtn) avatarRemoveBtn.style.display = 'block';
+        } else {
+            avatarImg.src = '';
+            avatarImg.style.display = 'none';
+            avatarInitials.style.display = 'block';
+            if (avatarRemoveBtn) avatarRemoveBtn.style.display = 'none';
+
+            // Generate initials
+            avatarInitials.textContent = getInitials(state.currentUser);
+        }
+    }
 
     if (isFirstTime) {
         elements.setupCloseBtn.style.display = 'none';

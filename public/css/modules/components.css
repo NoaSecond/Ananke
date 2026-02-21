@@ -187,6 +187,13 @@ select {
     cursor: pointer;
 }
 
+select option {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    font-weight: normal;
+    padding: 10px;
+}
+
 .small-select,
 .role-select {
     padding: 0.4rem 2rem 0.4rem 0.75rem !important;

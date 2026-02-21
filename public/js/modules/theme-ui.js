@@ -47,8 +47,7 @@ export function initThemeListeners() {
 
     // Image Upload
     if (elements.bgImageUpload) {
-        elements.bgImageUpload.onchange = (e) => {
-            const file = e.target.files[0];
+        const handleFile = (file) => {
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (event) => {
@@ -58,6 +57,34 @@ export function initThemeListeners() {
                 reader.readAsDataURL(file);
             }
         };
+
+        elements.bgImageUpload.onchange = (e) => {
+            handleFile(e.target.files[0]);
+        };
+
+        const dropzone = document.getElementById('bg-upload-dropzone');
+        if (dropzone) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzone.addEventListener(eventName, () => dropzone.classList.add('drag-active'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, () => dropzone.classList.remove('drag-active'), false);
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const file = dt.files[0];
+                handleFile(file);
+            }, false);
+        }
     }
 
     // Reset

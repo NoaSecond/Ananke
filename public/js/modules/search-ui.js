@@ -16,14 +16,7 @@ export async function initSearch() {
     elements.searchAutocomplete = autocompleteList;
 
     // Fetch users for autocompletion
-    try {
-        const response = await getSimpleList();
-        if (response && response.users) {
-            users = response.users;
-        }
-    } catch (e) {
-        console.error('Failed to fetch users for search', e);
-    }
+    await refreshSearchUsers();
 
     searchInput.addEventListener('input', () => {
         handleSearch();
@@ -75,6 +68,17 @@ export async function initSearch() {
             searchInput.focus();
         }
     });
+}
+
+export async function refreshSearchUsers() {
+    try {
+        const response = await getSimpleList();
+        if (response && response.users) {
+            users = response.users;
+        }
+    } catch (e) {
+        console.error('Failed to fetch users for search', e);
+    }
 }
 
 export function handleSearch() {

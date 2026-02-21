@@ -100,3 +100,27 @@ export const ErrorHandler = {
         };
     }
 };
+
+export const getInitials = (user) => {
+    if (!user) return '?';
+
+    // Si on a un prénom et un nom
+    if (user.first_name && user.last_name) {
+        return `${user.first_name[0]}.${user.last_name[0]}`.toUpperCase();
+    }
+
+    // Si on a juste name (ex: "Noa Second")
+    if (user.name) {
+        const parts = user.name.split(' ').filter(p => p.trim() !== '');
+        if (parts.length >= 2) {
+            return `${parts[0][0]}.${parts[1][0]}`.toUpperCase();
+        }
+        return user.name[0].toUpperCase();
+    }
+
+    // En dernier recours: email ou autre
+    if (user.first_name) return user.first_name[0].toUpperCase();
+    if (user.email) return user.email[0].toUpperCase();
+
+    return '?';
+};

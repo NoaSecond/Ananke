@@ -95,7 +95,7 @@
         },
         "datePublished": "2025-01-26",
         "dateModified": "2026-02-20",
-        "version": "2.8.3",
+        "version": "2.8.4",
         "downloadUrl": "https://github.com/NoaSecond/Ananke",
         "featureList": [
             "Interactive Kanban Board",
@@ -142,13 +142,37 @@
 
     <!-- Setup / Profile Modal -->
     <div id="setup-modal" class="modal-overlay" style="z-index: 2000;">
-        <div class="modal-content" style="max-width: 500px;">
-            <button class="modal-close-btn" id="setup-close-btn" style="display:none;">&times;</button>
+        <div class="modal-content" style="width: min(95vw, 500px);">
+            <button class="modal-close-btn" id="setup-close-btn" style="display:none;">
+                <span class="material-symbols-outlined">close</span>
+            </button>
             <h2 id="setup-title">Account Setup</h2>
             <p id="setup-desc" style="margin-bottom: 1.5rem; opacity: 0.7;">Please complete your information to
                 continue.</p>
 
             <form id="setup-form">
+                <div
+                    style="display: flex; gap: 1rem; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                    <div id="setup-avatar-preview"
+                        style="width: 80px; height: 80px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 2rem; overflow: hidden; position: relative; border: 2px solid var(--primary-color);">
+                        <div id="setup-avatar-initials" style="position: absolute;">?</div>
+                        <img id="setup-avatar-img" src=""
+                            style="width: 100%; height: 100%; object-fit: cover; display: none; position: absolute;">
+                        <label for="setup-avatar-upload"
+                            style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); color: white; opacity: 0; cursor: pointer; transition: opacity 0.2s;"
+                            onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0"
+                            title="Change Avatar">
+                            <span class="material-symbols-outlined">upload</span>
+                        </label>
+                    </div>
+                    <button type="button" id="setup-avatar-remove"
+                        class="secondary-btn small-btn circular-btn danger-text" title="Remove Avatar"
+                        style="display: none; position: absolute; margin-left: 90px; margin-top: -40px; background: var(--card-bg); box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                        <span class="material-symbols-outlined" style="font-size: 1rem;">delete</span>
+                    </button>
+                </div>
+                <input type="file" id="setup-avatar-upload" accept="image/*" style="display: none;">
+
                 <div style="display: flex; gap: 1rem;">
                     <div class="form-group" style="flex:1;">
                         <label for="setup-firstname">First Name</label>
@@ -165,15 +189,21 @@
                 </div>
 
                 <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid var(--border-color);">
-                <p style="font-size: 0.9rem; margin-bottom: 1rem; font-weight: bold;">Change Password</p>
 
-                <div class="form-group">
-                    <label for="setup-password">New Password</label>
-                    <input type="password" id="setup-password" placeholder="Leave blank to keep current">
-                </div>
-                <div class="form-group">
-                    <label for="setup-password-confirm">Confirm</label>
-                    <input type="password" id="setup-password-confirm">
+                <button type="button" id="toggle-password-btn" class="secondary-btn"
+                    style="width: 100%; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">lock</span> Change Password
+                </button>
+
+                <div id="password-change-section" style="display: none;">
+                    <div class="form-group">
+                        <label for="setup-password">New Password</label>
+                        <input type="password" id="setup-password" placeholder="Leave blank to keep current">
+                    </div>
+                    <div class="form-group">
+                        <label for="setup-password-confirm">Confirm</label>
+                        <input type="password" id="setup-password-confirm">
+                    </div>
                 </div>
                 <button type="submit" class="action-btn" style="width: 100%; margin-top: 1rem;">Save</button>
             </form>
@@ -183,7 +213,7 @@
 
     <!-- User Management Modal -->
     <div id="user-management-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-content" style="width: min(95vw, 700px);">
             <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2>User Management</h2>
 
@@ -194,21 +224,24 @@
                     <div style="flex: 2; min-width: 200px;">
                         <label style="font-size: 0.8rem;">Email</label>
                         <input type="email" id="invite-email" required placeholder="email@example.com"
-                            style="margin:0;">
+                            style="margin:0; height: 44px; box-sizing: border-box;">
                     </div>
                     <div style="flex: 2; min-width: 150px;">
                         <label style="font-size: 0.8rem;">Temp Password</label>
-                        <input type="text" id="invite-password" required placeholder="Temp123" style="margin:0;">
+                        <input type="text" id="invite-password" required placeholder="Temp123"
+                            style="margin:0; height: 44px; box-sizing: border-box;">
                     </div>
                     <div style="flex: 1; min-width: 100px;">
                         <label style="font-size: 0.8rem;">Role</label>
-                        <select id="invite-role" class="role-select" data-role="reader">
+                        <select id="invite-role" class="role-select" data-role="reader"
+                            style="height: 44px !important; width: 100% !important; box-sizing: border-box; font-size: 0.85rem;">
                             <option value="reader">Reader</option>
                             <option value="editor">Editor</option>
                             <option value="admin">Admin</option>
                         </select>
                     </div>
-                    <button type="submit" class="action-btn">Create</button>
+                    <button type="submit" class="action-btn"
+                        style="height: 44px; box-sizing: border-box; flex-shrink: 0;">Create</button>
                 </form>
                 <div id="invite-message" style="margin-top:0.5rem; font-size:0.9rem;"></div>
             </div>
@@ -247,9 +280,15 @@
                     <span class="material-symbols-outlined">settings</span>
                 </button>
                 <div id="settings-menu" class="settings-menu hidden">
-                    <div class="settings-header">
-                        <strong id="user-display-name">User Name</strong>
-                        <small id="user-display-role">Role</small>
+                    <div class="settings-header" style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div id="settings-user-avatar"
+                            style="width: 36px; height: 36px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; overflow: hidden; font-weight: bold; font-size: 0.85rem; letter-spacing: -0.05em; border: 2px solid var(--primary-color);">
+                            ?
+                        </div>
+                        <div style="display: flex; flex-direction: column;">
+                            <strong id="user-display-name">User Name</strong>
+                            <small id="user-display-role">Role</small>
+                        </div>
                     </div>
                     <div class="settings-divider"></div>
                     <button id="profile-btn" class="settings-item">
@@ -348,7 +387,7 @@
             </a>
         </div>
         <div class="footer-right">
-            <span class="version-tag">v2.8.3</span>
+            <span class="version-tag">v2.8.4</span>
         </div>
     </footer>
 
@@ -540,7 +579,7 @@
 
     <!-- Background Customization Modal -->
     <div id="bg-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="width: min(95vw, 600px);">
             <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2>Customize Background</h2>
             <p style="opacity: 0.7; font-size: 0.9rem; margin-bottom: 1.5rem;">Choose a custom look for your workspace.
@@ -583,9 +622,10 @@
 
                 <div class="bg-option-section">
                     <h4>Custom Image</h4>
-                    <label for="bg-image-upload" class="action-btn secondary-btn"
-                        style="display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
-                        <span class="material-symbols-outlined">upload</span> Import Image
+                    <label for="bg-image-upload" class="media-upload-label" id="bg-upload-dropzone">
+                        <span class="material-symbols-outlined">cloud_upload</span>
+                        <span>Click or drag & drop image</span>
+                        <small style="opacity:0.6;">PNG, JPG, WebP...</small>
                     </label>
                     <input type="file" id="bg-image-upload" accept="image/*" style="display: none;">
                 </div>
@@ -599,7 +639,7 @@
     </div>
 
     <div id="workflow-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="width: min(95vw, 500px);">
             <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2>Edit Column</h2>
             <input type="hidden" id="workflow-id-input">
@@ -621,7 +661,7 @@
     </div>
 
     <div id="confirm-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <div class="modal-content" style="width: min(95vw, 450px); text-align: center;">
             <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2 id="confirm-modal-title">Confirmation</h2>
             <p id="confirm-modal-message">Are you sure?</p>
@@ -633,7 +673,7 @@
     </div>
 
     <div id="project-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="width: min(95vw, 500px);">
             <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
             <h2>Rename Project</h2>
             <label for="project-name-input">Project name</label>
