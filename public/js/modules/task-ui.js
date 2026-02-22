@@ -535,7 +535,8 @@ const renderCustomFields = (fields) => {
                 </div>
             `;
         } else {
-            valueContent = `<input type="text" class="small-input field-value" value="${field.value.replace(/"/g, '&quot;')}" placeholder="Value" style="flex-grow: 1; font-size: 0.9rem; padding: 0.4rem 0.6rem; width: 100%;">`;
+            const inputType = field.type === 'date' ? 'date' : (field.type === 'number' ? 'number' : (field.type === 'link' ? 'url' : 'text'));
+            valueContent = `<input type="${inputType}" class="small-input field-value" value="${field.value.replace(/"/g, '&quot;')}" placeholder="Value" style="flex-grow: 1; font-size: 0.9rem; padding: 0.4rem 0.6rem; width: 100%;">`;
         }
 
         fieldEl.innerHTML = `
