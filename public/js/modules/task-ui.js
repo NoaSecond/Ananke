@@ -427,7 +427,7 @@ const renderTags = (tags) => {
         tagEl.innerHTML = `
             <span class="material-symbols-outlined drag-handle" style="font-size: 14px; margin-right: 4px; color:${textColor}">drag_indicator</span>
             ${tag.name} 
-            <span class="remove-tag" data-index="${index}" style="color:${textColor}">&times;</span>
+            <span class="remove-tag" data-index="${index}" style="color:${textColor}; cursor: pointer; margin-left: 4px;">&times;</span>
         `;
         tagEl.querySelector('.remove-tag').onclick = (e) => {
             e.stopPropagation(); // Stop propagation to prevent issues
