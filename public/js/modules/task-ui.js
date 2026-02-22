@@ -191,18 +191,23 @@ export const initTaskListeners = () => {
 
     // Media Upload
     if (elements.taskForm.mediaUpload) {
-        const processFiles = (files) => {
-            Array.from(files).forEach(file => {
-                const type = file.type.startsWith('image/') ? 'image' : (file.type.startsWith('video/') ? 'video' : null);
-                if (!type) return;
+        const processFiles = async (files) => {
+            const validFiles = Array.from(files).filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'));
+            if (validFiles.length === 0) return;
 
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    tempMedia.push({ type, data: event.target.result });
+            try {
+                // Show loading state or wait (could add a spinner here)
+                const response = await API.uploadFiles(validFiles);
+                if (response.urls) {
+                    response.urls.forEach(url => {
+                        const type = url.match(/\.(mp4|webm|ogg)$/i) ? 'video' : 'image';
+                        tempMedia.push({ type, data: url });
+                    });
                     renderMediaGallery(tempMedia, elements.taskForm.mediaGallery, true);
-                };
-                reader.readAsDataURL(file);
-            });
+                }
+            } catch (err) {
+                Logger.error('Media upload failed');
+            }
         };
 
         elements.taskForm.mediaUpload.addEventListener('change', (e) => {

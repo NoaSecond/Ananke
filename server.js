@@ -10,6 +10,23 @@ const jwt = require('jsonwebtoken');
 const morgan = require('morgan');
 const logger = require('./src/utils/logger');
 const { describeChanges } = require('./src/utils/boardDiff');
+const multer = require('multer');
+
+const fs = require('fs');
+if (!fs.existsSync(path.join(__dirname, 'public', 'uploads'))) {
+    fs.mkdirSync(path.join(__dirname, 'public', 'uploads'), { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, path.join(__dirname, 'public', 'uploads'));
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + '-' + file.originalname);
+    }
+});
+const upload = multer({ storage: storage });
 
 const app = express();
 const server = http.createServer(app);
@@ -49,7 +66,19 @@ app.get('/api/board', authenticateToken, (req, res) => {
     });
 });
 
-const fs = require('fs');
+// File Upload API
+app.post('/api/upload', authenticateToken, upload.array('files', 10), (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No files uploaded.' });
+        }
+        const fileUrls = req.files.map(file => `/uploads/${file.filename}`);
+        res.json({ urls: fileUrls });
+    } catch (err) {
+        logger.error(`Upload error: ${err.message}`);
+        res.status(500).json({ error: 'Failed to upload files.' });
+    }
+});
 
 app.get('/api/version', async (req, res) => {
     try {

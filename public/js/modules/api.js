@@ -68,3 +68,16 @@ export async function getBoard() {
     if (res.ok) return res.json();
     throw new Error('Failed to fetch board');
 }
+
+export async function uploadFiles(files) {
+    const formData = new FormData();
+    for (const file of files) {
+        formData.append('files', file);
+    }
+    const res = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        body: formData
+    });
+    if (!res.ok) throw new Error('Upload failed');
+    return res.json();
+}
