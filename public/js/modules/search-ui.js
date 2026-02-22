@@ -175,7 +175,14 @@ function handleAutocomplete() {
         const query = tagMatch[1].toLowerCase();
         const availableTags = state.boardData.tags || [];
         const filteredTags = availableTags.filter(t => t.name.toLowerCase().includes(query));
-        showAutocomplete(filteredTags.map(t => ({ type: 'Tag', name: t.name })), tagMatch[0], tagMatch.index);
+        const tagsWithOptions = filteredTags.map(t => {
+            let count = 0;
+            (state.boardData.workflows || []).forEach(w => (w.tasks || []).forEach(task => {
+                if ((task.tags || []).some(taskTag => taskTag.name === t.name)) count++;
+            }));
+            return { type: 'Tag', name: t.name, count };
+        });
+        showAutocomplete(tagsWithOptions, tagMatch[0], tagMatch.index);
     } else if (personMatch) {
         const query = personMatch[1].toLowerCase();
         const filteredUsers = users.filter(u =>
@@ -184,7 +191,15 @@ function handleAutocomplete() {
             (u.lastname && u.lastname.toLowerCase().includes(query)) ||
             (u.email && u.email.toLowerCase().includes(query))
         );
-        showAutocomplete(filteredUsers.map(u => ({ type: 'Person', name: u.name || `${u.firstname} ${u.lastname}` })), personMatch[0], personMatch.index);
+        const personsWithOptions = filteredUsers.map(u => {
+            const personName = u.name || `${u.firstname} ${u.lastname}`;
+            let count = 0;
+            (state.boardData.workflows || []).forEach(w => (w.tasks || []).forEach(task => {
+                if ((task.assignees || []).some(a => a.name === personName)) count++;
+            }));
+            return { type: 'Person', name: personName, count };
+        });
+        showAutocomplete(personsWithOptions, personMatch[0], personMatch.index);
     } else {
         closeAutocomplete();
     }
@@ -219,8 +234,13 @@ function showAutocomplete(options, matchText, matchIndex) {
         const item = document.createElement('div');
         item.className = 'autocomplete-item';
         item.innerHTML = `
-            <span class="item-type">${opt.type}</span>
-            <span class="item-value">${opt.name}</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div>
+                    <span class="item-type">${opt.type}</span>
+                    <span class="item-value">${opt.name}</span>
+                </div>
+                ${opt.count !== undefined ? `<span style="opacity: 0.6; font-size: 0.8rem;">${opt.count} card${opt.count !== 1 ? 's' : ''}</span>` : ''}
+            </div>
         `;
         item.onclick = () => {
             applyAutocomplete(opt.type.toLowerCase(), opt.name, matchText, matchIndex);
