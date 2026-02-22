@@ -355,7 +355,8 @@ export const initBoardListeners = () => {
                 const newTask = JSON.parse(JSON.stringify(task));
                 newTask.id = Date.now();
                 newTask.title = `${task.title} (Copy)`;
-                workflow.tasks.push(newTask);
+                const taskIndex = workflow.tasks.indexOf(task);
+                workflow.tasks.splice(taskIndex + 1, 0, newTask);
                 saveData();
                 renderBoard();
                 return;
@@ -392,7 +393,7 @@ export const initBoardListeners = () => {
                 const workflow = state.boardData.workflows.find(w => w.id == elements.addModalWorkflowId.value);
                 if (workflow) {
                     const newTask = { id: Date.now(), title, description: 'Click to edit...', color: '#6b7280' };
-                    workflow.tasks.push(newTask);
+                    workflow.tasks.unshift(newTask);
                     trackEvent('create_task', 'Task', title);
                 }
             }

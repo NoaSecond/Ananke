@@ -107,7 +107,8 @@ export const initTaskListeners = () => {
                 const newTask = JSON.parse(JSON.stringify(task));
                 newTask.id = Date.now();
                 newTask.title = `${task.title} (Copy)`;
-                workflow.tasks.push(newTask);
+                const taskIndex = workflow.tasks.findIndex(t => t.id == taskId);
+                workflow.tasks.splice(taskIndex + 1, 0, newTask);
                 saveData();
                 renderBoard();
                 closeModal(elements.taskModal);
