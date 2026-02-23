@@ -10,6 +10,23 @@ const jwt = require('jsonwebtoken');
 const morgan = require('morgan');
 const logger = require('./src/utils/logger');
 const { describeChanges } = require('./src/utils/boardDiff');
+const multer = require('multer');
+
+const fs = require('fs');
+if (!fs.existsSync(path.join(__dirname, 'public', 'uploads'))) {
+    fs.mkdirSync(path.join(__dirname, 'public', 'uploads'), { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, path.join(__dirname, 'public', 'uploads'));
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + '-' + file.originalname);
+    }
+});
+const upload = multer({ storage: storage });
 
 const app = express();
 const server = http.createServer(app);
@@ -49,7 +66,38 @@ app.get('/api/board', authenticateToken, (req, res) => {
     });
 });
 
-const fs = require('fs');
+// File Upload API
+app.post('/api/upload', authenticateToken, upload.array('files', 10), (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No files uploaded.' });
+        }
+        const fileUrls = req.files.map(file => `/uploads/${file.filename}`);
+        res.json({ urls: fileUrls });
+    } catch (err) {
+        logger.error(`Upload error: ${err.message}`);
+        res.status(500).json({ error: 'Failed to upload files.' });
+    }
+});
+
+app.delete('/api/media', authenticateToken, (req, res) => {
+    try {
+        const { url } = req.body;
+        if (!url || !url.startsWith('/uploads/')) return res.status(400).json({ error: 'Invalid URL' });
+
+        const filename = path.basename(url);
+        const filepath = path.join(__dirname, 'public', 'uploads', filename);
+
+        if (fs.existsSync(filepath)) {
+            fs.unlinkSync(filepath);
+            logger.info(`Media deleted explicitly: ${filename}`);
+        }
+        res.json({ success: true });
+    } catch (err) {
+        logger.error(`Delete media error: ${err.message}`);
+        res.status(500).json({ error: 'Failed to delete media.' });
+    }
+});
 
 app.get('/api/version', async (req, res) => {
     try {
@@ -167,8 +215,58 @@ io.on('connection', (socket) => {
                     logger.info(`Board updated by ${socket.user.name} (minor changes)`);
                 }
 
-                // Broadcast to all clients
-                io.emit('boardUpdate', newBoardData);
+            });
+        });
+    });
+
+    socket.on('updateTask', ({ task, workflowId }) => {
+        const canEdit = ['editor', 'admin', 'owner'].includes(socket.user.role);
+        if (!canEdit) {
+            logger.warn(`Unauthorized task edit attempt: User ${socket.user.name}`);
+            return;
+        }
+
+        db.get("SELECT data FROM board_store WHERE id = 1", (err, row) => {
+            if (err) {
+                logger.error(`Error fetching board for task update: ${err.message}`);
+                return;
+            }
+
+            const boardData = row ? JSON.parse(row.data) : { workflows: [] };
+
+            if (boardData.workflows) {
+                let oldWfId = null;
+                let oldIndex = -1;
+                // Remove task from previous workflow
+                for (const wf of boardData.workflows) {
+                    const idx = wf.tasks.findIndex(t => t.id == task.id);
+                    if (idx !== -1) {
+                        oldWfId = wf.id;
+                        oldIndex = idx;
+                        wf.tasks.splice(idx, 1);
+                        break;
+                    }
+                }
+
+                // Add task to target workflow
+                const targetWf = boardData.workflows.find(w => w.id == workflowId);
+                if (targetWf) {
+                    if (oldWfId == workflowId && oldIndex !== -1) {
+                        targetWf.tasks.splice(oldIndex, 0, task);
+                    } else {
+                        targetWf.tasks.push(task);
+                    }
+                }
+            }
+
+            const dataStr = JSON.stringify(boardData);
+            db.run("UPDATE board_store SET data = ? WHERE id = 1", [dataStr], (err) => {
+                if (err) {
+                    logger.error(`Error saving board to DB after task update: ${err.message}`);
+                    return;
+                }
+                logger.info(`Task ${task.title} updated by ${socket.user.name}`);
+                io.emit('boardUpdate', boardData);
             });
         });
     });

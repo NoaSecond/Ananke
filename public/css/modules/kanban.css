@@ -266,16 +266,17 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 1rem;
-    box-shadow: 0 4px 12px var(--shadow-color);
-    margin-top: 5px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     position: absolute;
-    top: 100%;
-    left: 0;
+    top: 50%;
+    right: 0;
+    left: auto;
+    transform: translateY(-50%);
     z-index: 100;
-    width: 250px;
+    width: 320px;
 }
 
 .tag-picker.hidden {
@@ -291,7 +292,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    max-height: 100px;
+    max-height: 200px;
     overflow-y: auto;
 }
 
@@ -506,11 +507,12 @@ body.light-mode .assignee-item:hover {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: transparent;
     display: flex;
-    gap: 12px;
-    align-items: center;
-    justify-content: center;
+    gap: 8px;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 8px;
     opacity: 0;
     transition: opacity 0.2s;
     z-index: 10;
@@ -520,7 +522,7 @@ body.light-mode .assignee-item:hover {
 .media-item:hover .media-actions-overlay,
 .media-view-item:hover .media-actions-overlay {
     opacity: 1;
-    pointer-events: auto;
+    pointer-events: none;
 }
 
 .media-btn {

@@ -6,6 +6,7 @@ import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
 import { handleSearch } from './search-ui.js';
 import { getInitials, getContrastYIQ } from './utils.js';
+import * as API from './api.js';
 
 export const trackEvent = (action, category = 'Kanban', label = null, value = null) => {
     if (typeof gtag !== 'undefined') {
@@ -19,6 +20,12 @@ export const saveData = ErrorHandler.wrapSync(() => {
         state.socket.emit('updateBoard', state.boardData);
     }
 }, 'Data saving');
+
+export const saveTaskOnly = ErrorHandler.wrapSync((task, workflowId) => {
+    if (state.socket) {
+        state.socket.emit('updateTask', { task, workflowId });
+    }
+}, 'Task saving');
 
 const updateProjectTitle = ErrorHandler.wrapSync(() => {
     if (state.boardData.projectName) {
@@ -268,7 +275,9 @@ const openAddModal = (type, workflowId = null) => {
     elements.addModalInput.placeholder = type === 'workflow' ? 'New column name' : 'New task title';
     if (workflowId) elements.addModalWorkflowId.value = workflowId;
     openModal(elements.addModal);
-    elements.addModalInput.focus();
+    setTimeout(() => {
+        elements.addModalInput.focus();
+    }, 100);
 };
 
 export const initBoardListeners = () => {
@@ -345,6 +354,11 @@ export const initBoardListeners = () => {
 
             if (deleteTaskBtn) {
                 showConfirm('Delete task?', () => {
+                    if (task.media && task.media.length > 0) {
+                        task.media.forEach(m => {
+                            if (m.data) API.deleteMedia(m.data).catch(e => Logger.error('Failed to delete media: ' + e));
+                        });
+                    }
                     workflow.tasks = workflow.tasks.filter(t => t.id != task.id);
                     saveData();
                     renderBoard();
@@ -355,7 +369,8 @@ export const initBoardListeners = () => {
                 const newTask = JSON.parse(JSON.stringify(task));
                 newTask.id = Date.now();
                 newTask.title = `${task.title} (Copy)`;
-                workflow.tasks.push(newTask);
+                const taskIndex = workflow.tasks.indexOf(task);
+                workflow.tasks.splice(taskIndex + 1, 0, newTask);
                 saveData();
                 renderBoard();
                 return;
@@ -391,8 +406,15 @@ export const initBoardListeners = () => {
             } else {
                 const workflow = state.boardData.workflows.find(w => w.id == elements.addModalWorkflowId.value);
                 if (workflow) {
-                    const newTask = { id: Date.now(), title, description: 'Click to edit...', color: '#6b7280' };
-                    workflow.tasks.push(newTask);
+                    const today = new Date().toISOString().split('T')[0];
+                    const newTask = {
+                        id: Date.now(),
+                        title,
+                        description: 'Click to edit...',
+                        color: '#6b7280',
+                        customFields: [{ name: 'Created at', type: 'date', value: today, showOnCard: true }]
+                    };
+                    workflow.tasks.unshift(newTask);
                     trackEvent('create_task', 'Task', title);
                 }
             }

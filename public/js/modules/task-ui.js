@@ -2,7 +2,7 @@ import { elements } from './dom.js';
 import * as API from './api.js';
 import { state } from './state.js';
 import { openModal, closeModal, showConfirm } from './modals.js';
-import { renderBoard, saveData } from './board-ui.js';
+import { renderBoard, saveData, saveTaskOnly } from './board-ui.js';
 import { Logger, getInitials, getContrastYIQ } from './utils.js';
 import { trackEvent } from './board-ui.js';
 
@@ -75,10 +75,12 @@ export const initTaskListeners = () => {
                     workflow.tasks.splice(tIndex, 1);
                     targetWorkflow.tasks.push(task);
                 }
+
+                const finalWorkflowId = (workflow.id != newWorkflowId && targetWorkflow) ? targetWorkflow.id : workflow.id;
+                saveTaskOnly(task, finalWorkflowId);
                 break;
             }
         }
-        saveData();
         renderBoard();
         closeModal(elements.taskModal);
     });
@@ -89,6 +91,12 @@ export const initTaskListeners = () => {
             for (const workflow of state.boardData.workflows) {
                 const tIndex = workflow.tasks.findIndex(t => t.id == taskId);
                 if (tIndex !== -1) {
+                    const task = workflow.tasks[tIndex];
+                    if (task.media && task.media.length > 0) {
+                        task.media.forEach(m => {
+                            if (m.data) API.deleteMedia(m.data).catch(e => Logger.error('Failed to delete media: ' + e));
+                        });
+                    }
                     workflow.tasks.splice(tIndex, 1);
                     break;
                 }
@@ -107,7 +115,8 @@ export const initTaskListeners = () => {
                 const newTask = JSON.parse(JSON.stringify(task));
                 newTask.id = Date.now();
                 newTask.title = `${task.title} (Copy)`;
-                workflow.tasks.push(newTask);
+                const taskIndex = workflow.tasks.findIndex(t => t.id == taskId);
+                workflow.tasks.splice(taskIndex + 1, 0, newTask);
                 saveData();
                 renderBoard();
                 closeModal(elements.taskModal);
@@ -147,6 +156,21 @@ export const initTaskListeners = () => {
         }
     });
 
+    if (elements.taskForm.tagSearchInput) {
+        elements.taskForm.tagSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const tagOptions = elements.taskForm.availableTagsList.querySelectorAll('.tag-option');
+            tagOptions.forEach(opt => {
+                const tagName = opt.textContent.toLowerCase();
+                if (tagName.includes(searchTerm)) {
+                    opt.style.display = 'flex';
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+        });
+    }
+
     // Close tag picker when clicking outside
     document.addEventListener('click', (e) => {
         if (elements.taskForm.tagPicker && !elements.taskForm.tagPicker.classList.contains('hidden') &&
@@ -175,7 +199,29 @@ export const initTaskListeners = () => {
         e.stopPropagation();
         elements.assigneePicker.classList.remove('hidden');
         renderAssigneePickerList();
+
+        if (elements.assigneeSearchInput) {
+            elements.assigneeSearchInput.value = '';
+            setTimeout(() => elements.assigneeSearchInput.focus(), 50);
+        }
     });
+
+    if (elements.assigneeSearchInput) {
+        elements.assigneeSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const assigneeOptions = elements.assigneeListEl.querySelectorAll('.assignee-item');
+            assigneeOptions.forEach(opt => {
+                // Get the name which usually is the second child span
+                const span = opt.querySelector('span');
+                const name = span ? span.textContent.toLowerCase() : '';
+                if (name.includes(searchTerm)) {
+                    opt.style.display = 'flex';
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+        });
+    }
 
     // View Task Listeners
     elements.viewTaskDisplay.editBtn.addEventListener('click', () => {
@@ -190,18 +236,23 @@ export const initTaskListeners = () => {
 
     // Media Upload
     if (elements.taskForm.mediaUpload) {
-        const processFiles = (files) => {
-            Array.from(files).forEach(file => {
-                const type = file.type.startsWith('image/') ? 'image' : (file.type.startsWith('video/') ? 'video' : null);
-                if (!type) return;
+        const processFiles = async (files) => {
+            const validFiles = Array.from(files).filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'));
+            if (validFiles.length === 0) return;
 
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    tempMedia.push({ type, data: event.target.result });
+            try {
+                // Show loading state or wait (could add a spinner here)
+                const response = await API.uploadFiles(validFiles);
+                if (response.urls) {
+                    response.urls.forEach(url => {
+                        const type = url.match(/\.(mp4|webm|ogg)$/i) ? 'video' : 'image';
+                        tempMedia.push({ type, data: url });
+                    });
                     renderMediaGallery(tempMedia, elements.taskForm.mediaGallery, true);
-                };
-                reader.readAsDataURL(file);
-            });
+                }
+            } catch (err) {
+                Logger.error('Media upload failed');
+            }
         };
 
         elements.taskForm.mediaUpload.addEventListener('change', (e) => {
@@ -253,7 +304,7 @@ export const initTaskListeners = () => {
                     });
                     elements.viewTaskDisplay.commentInput.value = '';
                     renderComments(taskToUpdate);
-                    saveData();
+                    saveTaskOnly(taskToUpdate, workflow.id);
                     // Update the reference we hold to the new one
                     currentViewingTask = taskToUpdate;
                 }
@@ -287,7 +338,7 @@ export const initTaskListeners = () => {
                             if (items[idx]) {
                                 items[idx].checked = isChecked;
                                 field.value = JSON.stringify(items);
-                                saveData();
+                                saveTaskOnly(taskToUpdate, workflow.id);
                                 renderBoard();
                                 openViewTaskModal(taskToUpdate, workflow);
                             }
@@ -427,7 +478,7 @@ const renderTags = (tags) => {
         tagEl.innerHTML = `
             <span class="material-symbols-outlined drag-handle" style="font-size: 14px; margin-right: 4px; color:${textColor}">drag_indicator</span>
             ${tag.name} 
-            <span class="remove-tag" data-index="${index}" style="color:${textColor}">&times;</span>
+            <span class="remove-tag" data-index="${index}" style="color:${textColor}; cursor: pointer; margin-left: 4px;">&times;</span>
         `;
         tagEl.querySelector('.remove-tag').onclick = (e) => {
             e.stopPropagation(); // Stop propagation to prevent issues
@@ -460,6 +511,10 @@ const toggleTagPicker = (show) => {
     if (show) {
         elements.taskForm.tagPicker.classList.remove('hidden');
         renderAvailableTags();
+        if (elements.taskForm.tagSearchInput) {
+            elements.taskForm.tagSearchInput.value = '';
+            setTimeout(() => elements.taskForm.tagSearchInput.focus(), 50);
+        }
     } else {
         elements.taskForm.tagPicker.classList.add('hidden');
     }
@@ -535,7 +590,8 @@ const renderCustomFields = (fields) => {
                 </div>
             `;
         } else {
-            valueContent = `<input type="text" class="small-input field-value" value="${field.value.replace(/"/g, '&quot;')}" placeholder="Value" style="flex-grow: 1; font-size: 0.9rem; padding: 0.4rem 0.6rem; width: 100%;">`;
+            const inputType = field.type === 'date' ? 'date' : (field.type === 'number' ? 'number' : (field.type === 'link' ? 'url' : 'text'));
+            valueContent = `<input type="${inputType}" class="small-input field-value" value="${field.value.replace(/"/g, '&quot;')}" placeholder="Value" style="flex-grow: 1; font-size: 0.9rem; padding: 0.4rem 0.6rem; width: 100%;">`;
         }
 
         fieldEl.innerHTML = `
@@ -726,7 +782,10 @@ const renderMediaGallery = (media, container, isEditable = false) => {
         if (isEditable) {
             div.querySelector('.delete-btn').onclick = (e) => {
                 e.stopPropagation();
-                tempMedia.splice(index, 1);
+                const removedItem = tempMedia.splice(index, 1)[0];
+                if (removedItem && removedItem.data) {
+                    API.deleteMedia(removedItem.data).catch(err => Logger.error('Failed to delete media on server: ' + err));
+                }
                 renderMediaGallery(tempMedia, container, true);
             };
         } else {

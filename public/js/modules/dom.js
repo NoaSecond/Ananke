@@ -34,6 +34,7 @@ export const elements = {
         showAssignees: document.getElementById('task-show-assignees-input'),
         showTagPickerBtn: document.getElementById('show-tag-picker-btn'),
         tagPicker: document.getElementById('tag-picker'),
+        tagSearchInput: document.getElementById('tag-search-input'),
         availableTagsList: document.getElementById('available-tags-list'),
         customFieldsContainer: document.getElementById('task-custom-fields-container'),
         addCustomFieldBtn: document.getElementById('add-custom-field-btn'),
@@ -93,6 +94,7 @@ export const elements = {
 
     // Assignees
     assigneePicker: document.getElementById('assignee-picker'),
+    assigneeSearchInput: document.getElementById('assignee-search-input'),
     addAssigneeBtn: document.getElementById('add-assignee-btn'),
     assigneeListEl: document.getElementById('assignee-list'),
     taskAssigneesContainer: document.getElementById('task-assignees-container'),
