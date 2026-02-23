@@ -165,13 +165,15 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                 taskCard.innerHTML = `
                     ${taskActionsHtml}
                     <h4>${task.title}</h4>
+                    ${(task.showTags !== false && task.tags && task.tags.length > 0) ? `
                     <div class="task-tags-display">
-                        ${task.showTags !== false ? (task.tags || []).map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color}; color: ${getContrastYIQ(tag.color || '#3b82f6')};" title="${tag.name}">${tag.name}</span>`).join('') : ''}
-                    </div>
+                        ${task.tags.map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color}; color: ${getContrastYIQ(tag.color || '#3b82f6')};" title="${tag.name}">${tag.name}</span>`).join('')}
+                    </div>` : ''}
+                    ${((task.showAssigneesOnCard !== false && assigneesHtml) || commentsHtml) ? `
                     <div class="task-card-footer">
-                        ${task.showAssigneesOnCard !== false ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
+                        ${(task.showAssigneesOnCard !== false && assigneesHtml) ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
                         ${commentsHtml}
-                    </div>
+                    </div>` : ''}
                     ${(task.showDescriptionOnCard !== false && task.description) ? `<div class="task-card-description">${marked.parse(task.description)}</div>` : ''}
                     ${(task.customFields || []).filter(f => f.showOnCard).map(f => {
                     let val = f.value;
@@ -198,6 +200,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
     generateDynamicKeywords();
     updateProjectTitle();
     handleSearch();
+
 }, 'Board rendering');
 
 export const initDragAndDrop = () => {
