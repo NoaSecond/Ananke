@@ -80,6 +80,25 @@ app.post('/api/upload', authenticateToken, upload.array('files', 10), (req, res)
     }
 });
 
+app.delete('/api/media', authenticateToken, (req, res) => {
+    try {
+        const { url } = req.body;
+        if (!url || !url.startsWith('/uploads/')) return res.status(400).json({ error: 'Invalid URL' });
+
+        const filename = path.basename(url);
+        const filepath = path.join(__dirname, 'public', 'uploads', filename);
+
+        if (fs.existsSync(filepath)) {
+            fs.unlinkSync(filepath);
+            logger.info(`Media deleted explicitly: ${filename}`);
+        }
+        res.json({ success: true });
+    } catch (err) {
+        logger.error(`Delete media error: ${err.message}`);
+        res.status(500).json({ error: 'Failed to delete media.' });
+    }
+});
+
 app.get('/api/version', async (req, res) => {
     try {
         const pkgData = await fs.promises.readFile(path.join(__dirname, 'package.json'), 'utf8');

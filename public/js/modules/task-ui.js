@@ -91,6 +91,12 @@ export const initTaskListeners = () => {
             for (const workflow of state.boardData.workflows) {
                 const tIndex = workflow.tasks.findIndex(t => t.id == taskId);
                 if (tIndex !== -1) {
+                    const task = workflow.tasks[tIndex];
+                    if (task.media && task.media.length > 0) {
+                        task.media.forEach(m => {
+                            if (m.data) API.deleteMedia(m.data).catch(e => Logger.error('Failed to delete media: ' + e));
+                        });
+                    }
                     workflow.tasks.splice(tIndex, 1);
                     break;
                 }
@@ -735,7 +741,10 @@ const renderMediaGallery = (media, container, isEditable = false) => {
         if (isEditable) {
             div.querySelector('.delete-btn').onclick = (e) => {
                 e.stopPropagation();
-                tempMedia.splice(index, 1);
+                const removedItem = tempMedia.splice(index, 1)[0];
+                if (removedItem && removedItem.data) {
+                    API.deleteMedia(removedItem.data).catch(err => Logger.error('Failed to delete media on server: ' + err));
+                }
                 renderMediaGallery(tempMedia, container, true);
             };
         } else {

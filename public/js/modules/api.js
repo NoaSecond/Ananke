@@ -81,3 +81,13 @@ export async function uploadFiles(files) {
     if (!res.ok) throw new Error('Upload failed');
     return res.json();
 }
+
+export async function deleteMedia(url) {
+    const res = await fetch(`${API_URL}/media`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+    });
+    if (!res.ok) throw new Error('Failed to delete media');
+    return res.json();
+}

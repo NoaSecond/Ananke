@@ -6,6 +6,7 @@ import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
 import { handleSearch } from './search-ui.js';
 import { getInitials, getContrastYIQ } from './utils.js';
+import * as API from './api.js';
 
 export const trackEvent = (action, category = 'Kanban', label = null, value = null) => {
     if (typeof gtag !== 'undefined') {
@@ -351,6 +352,11 @@ export const initBoardListeners = () => {
 
             if (deleteTaskBtn) {
                 showConfirm('Delete task?', () => {
+                    if (task.media && task.media.length > 0) {
+                        task.media.forEach(m => {
+                            if (m.data) API.deleteMedia(m.data).catch(e => Logger.error('Failed to delete media: ' + e));
+                        });
+                    }
                     workflow.tasks = workflow.tasks.filter(t => t.id != task.id);
                     saveData();
                     renderBoard();
