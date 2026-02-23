@@ -2,7 +2,7 @@ import { elements } from './dom.js';
 import * as API from './api.js';
 import { state } from './state.js';
 import { openModal, closeModal, showConfirm } from './modals.js';
-import { renderBoard, saveData } from './board-ui.js';
+import { renderBoard, saveData, saveTaskOnly } from './board-ui.js';
 import { Logger, getInitials, getContrastYIQ } from './utils.js';
 import { trackEvent } from './board-ui.js';
 
@@ -75,10 +75,12 @@ export const initTaskListeners = () => {
                     workflow.tasks.splice(tIndex, 1);
                     targetWorkflow.tasks.push(task);
                 }
+
+                const finalWorkflowId = (workflow.id != newWorkflowId && targetWorkflow) ? targetWorkflow.id : workflow.id;
+                saveTaskOnly(task, finalWorkflowId);
                 break;
             }
         }
-        saveData();
         renderBoard();
         closeModal(elements.taskModal);
     });
@@ -259,7 +261,7 @@ export const initTaskListeners = () => {
                     });
                     elements.viewTaskDisplay.commentInput.value = '';
                     renderComments(taskToUpdate);
-                    saveData();
+                    saveTaskOnly(taskToUpdate, workflow.id);
                     // Update the reference we hold to the new one
                     currentViewingTask = taskToUpdate;
                 }
@@ -293,7 +295,7 @@ export const initTaskListeners = () => {
                             if (items[idx]) {
                                 items[idx].checked = isChecked;
                                 field.value = JSON.stringify(items);
-                                saveData();
+                                saveTaskOnly(taskToUpdate, workflow.id);
                                 renderBoard();
                                 openViewTaskModal(taskToUpdate, workflow);
                             }

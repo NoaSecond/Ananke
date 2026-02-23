@@ -20,6 +20,12 @@ export const saveData = ErrorHandler.wrapSync(() => {
     }
 }, 'Data saving');
 
+export const saveTaskOnly = ErrorHandler.wrapSync((task, workflowId) => {
+    if (state.socket) {
+        state.socket.emit('updateTask', { task, workflowId });
+    }
+}, 'Task saving');
+
 const updateProjectTitle = ErrorHandler.wrapSync(() => {
     if (state.boardData.projectName) {
         elements.projectNameDisplay.textContent = state.boardData.projectName;

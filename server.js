@@ -196,8 +196,58 @@ io.on('connection', (socket) => {
                     logger.info(`Board updated by ${socket.user.name} (minor changes)`);
                 }
 
-                // Broadcast to all clients
-                io.emit('boardUpdate', newBoardData);
+            });
+        });
+    });
+
+    socket.on('updateTask', ({ task, workflowId }) => {
+        const canEdit = ['editor', 'admin', 'owner'].includes(socket.user.role);
+        if (!canEdit) {
+            logger.warn(`Unauthorized task edit attempt: User ${socket.user.name}`);
+            return;
+        }
+
+        db.get("SELECT data FROM board_store WHERE id = 1", (err, row) => {
+            if (err) {
+                logger.error(`Error fetching board for task update: ${err.message}`);
+                return;
+            }
+
+            const boardData = row ? JSON.parse(row.data) : { workflows: [] };
+
+            if (boardData.workflows) {
+                let oldWfId = null;
+                let oldIndex = -1;
+                // Remove task from previous workflow
+                for (const wf of boardData.workflows) {
+                    const idx = wf.tasks.findIndex(t => t.id == task.id);
+                    if (idx !== -1) {
+                        oldWfId = wf.id;
+                        oldIndex = idx;
+                        wf.tasks.splice(idx, 1);
+                        break;
+                    }
+                }
+
+                // Add task to target workflow
+                const targetWf = boardData.workflows.find(w => w.id == workflowId);
+                if (targetWf) {
+                    if (oldWfId == workflowId && oldIndex !== -1) {
+                        targetWf.tasks.splice(oldIndex, 0, task);
+                    } else {
+                        targetWf.tasks.push(task);
+                    }
+                }
+            }
+
+            const dataStr = JSON.stringify(boardData);
+            db.run("UPDATE board_store SET data = ? WHERE id = 1", [dataStr], (err) => {
+                if (err) {
+                    logger.error(`Error saving board to DB after task update: ${err.message}`);
+                    return;
+                }
+                logger.info(`Task ${task.title} updated by ${socket.user.name}`);
+                io.emit('boardUpdate', boardData);
             });
         });
     });
