@@ -127,9 +127,25 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
         params.push(hash);
     }
 
+    let avatarUrlToSave = avatar_url;
+    if (avatar_url && avatar_url.startsWith('data:image')) {
+        const matches = avatar_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+            const ext = matches[1].split('/')[1];
+            const fs = require('fs');
+            const path = require('path');
+            const personPath = path.join(__dirname, '..', '..', 'public', 'uploads', 'Person');
+            if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
+            const personName = `${firstName}_${lastName}`.replace(/[^a-z0-9]/gi, '_');
+            const fileName = `${personName}.${ext}`;
+            fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
+            avatarUrlToSave = `/uploads/Person/${fileName}`;
+        }
+    }
+
     if (avatar_url !== undefined) {
         query += ", avatar_url = ?";
-        params.push(avatar_url);
+        params.push(avatarUrlToSave);
     }
 
     query += " WHERE id = ?";
