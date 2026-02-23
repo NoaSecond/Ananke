@@ -685,7 +685,7 @@ const renderTaskAssignees = () => {
             <span class="material-symbols-outlined drag-handle" style="font-size: 14px; margin-right: 4px; opacity: 0.5; cursor: grab;">drag_indicator</span>
             ${avatarUrl ? `<img src="${avatarUrl}" class="assignee-avatar-small" style="object-fit: cover;">` : `<div class="assignee-avatar-small">${getInitials(currentUserObj)}</div>`}
             <span>${currentUserObj.name}</span>
-            <span class="remove-assignee">&times;</span>
+            <span class="remove-assignee" style="cursor: pointer; opacity: 0.7; margin-left: 4px;">&times;</span>
         `;
         el.querySelector('.remove-assignee').onclick = () => {
             tempAssignees.splice(index, 1);
