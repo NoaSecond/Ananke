@@ -435,12 +435,26 @@ export const initBoardListeners = () => {
             elements.settingsMenu.classList.add('hidden');
             if (!state.boardData) return;
             try {
-                const dataStr = JSON.stringify(state.boardData, null, 2);
+                const exportData = JSON.parse(JSON.stringify(state.boardData));
+
+                // Remove any residual base64 data to maximize performance
+                const removeBase64 = (obj) => {
+                    for (let key in obj) {
+                        if (typeof obj[key] === 'string' && obj[key].match(/^data:([A-Za-z-+\/]+);base64,/)) {
+                            obj[key] = ''; // clear base64 content
+                        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                            removeBase64(obj[key]);
+                        }
+                    }
+                };
+                removeBase64(exportData);
+
+                const dataStr = JSON.stringify(exportData, null, 2);
                 const blob = new Blob([dataStr], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${state.boardData.projectName || 'ananke-project'}-${new Date().toISOString().slice(0, 10)}.kanban`;
+                a.download = `${exportData.projectName || 'ananke-project'}-${new Date().toISOString().slice(0, 10)}.kanban`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);

@@ -6,6 +6,8 @@ import { renderBoard } from './board-ui.js';
 import { refreshSearchUsers } from './search-ui.js';
 
 let currentAvatarUrl = null;
+let oldAvatarUrl = null;
+let sessionAvatarUploads = [];
 
 export function initAuth(initSocketCallback) {
     checkAuth(initSocketCallback);
@@ -41,6 +43,10 @@ export function initAuth(initSocketCallback) {
     // Setup Modal Close Button
     if (elements.setupCloseBtn) {
         elements.setupCloseBtn.onclick = () => {
+            sessionAvatarUploads.forEach(url => {
+                API.deleteMedia(url).catch(e => console.error(e));
+            });
+            sessionAvatarUploads = [];
             elements.setupModal.classList.remove('visible');
             currentAvatarUrl = null; // reset
         };
@@ -53,18 +59,22 @@ export function initAuth(initSocketCallback) {
     const avatarRemoveBtn = document.getElementById('setup-avatar-remove');
 
     if (avatarUploadInput) {
-        avatarUploadInput.addEventListener('change', (e) => {
+        avatarUploadInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    currentAvatarUrl = event.target.result;
-                    avatarImg.src = currentAvatarUrl;
-                    avatarImg.style.display = 'block';
-                    avatarInitials.style.display = 'none';
-                    if (avatarRemoveBtn) avatarRemoveBtn.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
+                try {
+                    const res = await API.uploadFiles([file]);
+                    if (res.urls && res.urls.length > 0) {
+                        sessionAvatarUploads.push(res.urls[0]);
+                        currentAvatarUrl = res.urls[0];
+                        avatarImg.src = currentAvatarUrl;
+                        avatarImg.style.display = 'block';
+                        avatarInitials.style.display = 'none';
+                        if (avatarRemoveBtn) avatarRemoveBtn.style.display = 'block';
+                    }
+                } catch (err) {
+                    Logger.error('Failed to upload avatar', err);
+                }
             }
         });
     }
@@ -96,6 +106,16 @@ export function initAuth(initSocketCallback) {
             }
 
             try {
+                if (oldAvatarUrl && oldAvatarUrl.startsWith('/uploads/') && currentAvatarUrl !== oldAvatarUrl) {
+                    API.deleteMedia(oldAvatarUrl).catch(e => console.error(e));
+                }
+                sessionAvatarUploads.forEach(url => {
+                    if (url !== currentAvatarUrl) {
+                        API.deleteMedia(url).catch(e => console.error(e));
+                    }
+                });
+                sessionAvatarUploads = [];
+
                 const res = await API.completeSetup({ firstName, lastName, email, password, avatar_url: currentAvatarUrl });
                 if (res.success) {
                     state.currentUser = res.user;
@@ -288,6 +308,8 @@ export function openSetupModal(isFirstTime) {
     const avatarInitials = document.getElementById('setup-avatar-initials');
     const avatarRemoveBtn = document.getElementById('setup-avatar-remove');
     currentAvatarUrl = state.currentUser ? state.currentUser.avatar_url : null;
+    oldAvatarUrl = currentAvatarUrl;
+    sessionAvatarUploads = [];
 
     if (avatarImg && avatarInitials) {
         if (currentAvatarUrl) {
