@@ -125,6 +125,20 @@ app.post('/api/board', authenticateToken, (req, res) => {
         }
 
         const oldBoardData = row ? JSON.parse(row.data) : { workflows: [] };
+
+        // Handle background
+        if (newBoardData.background && newBoardData.background.type === 'image' && typeof newBoardData.background.value === 'string' && newBoardData.background.value.startsWith('data:image')) {
+            const matches = newBoardData.background.value.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+            if (matches && matches.length === 3) {
+                const ext = matches[1].split('/')[1];
+                const bgPath = path.join(__dirname, 'public', 'uploads', 'background');
+                if (!fs.existsSync(bgPath)) fs.mkdirSync(bgPath, { recursive: true });
+                const fileName = `bg_${Date.now()}.${ext}`;
+                fs.writeFileSync(path.join(bgPath, fileName), Buffer.from(matches[2], 'base64'));
+                newBoardData.background.value = `/uploads/background/${fileName}`;
+            }
+        }
+
         const changes = describeChanges(oldBoardData, newBoardData);
 
         const dataStr = JSON.stringify(newBoardData);
@@ -143,7 +157,7 @@ app.post('/api/board', authenticateToken, (req, res) => {
                 logger.info(`Board updated via API by ${req.user.name}`);
             }
 
-            res.json({ success: true });
+            res.json({ success: true, updatedBoard: newBoardData });
             io.emit('boardUpdate', newBoardData);
         });
     });
@@ -195,6 +209,46 @@ io.on('connection', (socket) => {
             }
 
             const oldBoardData = row ? JSON.parse(row.data) : { workflows: [] };
+
+            // Check for base64 background and convert
+            if (newBoardData.background && newBoardData.background.type === 'image' && typeof newBoardData.background.value === 'string' && newBoardData.background.value.startsWith('data:image')) {
+                const matches = newBoardData.background.value.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+                if (matches && matches.length === 3) {
+                    const ext = matches[1].split('/')[1];
+                    const bgPath = path.join(__dirname, 'public', 'uploads', 'background');
+                    if (!fs.existsSync(bgPath)) fs.mkdirSync(bgPath, { recursive: true });
+                    const fileName = `bg_${Date.now()}.${ext}`;
+                    fs.writeFileSync(path.join(bgPath, fileName), Buffer.from(matches[2], 'base64'));
+                    newBoardData.background.value = `/uploads/background/${fileName}`;
+                }
+            }
+
+            // Cleanup base64 avatars in tasks if they are passed
+            if (newBoardData.workflows) {
+                newBoardData.workflows.forEach(w => {
+                    if (w.tasks) {
+                        w.tasks.forEach(t => {
+                            if (t.assignees) {
+                                t.assignees.forEach(a => {
+                                    if (a.avatar_url && typeof a.avatar_url === 'string' && a.avatar_url.startsWith('data:image')) {
+                                        const matches = a.avatar_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+                                        if (matches && matches.length === 3) {
+                                            const ext = matches[1].split('/')[1];
+                                            const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
+                                            if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
+                                            const personName = (a.name || a.email || 'user').replace(/[^a-z0-9]/gi, '_');
+                                            const fileName = `${personName}.${ext}`;
+                                            fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
+                                            a.avatar_url = `/uploads/Person/${fileName}`;
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+
             const changes = describeChanges(oldBoardData, newBoardData);
 
             // Save to DB
@@ -233,6 +287,24 @@ io.on('connection', (socket) => {
             }
 
             const boardData = row ? JSON.parse(row.data) : { workflows: [] };
+
+            // Cleanup base64 avatars in the updated task if passed
+            if (task && task.assignees) {
+                task.assignees.forEach(a => {
+                    if (a.avatar_url && typeof a.avatar_url === 'string' && a.avatar_url.startsWith('data:image')) {
+                        const matches = a.avatar_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+                        if (matches && matches.length === 3) {
+                            const ext = matches[1].split('/')[1];
+                            const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
+                            if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
+                            const personName = (a.name || a.email || 'user').replace(/[^a-z0-9]/gi, '_');
+                            const fileName = `${personName}.${ext}`;
+                            fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
+                            a.avatar_url = `/uploads/Person/${fileName}`;
+                        }
+                    }
+                });
+            }
 
             if (boardData.workflows) {
                 let oldWfId = null;

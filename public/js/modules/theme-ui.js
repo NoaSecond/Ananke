@@ -3,12 +3,18 @@ import { state } from './state.js';
 import { renderBoard } from './board-ui.js';
 import { openModal, closeModal } from './modals.js';
 import { Logger } from './utils.js';
+import * as API from './api.js';
 
 let tempBg = null;
+let sessionBgUploads = [];
 
 export function initThemeListeners() {
     if (elements.bgCustomizeBtn) {
         elements.bgCustomizeBtn.onclick = () => {
+            // Cleanup any leftovers from a previous canceled session
+            sessionBgUploads.forEach(url => API.deleteMedia(url).catch(e => console.error(e)));
+            sessionBgUploads = [];
+
             tempBg = state.boardData.background ? { ...state.boardData.background } : { type: 'default', value: '' };
             updatePreview(tempBg);
             openModal(elements.bgModal);
@@ -47,14 +53,18 @@ export function initThemeListeners() {
 
     // Image Upload
     if (elements.bgImageUpload) {
-        const handleFile = (file) => {
+        const handleFile = async (file) => {
             if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    tempBg = { type: 'image', value: event.target.result };
-                    updatePreview(tempBg);
-                };
-                reader.readAsDataURL(file);
+                try {
+                    const res = await API.uploadFiles([file]);
+                    if (res.urls && res.urls.length > 0) {
+                        sessionBgUploads.push(res.urls[0]);
+                        tempBg = { type: 'image', value: res.urls[0] };
+                        updatePreview(tempBg);
+                    }
+                } catch (err) {
+                    Logger.error('Failed to upload background image', err);
+                }
             }
         };
 
@@ -98,6 +108,19 @@ export function initThemeListeners() {
     // Save
     if (elements.saveBgBtn) {
         elements.saveBgBtn.onclick = () => {
+            const oldBg = state.boardData.background;
+
+            if (oldBg && oldBg.type === 'image' && oldBg.value && oldBg.value.startsWith('/uploads/') && (!tempBg || tempBg.value !== oldBg.value)) {
+                API.deleteMedia(oldBg.value).catch(err => Logger.error('Failed to delete old background', err));
+            }
+
+            sessionBgUploads.forEach(url => {
+                if (!tempBg || tempBg.value !== url) {
+                    API.deleteMedia(url).catch(e => console.error(e));
+                }
+            });
+            sessionBgUploads = [];
+
             state.boardData.background = tempBg;
             applyBackground(state.boardData.background);
 

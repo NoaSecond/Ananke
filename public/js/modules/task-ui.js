@@ -682,9 +682,10 @@ const renderTaskAssignees = () => {
         const currentUserObj = isCurrentUser ? state.currentUser : user;
         const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : user.avatar_url;
         el.innerHTML = `
+            <span class="material-symbols-outlined drag-handle" style="font-size: 14px; margin-right: 4px; opacity: 0.5; cursor: grab;">drag_indicator</span>
             ${avatarUrl ? `<img src="${avatarUrl}" class="assignee-avatar-small" style="object-fit: cover;">` : `<div class="assignee-avatar-small">${getInitials(currentUserObj)}</div>`}
             <span>${currentUserObj.name}</span>
-            <span class="remove-assignee">&times;</span>
+            <span class="remove-assignee" style="cursor: pointer; opacity: 0.7; margin-left: 4px;">&times;</span>
         `;
         el.querySelector('.remove-assignee').onclick = () => {
             tempAssignees.splice(index, 1);
@@ -696,6 +697,17 @@ const renderTaskAssignees = () => {
     const showAssigneesWrapper = elements.taskForm.showAssignees.closest('div');
     if (showAssigneesWrapper) {
         showAssigneesWrapper.style.display = tempAssignees.length > 0 ? 'flex' : 'none';
+    }
+
+    if (tempAssignees.length > 1) {
+        new Sortable(elements.taskAssigneesContainer, {
+            animation: 150,
+            handle: '.drag-handle',
+            onEnd: (evt) => {
+                const [movedItem] = tempAssignees.splice(evt.oldIndex, 1);
+                tempAssignees.splice(evt.newIndex, 0, movedItem);
+            }
+        });
     }
 };
 

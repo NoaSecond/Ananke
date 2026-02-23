@@ -165,13 +165,15 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                 taskCard.innerHTML = `
                     ${taskActionsHtml}
                     <h4>${task.title}</h4>
+                    ${(task.showTags !== false && task.tags && task.tags.length > 0) ? `
                     <div class="task-tags-display">
-                        ${task.showTags !== false ? (task.tags || []).map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color}; color: ${getContrastYIQ(tag.color || '#3b82f6')};" title="${tag.name}">${tag.name}</span>`).join('') : ''}
-                    </div>
+                        ${task.tags.map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color}; color: ${getContrastYIQ(tag.color || '#3b82f6')};" title="${tag.name}">${tag.name}</span>`).join('')}
+                    </div>` : ''}
+                    ${((task.showAssigneesOnCard !== false && assigneesHtml) || commentsHtml) ? `
                     <div class="task-card-footer">
-                        ${task.showAssigneesOnCard !== false ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
+                        ${(task.showAssigneesOnCard !== false && assigneesHtml) ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
                         ${commentsHtml}
-                    </div>
+                    </div>` : ''}
                     ${(task.showDescriptionOnCard !== false && task.description) ? `<div class="task-card-description">${marked.parse(task.description)}</div>` : ''}
                     ${(task.customFields || []).filter(f => f.showOnCard).map(f => {
                     let val = f.value;
@@ -198,6 +200,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
     generateDynamicKeywords();
     updateProjectTitle();
     handleSearch();
+
 }, 'Board rendering');
 
 export const initDragAndDrop = () => {
@@ -432,12 +435,26 @@ export const initBoardListeners = () => {
             elements.settingsMenu.classList.add('hidden');
             if (!state.boardData) return;
             try {
-                const dataStr = JSON.stringify(state.boardData, null, 2);
+                const exportData = JSON.parse(JSON.stringify(state.boardData));
+
+                // Remove any residual base64 data to maximize performance
+                const removeBase64 = (obj) => {
+                    for (let key in obj) {
+                        if (typeof obj[key] === 'string' && obj[key].match(/^data:([A-Za-z-+\/]+);base64,/)) {
+                            obj[key] = ''; // clear base64 content
+                        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                            removeBase64(obj[key]);
+                        }
+                    }
+                };
+                removeBase64(exportData);
+
+                const dataStr = JSON.stringify(exportData, null, 2);
                 const blob = new Blob([dataStr], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${state.boardData.projectName || 'ananke-project'}-${new Date().toISOString().slice(0, 10)}.kanban`;
+                a.download = `${exportData.projectName || 'ananke-project'}-${new Date().toISOString().slice(0, 10)}.kanban`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
