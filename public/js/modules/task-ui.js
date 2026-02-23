@@ -156,6 +156,21 @@ export const initTaskListeners = () => {
         }
     });
 
+    if (elements.taskForm.tagSearchInput) {
+        elements.taskForm.tagSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const tagOptions = elements.taskForm.availableTagsList.querySelectorAll('.tag-option');
+            tagOptions.forEach(opt => {
+                const tagName = opt.textContent.toLowerCase();
+                if (tagName.includes(searchTerm)) {
+                    opt.style.display = 'flex';
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+        });
+    }
+
     // Close tag picker when clicking outside
     document.addEventListener('click', (e) => {
         if (elements.taskForm.tagPicker && !elements.taskForm.tagPicker.classList.contains('hidden') &&
@@ -474,6 +489,10 @@ const toggleTagPicker = (show) => {
     if (show) {
         elements.taskForm.tagPicker.classList.remove('hidden');
         renderAvailableTags();
+        if (elements.taskForm.tagSearchInput) {
+            elements.taskForm.tagSearchInput.value = '';
+            setTimeout(() => elements.taskForm.tagSearchInput.focus(), 50);
+        }
     } else {
         elements.taskForm.tagPicker.classList.add('hidden');
     }

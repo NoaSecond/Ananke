@@ -275,7 +275,9 @@ const openAddModal = (type, workflowId = null) => {
     elements.addModalInput.placeholder = type === 'workflow' ? 'New column name' : 'New task title';
     if (workflowId) elements.addModalWorkflowId.value = workflowId;
     openModal(elements.addModal);
-    elements.addModalInput.focus();
+    setTimeout(() => {
+        elements.addModalInput.focus();
+    }, 100);
 };
 
 export const initBoardListeners = () => {
