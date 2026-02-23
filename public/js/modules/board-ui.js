@@ -404,7 +404,14 @@ export const initBoardListeners = () => {
             } else {
                 const workflow = state.boardData.workflows.find(w => w.id == elements.addModalWorkflowId.value);
                 if (workflow) {
-                    const newTask = { id: Date.now(), title, description: 'Click to edit...', color: '#6b7280' };
+                    const today = new Date().toISOString().split('T')[0];
+                    const newTask = {
+                        id: Date.now(),
+                        title,
+                        description: 'Click to edit...',
+                        color: '#6b7280',
+                        customFields: [{ name: 'Created at', type: 'date', value: today, showOnCard: true }]
+                    };
                     workflow.tasks.unshift(newTask);
                     trackEvent('create_task', 'Task', title);
                 }
