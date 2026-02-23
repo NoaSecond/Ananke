@@ -199,7 +199,29 @@ export const initTaskListeners = () => {
         e.stopPropagation();
         elements.assigneePicker.classList.remove('hidden');
         renderAssigneePickerList();
+
+        if (elements.assigneeSearchInput) {
+            elements.assigneeSearchInput.value = '';
+            setTimeout(() => elements.assigneeSearchInput.focus(), 50);
+        }
     });
+
+    if (elements.assigneeSearchInput) {
+        elements.assigneeSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const assigneeOptions = elements.assigneeListEl.querySelectorAll('.assignee-item');
+            assigneeOptions.forEach(opt => {
+                // Get the name which usually is the second child span
+                const span = opt.querySelector('span');
+                const name = span ? span.textContent.toLowerCase() : '';
+                if (name.includes(searchTerm)) {
+                    opt.style.display = 'flex';
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+        });
+    }
 
     // View Task Listeners
     elements.viewTaskDisplay.editBtn.addEventListener('click', () => {

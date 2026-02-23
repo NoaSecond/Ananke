@@ -94,6 +94,7 @@ export const elements = {
 
     // Assignees
     assigneePicker: document.getElementById('assignee-picker'),
+    assigneeSearchInput: document.getElementById('assignee-search-input'),
     addAssigneeBtn: document.getElementById('add-assignee-btn'),
     assigneeListEl: document.getElementById('assignee-list'),
     taskAssigneesContainer: document.getElementById('task-assignees-container'),

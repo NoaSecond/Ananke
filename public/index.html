@@ -507,16 +507,16 @@
                     <label>Assignees</label>
                     <div class="tags-wrapper">
                         <div id="task-assignees-container" class="tags-container"></div>
-                        <div style="position:relative;">
-                            <button id="add-assignee-btn" class="secondary-btn small-btn circular-btn"
-                                title="Assign User">
-                                <span class="material-symbols-outlined">person_add</span>
-                            </button>
-                            <div id="assignee-picker" class="tag-picker hidden" style="width: 200px;">
-                                <h4>Assign User</h4>
-                                <div id="assignee-list" class="available-tags-list"
-                                    style="flex-direction:column; max-height:150px;"></div>
-                            </div>
+                        <button id="add-assignee-btn" class="secondary-btn small-btn circular-btn" title="Assign User">
+                            <span class="material-symbols-outlined">person_add</span>
+                        </button>
+                        <div id="assignee-picker" class="tag-picker hidden" style="width: 320px;">
+                            <h4>Assign User</h4>
+                            <input type="text" id="assignee-search-input" placeholder="Search users..."
+                                class="small-input" style="width: 100%; padding: 0.4rem 0.6rem; margin-bottom: 0.2rem;"
+                                autocomplete="off">
+                            <div id="assignee-list" class="available-tags-list"
+                                style="flex-direction:column; max-height:200px;"></div>
                         </div>
                     </div>
                     <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
@@ -540,7 +540,8 @@
                         <!-- Tag Picker (Moved inside wrapper for positioning) -->
                         <div id="tag-picker" class="tag-picker hidden">
                             <h4>Select a tag</h4>
-                            <input type="text" id="tag-search-input" placeholder="Search tags..." class="small-input" style="width: 100%; padding: 0.4rem 0.6rem; margin-bottom: 0.2rem;" autocomplete="off">
+                            <input type="text" id="tag-search-input" placeholder="Search tags..." class="small-input"
+                                style="width: 100%; padding: 0.4rem 0.6rem; margin-bottom: 0.2rem;" autocomplete="off">
                             <div id="available-tags-list" class="available-tags-list"></div>
                             <div class="tag-picker-divider">or create new</div>
                             <div class="create-tag-row">
