@@ -88,7 +88,13 @@ export const elements = {
     userManagementModal: document.getElementById('user-management-modal'),
     inviteForm: document.getElementById('invite-form'),
 
+    // Logs Modal
+    logsModal: document.getElementById('logs-modal'),
+    logsContainer: document.getElementById('logs-container'),
+    clearLogsBtn: document.getElementById('clear-logs-btn'),
+
     // Header & Settings
+    serverLogsBtn: document.getElementById('server-logs-btn'),
     settingsToggleBtn: document.getElementById('settings-toggle-btn'),
     settingsMenu: document.getElementById('settings-menu'),
     profileBtn: document.getElementById('profile-btn'),

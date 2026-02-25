@@ -328,8 +328,10 @@ export function updateUserUI() {
 
     if (['admin', 'owner'].includes(state.currentUser.role)) {
         elements.manageUsersBtn.style.display = 'flex';
+        if (elements.serverLogsBtn) elements.serverLogsBtn.style.display = 'flex';
     } else {
         elements.manageUsersBtn.style.display = 'none';
+        if (elements.serverLogsBtn) elements.serverLogsBtn.style.display = 'none';
     }
 
     if (state.currentUser.role === 'owner') {

@@ -34,6 +34,16 @@ const io = new Server(server, {
     maxHttpBufferSize: 1e8 // 100MB
 });
 
+logger.onLogCallback = (logEntry) => {
+    if (io && io.sockets && io.sockets.sockets) {
+        io.sockets.sockets.forEach(socket => {
+            if (socket.user && (socket.user.role === 'admin' || socket.user.role === 'owner')) {
+                socket.emit('serverLog', logEntry);
+            }
+        });
+    }
+};
+
 const JWT_SECRET = process.env.JWT_SECRET || 'ananke-secret-key-prod-rev2';
 
 app.use(express.json({ limit: '100mb' }));
@@ -44,15 +54,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 // HTTP Logging
 app.use(morgan((tokens, req, res) => {
     const status = tokens.status(req, res);
-    const color = status >= 500 ? 'red' : status >= 400 ? 'yellow' : status >= 300 ? 'cyan' : 'green';
     return [
-        require('picocolors').gray(`[${new Date().toISOString()}]`),
-        require('picocolors').cyan('HTTP:'),
         tokens.method(req, res),
         tokens.url(req, res),
-        require('picocolors')[color](status),
+        status,
         tokens['response-time'](req, res), 'ms'
     ].join(' ');
+}, {
+    stream: {
+        write: (message) => {
+            logger.http(message.trim());
+        }
+    }
 }));
 
 // Routes
@@ -107,6 +120,13 @@ app.get('/api/version', async (req, res) => {
     } catch (e) {
         res.status(500).json({ error: 'Could not read version' });
     }
+});
+
+app.get('/api/logs', authenticateToken, (req, res) => {
+    if (req.user.role !== 'admin' && req.user.role !== 'owner') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    res.json(logger.getHistory());
 });
 
 // Save Board API (for fallback or specific actions)

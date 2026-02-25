@@ -91,3 +91,9 @@ export async function deleteMedia(url) {
     if (!res.ok) throw new Error('Failed to delete media');
     return res.json();
 }
+
+export async function getLogs() {
+    const res = await fetch(`${API_URL}/logs`);
+    if (res.ok) return res.json();
+    throw new Error('Failed to fetch logs');
+}

@@ -215,7 +215,8 @@
     <!-- Avatar Crop Modal -->
     <div id="crop-modal" class="modal-overlay" style="z-index: 3000;">
         <div class="modal-content" style="width: min(95vw, 600px);">
-            <button class="modal-close-btn" id="crop-close-btn" type="button"><span class="material-symbols-outlined">close</span></button>
+            <button class="modal-close-btn" id="crop-close-btn" type="button"><span
+                    class="material-symbols-outlined">close</span></button>
             <h2>Crop Avatar</h2>
             <div style="max-height: 400px; overflow: hidden; margin-bottom: 1rem;">
                 <img id="crop-image" src="" style="max-width: 100%;">
@@ -351,6 +352,9 @@
                     </button>
                 </div>
             </div>
+            <button id="server-logs-btn" class="secondary-btn circular-btn" title="Server Logs" style="display: none;">
+                <span class="material-symbols-outlined">terminal</span>
+            </button>
         </div>
     </header>
 
@@ -697,6 +701,22 @@
             <input type="text" id="project-name-input" placeholder="Project name">
             <div class="modal-actions">
                 <button id="save-project-btn" class="action-btn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="logs-modal" class="modal-overlay">
+        <div class="modal-content"
+            style="width: min(95vw, 800px); max-height: 90vh; display: flex; flex-direction: column;">
+            <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
+            <div style="margin-bottom: 1rem;">
+                <h2 style="margin: 0;">Server Logs</h2>
+            </div>
+            <div id="logs-container"
+                style="background: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; padding: 1rem; border-radius: 8px; flex: 1; overflow-y: auto; white-space: pre-wrap; word-break: break-all; border: 1px solid var(--border-color); min-height: 300px; margin-bottom: 1rem;">
+            </div>
+            <div class="modal-actions" style="margin-top: auto;">
+                <button id="clear-logs-btn" class="secondary-btn">Clear View</button>
             </div>
         </div>
     </div>
