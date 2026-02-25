@@ -64,7 +64,8 @@
     align-items: center;
 }
 
-.workflow-menu-btn, .workflow-header-btn {
+.workflow-menu-btn,
+.workflow-header-btn {
     background: transparent;
     border: none;
     cursor: pointer;
@@ -83,7 +84,8 @@
     pointer-events: none;
 }
 
-.workflow-menu-btn:hover, .workflow-header-btn:hover {
+.workflow-menu-btn:hover,
+.workflow-header-btn:hover {
     background-color: var(--border-color);
 }
 
@@ -214,6 +216,20 @@
 
 .task-card-description p:last-child {
     margin-bottom: 0;
+}
+
+.task-card a,
+.task-card-description a,
+.custom-field-view a {
+    color: #60a5fa;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.task-card a:hover,
+.task-card-description a:hover,
+.custom-field-view a:hover {
+    color: #93c5fd;
 }
 
 .task-tags-display {
