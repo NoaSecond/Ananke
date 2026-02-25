@@ -67,6 +67,7 @@
     <!-- CSS -->
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css">
 
     <!-- Schema.org JSON-LD -->
@@ -94,8 +95,8 @@
             "url": "https://noasecond.com"
         },
         "datePublished": "2025-01-26",
-        "dateModified": "2026-02-20",
-        "version": "2.8.4",
+        "dateModified": "2026-02-25",
+        "version": "2.8.8",
         "downloadUrl": "https://github.com/NoaSecond/Ananke",
         "featureList": [
             "Interactive Kanban Board",
@@ -208,6 +209,21 @@
                 <button type="submit" class="action-btn" style="width: 100%; margin-top: 1rem;">Save</button>
             </form>
             <div id="setup-message" style="margin-top: 1rem; color: var(--danger-color);"></div>
+        </div>
+    </div>
+
+    <!-- Avatar Crop Modal -->
+    <div id="crop-modal" class="modal-overlay" style="z-index: 3000;">
+        <div class="modal-content" style="width: min(95vw, 600px);">
+            <button class="modal-close-btn" id="crop-close-btn" type="button"><span
+                    class="material-symbols-outlined">close</span></button>
+            <h2>Crop Avatar</h2>
+            <div style="max-height: 400px; overflow: hidden; margin-bottom: 1rem;">
+                <img id="crop-image" src="" style="max-width: 100%;">
+            </div>
+            <div class="modal-actions">
+                <button id="crop-save-btn" type="button" class="action-btn">Save & Upload</button>
+            </div>
         </div>
     </div>
 
@@ -336,6 +352,9 @@
                     </button>
                 </div>
             </div>
+            <button id="server-logs-btn" class="secondary-btn circular-btn" title="Server Logs" style="display: none;">
+                <span class="material-symbols-outlined">terminal</span>
+            </button>
         </div>
     </header>
 
@@ -686,6 +705,23 @@
         </div>
     </div>
 
+    <div id="logs-modal" class="modal-overlay">
+        <div class="modal-content"
+            style="width: min(95vw, 800px); max-height: 90vh; display: flex; flex-direction: column;">
+            <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
+            <div style="margin-bottom: 1rem;">
+                <h2 style="margin: 0;">Server Logs</h2>
+            </div>
+            <div id="logs-container"
+                style="background: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; padding: 1rem; border-radius: 8px; flex: 1; overflow-y: auto; white-space: pre-wrap; word-break: break-all; border: 1px solid var(--border-color); min-height: 300px; margin-bottom: 1rem;">
+            </div>
+            <div class="modal-actions" style="margin-top: auto;">
+                <button id="clear-logs-btn" class="secondary-btn">Clear View</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>

@@ -34,6 +34,53 @@ document.addEventListener('DOMContentLoaded', () => {
     initThemeListeners();
     initSearch();
 
+    function escapeHtml(unsafe) {
+        return (unsafe || '').toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function appendLog(logEntry) {
+        if (!elements.logsContainer) return;
+        const colorMap = {
+            'INFO': '#4fc1ff',
+            'ERROR': '#f44336',
+            'WARN': '#ff9800',
+            'SUCCESS': '#4caf50',
+            'SOCKET': '#d32f2f',
+            'HTTP': '#00bcd4'
+        };
+        const color = colorMap[logEntry.type] || '#fff';
+        const logLine = document.createElement('div');
+        logLine.innerHTML = `<span style="color: gray;">[${logEntry.timestamp}]</span> <span style="color: ${color}; font-weight: bold;">${logEntry.type}:</span> <span style="color: #d4d4d4;">${escapeHtml(logEntry.message)}</span>`;
+        elements.logsContainer.appendChild(logLine);
+        elements.logsContainer.scrollTop = elements.logsContainer.scrollHeight;
+    }
+
+    if (elements.serverLogsBtn) {
+        elements.serverLogsBtn.onclick = async () => {
+            if (elements.logsModal) elements.logsModal.classList.add('visible');
+            try {
+                const logs = await API.getLogs();
+                if (elements.logsContainer) {
+                    elements.logsContainer.innerHTML = '';
+                    logs.forEach(log => appendLog(log));
+                }
+            } catch (err) {
+                Logger.error('Failed to load logs', err);
+            }
+        };
+    }
+
+    if (elements.clearLogsBtn) {
+        elements.clearLogsBtn.onclick = () => {
+            if (elements.logsContainer) elements.logsContainer.innerHTML = '';
+        };
+    }
+
     // Theme Logic
     const initTheme = () => {
         const storedTheme = localStorage.getItem('theme');
@@ -201,6 +248,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderBoard();
                 refreshTaskView();
             }
+        });
+
+        state.socket.on('serverLog', (logEntry) => {
+            appendLog(logEntry);
         });
 
         state.socket.on('connect', () => {

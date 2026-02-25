@@ -86,8 +86,11 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
 
             const columnActionsHtml = isReader ? '' : `
                 <div class="workflow-actions">
+                    <button class="add-task-btn-menu workflow-header-btn" data-workflow-id="${workflow.id}" title="Add Task" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} onmousedown="event.stopPropagation()">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">add</span>
+                    </button>
                     <button class="workflow-menu-btn" title="Column Options" onmousedown="event.stopPropagation()">
-                        <span class="material-symbols-outlined">more_vert</span>
+                        <span class="material-symbols-outlined" style="font-size: 20px;">more_vert</span>
                     </button>
                     <div class="workflow-menu">
                         <button class="edit-workflow-btn" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
@@ -415,7 +418,8 @@ export const initBoardListeners = () => {
                         title,
                         description: 'Click to edit...',
                         color: '#6b7280',
-                        customFields: [{ name: 'Created at', type: 'date', value: today, showOnCard: true }]
+                        customFields: [{ name: 'Created at', type: 'date', value: today, showOnCard: true }],
+                        assignees: state.currentUser ? [state.currentUser] : []
                     };
                     workflow.tasks.unshift(newTask);
                     trackEvent('create_task', 'Task', title);
