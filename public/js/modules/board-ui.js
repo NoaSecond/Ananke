@@ -514,4 +514,8 @@ export const initBoardListeners = () => {
             closeModal(elements.projectModal);
         }
     });
+
+    elements.projectNameInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') elements.saveProjectBtn.click();
+    });
 };
