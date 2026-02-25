@@ -60,9 +60,11 @@
 .workflow-actions {
     position: relative;
     z-index: 5;
+    display: flex;
+    align-items: center;
 }
 
-.workflow-menu-btn {
+.workflow-menu-btn, .workflow-header-btn {
     background: transparent;
     border: none;
     cursor: pointer;
@@ -76,11 +78,12 @@
     transition: background-color 0.2s;
 }
 
-.workflow-menu-btn .material-symbols-outlined {
+.workflow-menu-btn .material-symbols-outlined,
+.workflow-header-btn .material-symbols-outlined {
     pointer-events: none;
 }
 
-.workflow-menu-btn:hover {
+.workflow-menu-btn:hover, .workflow-header-btn:hover {
     background-color: var(--border-color);
 }
 
