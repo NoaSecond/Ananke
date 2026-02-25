@@ -191,7 +191,7 @@ export const initTaskListeners = () => {
 
     // Custom Fields Listeners
     elements.taskForm.addCustomFieldBtn.addEventListener('click', () => {
-        tempCustomFields.push({ name: 'New Field', value: '', type: 'text', showOnCard: false });
+        tempCustomFields.push({ name: 'New Field', value: '', type: 'text', showOnCard: true });
         renderCustomFields(tempCustomFields);
     });
 
