@@ -148,6 +148,7 @@ export const initTaskListeners = () => {
             if (!state.boardData.tags) state.boardData.tags = [];
             if (!state.boardData.tags.find(t => t.name === name)) {
                 state.boardData.tags.push(newTag);
+                saveData();
             }
             tempTags.push(newTag);
             renderTags(tempTags);
