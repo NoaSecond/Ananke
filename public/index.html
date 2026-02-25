@@ -67,6 +67,7 @@
     <!-- CSS -->
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css">
 
     <!-- Schema.org JSON-LD -->
@@ -208,6 +209,20 @@
                 <button type="submit" class="action-btn" style="width: 100%; margin-top: 1rem;">Save</button>
             </form>
             <div id="setup-message" style="margin-top: 1rem; color: var(--danger-color);"></div>
+        </div>
+    </div>
+
+    <!-- Avatar Crop Modal -->
+    <div id="crop-modal" class="modal-overlay" style="z-index: 3000;">
+        <div class="modal-content" style="width: min(95vw, 600px);">
+            <button class="modal-close-btn" id="crop-close-btn" type="button"><span class="material-symbols-outlined">close</span></button>
+            <h2>Crop Avatar</h2>
+            <div style="max-height: 400px; overflow: hidden; margin-bottom: 1rem;">
+                <img id="crop-image" src="" style="max-width: 100%;">
+            </div>
+            <div class="modal-actions">
+                <button id="crop-save-btn" type="button" class="action-btn">Save & Upload</button>
+            </div>
         </div>
     </div>
 
@@ -686,6 +701,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>

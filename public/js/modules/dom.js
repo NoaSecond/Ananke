@@ -79,6 +79,12 @@ export const elements = {
     setupForm: document.getElementById('setup-form'),
     setupMessage: document.getElementById('setup-message'),
     setupCloseBtn: document.getElementById('setup-close-btn'),
+    // Avatar crop modal
+    cropModal: document.getElementById('crop-modal'),
+    cropImage: document.getElementById('crop-image'),
+    cropSaveBtn: document.getElementById('crop-save-btn'),
+    cropCloseBtn: document.getElementById('crop-close-btn'),
+
     userManagementModal: document.getElementById('user-management-modal'),
     inviteForm: document.getElementById('invite-form'),
 

@@ -61,9 +61,12 @@ export function initAuth(initSocketCallback) {
     if (avatarUploadInput) {
         avatarUploadInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
-            if (file) {
+            if (!file) return;
+
+            const processAvatarUpload = async (uploadFile) => {
                 try {
-                    const res = await API.uploadFiles([file]);
+                    elements.setupModal.classList.add('loading-avatar'); // optional css indicator
+                    const res = await API.uploadFiles([uploadFile]);
                     if (res.urls && res.urls.length > 0) {
                         sessionAvatarUploads.push(res.urls[0]);
                         currentAvatarUrl = res.urls[0];
@@ -74,8 +77,69 @@ export function initAuth(initSocketCallback) {
                     }
                 } catch (err) {
                     Logger.error('Failed to upload avatar', err);
+                } finally {
+                    elements.setupModal.classList.remove('loading-avatar');
                 }
-            }
+            };
+
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                let isSquare = img.width === img.height;
+                const MAX_SIZE_MB = 1;
+
+                if (!isSquare) {
+                    // Start Cropper
+                    elements.cropModal.classList.add('visible');
+                    elements.cropImage.src = url;
+
+                    if (window.cropperInstance) window.cropperInstance.destroy();
+                    window.cropperInstance = new Cropper(elements.cropImage, {
+                        aspectRatio: 1,
+                        viewMode: 1
+                    });
+
+                    elements.cropSaveBtn.onclick = async () => {
+                        const canvas = window.cropperInstance.getCroppedCanvas({
+                            width: 300,
+                            height: 300 // reasonable avatar size
+                        });
+
+                        canvas.toBlob(async (blob) => {
+                            elements.cropModal.classList.remove('visible');
+                            window.cropperInstance.destroy();
+                            window.cropperInstance = null;
+                            const croppedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + "_cropped.jpg", { type: 'image/jpeg' });
+                            await processAvatarUpload(croppedFile);
+                        }, 'image/jpeg', 0.85); // 0.85 compression
+                    };
+
+                    elements.cropCloseBtn.onclick = () => {
+                        elements.cropModal.classList.remove('visible');
+                        if (window.cropperInstance) {
+                            window.cropperInstance.destroy();
+                            window.cropperInstance = null;
+                        }
+                    };
+                } else {
+                    // Already square. Do we need compression?
+                    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.min(img.width, 400); // resize down to max 400px
+                        canvas.height = Math.min(img.height, 400);
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                        canvas.toBlob(async (blob) => {
+                            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + "_compressed.jpg", { type: 'image/jpeg' });
+                            await processAvatarUpload(compressedFile);
+                        }, 'image/jpeg', 0.8);
+                    } else {
+                        processAvatarUpload(file);
+                    }
+                }
+            };
+            img.src = url;
         });
     }
 
