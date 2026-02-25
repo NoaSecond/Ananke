@@ -36,6 +36,12 @@ input[type="checkbox"]:checked::before {
     transform: scale(1);
 }
 
+/* --- Date Inputs --- */
+body.dark-mode input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
 /* --- Buttons --- */
 button,
 .io-btn {

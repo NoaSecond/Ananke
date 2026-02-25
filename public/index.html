@@ -96,7 +96,7 @@
         },
         "datePublished": "2025-01-26",
         "dateModified": "2026-02-25",
-        "version": "2.8.8",
+        "version": "2.8.9",
         "downloadUrl": "https://github.com/NoaSecond/Ananke",
         "featureList": [
             "Interactive Kanban Board",
@@ -134,7 +134,10 @@
                     <label for="login-password">Mot de passe</label>
                     <input type="password" id="login-password" required placeholder="******">
                 </div>
-                <button type="submit" class="action-btn" style="width: 100%; margin-top: 1rem;">Se connecter</button>
+                <button type="submit" class="action-btn"
+                    style="width: 100%; margin-top: 1rem; display: flex; align-items: center; justify-content: center; gap: 4px;">Se
+                    connecter <span class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
+                        title="Raccourci : Entrée">keyboard_return</span></button>
             </form>
             <div id="auth-message"
                 style="margin-top: 1rem; color: var(--danger-color); font-size: 0.9rem; min-height: 1.2em;"></div>
@@ -206,7 +209,10 @@
                         <input type="password" id="setup-password-confirm">
                     </div>
                 </div>
-                <button type="submit" class="action-btn" style="width: 100%; margin-top: 1rem;">Save</button>
+                <button type="submit" class="action-btn"
+                    style="width: 100%; margin-top: 1rem; display: flex; align-items: center; justify-content: center; gap: 4px;">Save
+                    <span class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
+                        title="Raccourci : Entrée">keyboard_return</span></button>
             </form>
             <div id="setup-message" style="margin-top: 1rem; color: var(--danger-color);"></div>
         </div>
@@ -257,7 +263,9 @@
                         </select>
                     </div>
                     <button type="submit" class="action-btn"
-                        style="height: 44px; box-sizing: border-box; flex-shrink: 0;">Create</button>
+                        style="height: 44px; box-sizing: border-box; flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 4px;">Create
+                        <span class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
+                            title="Raccourci : Entrée">keyboard_return</span></button>
                 </form>
                 <div id="invite-message" style="margin-top:0.5rem; font-size:0.9rem;"></div>
             </div>
@@ -419,7 +427,10 @@
             <label for="add-modal-input">Title</label>
             <input type="text" id="add-modal-input" placeholder="New title...">
             <div class="modal-actions">
-                <button id="save-add-btn" class="action-btn">Add</button>
+                <button id="save-add-btn" class="action-btn"
+                    style="display: flex; align-items: center; justify-content: center; gap: 4px;">Add <span
+                        class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
+                        title="Raccourci : Entrée">keyboard_return</span></button>
             </div>
         </div>
     </div>
@@ -566,7 +577,10 @@
                             <div class="create-tag-row">
                                 <input type="text" id="new-tag-name" placeholder="Tag name" class="small-input">
                                 <input type="color" id="new-tag-color" value="#3b82f6" class="color-input-small">
-                                <button id="add-tag-btn" class="action-btn small-btn">Create</button>
+                                <button id="add-tag-btn" class="action-btn small-btn"
+                                    style="display: flex; align-items: center; justify-content: center; gap: 4px;">Create
+                                    <span class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
+                                        title="Raccourci : Entrée">keyboard_return</span></button>
                             </div>
                         </div>
                     </div>
@@ -593,7 +607,10 @@
             <div class="modal-actions">
                 <button id="delete-task-btn" class="danger-btn">Delete</button>
                 <button id="duplicate-task-btn" class="secondary-btn">Duplicate</button>
-                <button id="save-task-btn" class="action-btn">Save</button>
+                <button id="save-task-btn" class="action-btn"
+                    style="display: flex; align-items: center; justify-content: center; gap: 4px;">Save <span
+                        class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
+                        title="Raccourci : Entrée">keyboard_return</span></button>
             </div>
         </div>
     </div>
@@ -676,7 +693,10 @@
 
             <div class="modal-actions">
                 <button id="delete-workflow-btn" class="danger-btn">Delete</button>
-                <button id="save-workflow-btn" class="action-btn">Save</button>
+                <button id="save-workflow-btn" class="action-btn"
+                    style="display: flex; align-items: center; justify-content: center; gap: 4px;">Save <span
+                        class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
+                        title="Raccourci : Entrée">keyboard_return</span></button>
             </div>
         </div>
     </div>
@@ -700,7 +720,10 @@
             <label for="project-name-input">Project name</label>
             <input type="text" id="project-name-input" placeholder="Project name">
             <div class="modal-actions">
-                <button id="save-project-btn" class="action-btn">Save</button>
+                <button id="save-project-btn" class="action-btn"
+                    style="display: flex; align-items: center; justify-content: center; gap: 4px;">Save <span
+                        class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
+                        title="Raccourci : Entrée">keyboard_return</span></button>
             </div>
         </div>
     </div>

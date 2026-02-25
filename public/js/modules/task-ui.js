@@ -148,6 +148,7 @@ export const initTaskListeners = () => {
             if (!state.boardData.tags) state.boardData.tags = [];
             if (!state.boardData.tags.find(t => t.name === name)) {
                 state.boardData.tags.push(newTag);
+                saveData();
             }
             tempTags.push(newTag);
             renderTags(tempTags);
@@ -190,7 +191,7 @@ export const initTaskListeners = () => {
 
     // Custom Fields Listeners
     elements.taskForm.addCustomFieldBtn.addEventListener('click', () => {
-        tempCustomFields.push({ name: 'New Field', value: '', type: 'text', showOnCard: false });
+        tempCustomFields.push({ name: 'New Field', value: '', type: 'text', showOnCard: true });
         renderCustomFields(tempCustomFields);
     });
 
@@ -634,7 +635,7 @@ export const openViewTaskModal = (task, workflow) => {
         elements.viewTaskDisplay.customFields.innerHTML = task.customFields.map(f => {
             let val = f.value;
             if (f.type === 'link') {
-                val = `<a href="${f.value}" target="_blank" class="text-primary hover:underline">${f.value}</a>`;
+                val = `<a href="${f.value}" target="_blank">${f.value}</a>`;
             } else if (f.type === 'checklist') {
                 let items = [];
                 try { items = typeof f.value === 'string' ? JSON.parse(f.value) : (f.value || []); } catch (e) { items = []; }
@@ -760,6 +761,28 @@ const renderAvailableTags = () => {
 
     allTags.forEach((tag, index) => {
         const textColor = getContrastYIQ(tag.color || '#3b82f6');
+
+        // CHeck if tag is used
+        let isUsed = false;
+        if (state.boardData.workflows) {
+            for (const workflow of state.boardData.workflows) {
+                if (workflow.tasks) {
+                    for (const task of workflow.tasks) {
+                        if (task.tags && task.tags.some(t => t.name === tag.name)) {
+                            isUsed = true;
+                            break;
+                        }
+                    }
+                }
+                if (isUsed) break;
+            }
+        }
+
+        // Also check if the tag is currently selected in the temporary task being edited/created
+        if (!isUsed && tempTags.some(t => t.name === tag.name)) {
+            isUsed = true;
+        }
+
         const tagEl = document.createElement('div');
         tagEl.className = 'tag-option';
         tagEl.style.backgroundColor = tag.color;
@@ -767,7 +790,24 @@ const renderAvailableTags = () => {
         tagEl.innerHTML = `
             <span class="material-symbols-outlined drag-handle" style="font-size: 18px; opacity: 0.7; color:${textColor}" onmousedown="event.stopPropagation()">drag_indicator</span>
             <span style="flex: 1;">${tag.name}</span>
+            ${!isUsed ? `<button class="delete-tag-btn" style="background:none; border:none; color:${textColor}; cursor:pointer; display:flex; align-items:center; opacity:0.7; padding:0;" onmousedown="event.stopPropagation()"><span class="material-symbols-outlined" style="font-size:16px; color:inherit;">delete</span></button>` : ''}
         `;
+
+        if (!isUsed) {
+            const deleteBtn = tagEl.querySelector('.delete-tag-btn');
+            deleteBtn.onmouseover = () => { deleteBtn.style.opacity = '1'; };
+            deleteBtn.onmouseout = () => { deleteBtn.style.opacity = '0.7'; };
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                showConfirm(`Remove the tag "${tag.name}" permanently? It is not used by any task.`, () => {
+                    state.boardData.tags.splice(index, 1);
+                    saveData();
+                    renderBoard();
+                    renderAvailableTags();
+                });
+            };
+        }
+
         tagEl.onclick = () => {
             // Check if already added
             if (!tempTags.find(t => t.name === tag.name)) {

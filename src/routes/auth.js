@@ -59,8 +59,12 @@ const authenticateToken = (req, res, next) => {
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) return res.status(403).json({ error: 'Forbidden' });
-        req.user = user;
-        next();
+        db.get("SELECT role FROM users WHERE id = ?", [user.id], (dbErr, row) => {
+            if (dbErr || !row) return res.status(403).json({ error: 'Forbidden' });
+            user.role = row.role;
+            req.user = user;
+            next();
+        });
     });
 };
 
@@ -165,6 +169,7 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
                     { expiresIn: '24h' }
                 );
                 res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 24 * 3600000 });
+                logger.info(`User setup completed: ${displayName} (${user.email})`);
                 res.json({ success: true, user: { ...user, name: displayName, password_hash: undefined } });
             } else {
                 res.json({ success: true });
@@ -214,10 +219,15 @@ router.put('/users/:id/role', authenticateToken, requireRole('admin'), (req, res
         return res.status(400).json({ error: 'Rôle invalide' });
     }
 
-    db.run("UPDATE users SET role = ? WHERE id = ? AND role != 'owner'", [role, userId], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ error: 'Utilisateur non trouvé ou action interdite (Owner)' });
-        res.json({ success: true });
+    db.get("SELECT email FROM users WHERE id = ?", [userId], (err, user) => {
+        if (err || !user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+
+        db.run("UPDATE users SET role = ? WHERE id = ? AND role != 'owner'", [role, userId], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            if (this.changes === 0) return res.status(404).json({ error: 'Utilisateur non trouvé ou action interdite (Owner)' });
+            logger.info(`User role updated: ${user.email} is now ${role} (by ${req.user.name})`);
+            res.json({ success: true });
+        });
     });
 });
 
@@ -229,10 +239,15 @@ router.delete('/users/:id', authenticateToken, requireRole('admin'), (req, res) 
         return res.status(400).json({ error: 'Impossible de se supprimer soi-même' });
     }
 
-    db.run("DELETE FROM users WHERE id = ? AND role != 'owner'", [userId], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ error: 'Utilisateur non trouvé ou action interdite' });
-        res.json({ success: true });
+    db.get("SELECT email FROM users WHERE id = ?", [userId], (err, user) => {
+        if (err || !user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+
+        db.run("DELETE FROM users WHERE id = ? AND role != 'owner'", [userId], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            if (this.changes === 0) return res.status(404).json({ error: 'Utilisateur non trouvé ou action interdite' });
+            logger.info(`User deleted: ${user.email} (by ${req.user.name})`);
+            res.json({ success: true });
+        });
     });
 });
 

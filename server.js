@@ -86,6 +86,7 @@ app.post('/api/upload', authenticateToken, upload.array('files', 10), (req, res)
             return res.status(400).json({ error: 'No files uploaded.' });
         }
         const fileUrls = req.files.map(file => `/uploads/${file.filename}`);
+        logger.info(`${req.files.length} file(s) uploaded by ${req.user.name}`);
         res.json({ urls: fileUrls });
     } catch (err) {
         logger.error(`Upload error: ${err.message}`);
@@ -197,8 +198,12 @@ io.use((socket, next) => {
 
     jwt.verify(jwtToken, JWT_SECRET, (err, decoded) => {
         if (err) return next(new Error("Authentication error"));
-        socket.user = decoded;
-        next();
+        db.get("SELECT role FROM users WHERE id = ?", [decoded.id], (dbErr, row) => {
+            if (dbErr || !row) return next(new Error("Authentication error"));
+            decoded.role = row.role;
+            socket.user = decoded;
+            next();
+        });
     });
 });
 

@@ -145,7 +145,15 @@ export function handleSearch() {
         if (plainText) {
             const title = task.title.toLowerCase();
             const desc = (task.description || '').toLowerCase();
-            matchesText = title.includes(plainText) || desc.includes(plainText);
+            let customFieldsMatch = false;
+            if (task.customFields) {
+                customFieldsMatch = task.customFields.some(cf => {
+                    const cfName = (cf.name || '').toLowerCase();
+                    const cfValue = (typeof cf.value === 'string' ? cf.value : '').toLowerCase();
+                    return cfName.includes(plainText) || cfValue.includes(plainText);
+                });
+            }
+            matchesText = title.includes(plainText) || desc.includes(plainText) || customFieldsMatch;
         }
 
         if (matchesTags && matchesPersons && matchesText) {

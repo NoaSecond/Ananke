@@ -181,7 +181,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     ${(task.customFields || []).filter(f => f.showOnCard).map(f => {
                     let val = f.value;
                     if (f.type === 'link') {
-                        val = `<a href="${f.value}" target="_blank" onclick="event.stopPropagation()" style="color: var(--primary-color); text-decoration: underline;">${f.value}</a>`;
+                        val = `<a href="${f.value}" target="_blank" onclick="event.stopPropagation()">${f.value}</a>`;
                     } else if (f.type === 'checklist') {
                         let items = [];
                         try { items = typeof f.value === 'string' ? JSON.parse(f.value) : (f.value || []); } catch (e) { items = []; }
@@ -513,5 +513,9 @@ export const initBoardListeners = () => {
             renderBoard();
             closeModal(elements.projectModal);
         }
+    });
+
+    elements.projectNameInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') elements.saveProjectBtn.click();
     });
 };

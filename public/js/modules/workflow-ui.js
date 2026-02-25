@@ -38,4 +38,8 @@ export const initWorkflowListeners = () => {
             closeModal(elements.workflowModal);
         });
     });
+
+    elements.workflowForm.title.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') elements.workflowForm.saveBtn.click();
+    });
 };
