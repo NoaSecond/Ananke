@@ -418,7 +418,8 @@ export const initBoardListeners = () => {
                         title,
                         description: 'Click to edit...',
                         color: '#6b7280',
-                        customFields: [{ name: 'Created at', type: 'date', value: today, showOnCard: true }]
+                        customFields: [{ name: 'Created at', type: 'date', value: today, showOnCard: true }],
+                        assignees: state.currentUser ? [state.currentUser] : []
                     };
                     workflow.tasks.unshift(newTask);
                     trackEvent('create_task', 'Task', title);
