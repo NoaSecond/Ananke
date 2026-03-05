@@ -1,5 +1,5 @@
 import { Logger } from './modules/utils.js';
-import { state } from './modules/state.js';
+import { state, API_URL, basePath } from './modules/state.js';
 import { elements } from './modules/dom.js';
 import { initModals } from './modules/modals.js';
 import { initAuth } from './modules/auth-ui.js';
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     Logger.info('🚀 Ananke application started');
 
     // Fetch and display version dynamically
-    fetch('/api/version')
+    fetch(API_URL + '/version')
         .then(res => res.json())
         .then(data => {
             const versionDisplay = document.getElementById('app-version-display');
@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
             Logger.debug('Rest API board fetch failed, relying on socket');
         }
 
-        state.socket = io();
+        state.socket = io({ path: basePath + '/socket.io' });
 
         state.socket.on('boardUpdate', (data) => {
             if (!state.isDraggingInternal) {

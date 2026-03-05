@@ -1,6 +1,6 @@
 import { elements } from './dom.js';
 import * as API from './api.js';
-import { state } from './state.js';
+import { state, API_URL, getFullUrl } from './state.js';
 import { Logger, getInitials } from './utils.js';
 import { renderBoard } from './board-ui.js';
 import { refreshSearchUsers } from './search-ui.js';
@@ -70,7 +70,7 @@ export function initAuth(initSocketCallback) {
                     if (res.urls && res.urls.length > 0) {
                         sessionAvatarUploads.push(res.urls[0]);
                         currentAvatarUrl = res.urls[0];
-                        avatarImg.src = currentAvatarUrl;
+                        avatarImg.src = getFullUrl(currentAvatarUrl);
                         avatarImg.style.display = 'block';
                         avatarInitials.style.display = 'none';
                         if (avatarRemoveBtn) avatarRemoveBtn.style.display = 'block';
@@ -291,7 +291,7 @@ function handleLoginSuccess(user, initSocketCallback) {
 async function checkVersion(user) {
     if (!['admin', 'owner'].includes(user.role)) return;
     try {
-        const localRes = await fetch('/api/version');
+        const localRes = await fetch(API_URL + '/version');
         const localData = await localRes.json();
         const localVersion = localData.version;
 
@@ -343,7 +343,7 @@ export function updateUserUI() {
     const settingsAvatarContainer = document.getElementById('settings-user-avatar');
     if (settingsAvatarContainer) {
         if (state.currentUser.avatar_url) {
-            settingsAvatarContainer.innerHTML = `<img src="${state.currentUser.avatar_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            settingsAvatarContainer.innerHTML = `<img src="${getFullUrl(state.currentUser.avatar_url)}" style="width: 100%; height: 100%; object-fit: cover;">`;
             settingsAvatarContainer.style.background = 'transparent';
         } else {
             settingsAvatarContainer.innerHTML = getInitials(state.currentUser);
@@ -379,7 +379,7 @@ export function openSetupModal(isFirstTime) {
 
     if (avatarImg && avatarInitials) {
         if (currentAvatarUrl) {
-            avatarImg.src = currentAvatarUrl;
+            avatarImg.src = getFullUrl(currentAvatarUrl);
             avatarImg.style.display = 'block';
             avatarInitials.style.display = 'none';
             if (avatarRemoveBtn) avatarRemoveBtn.style.display = 'block';

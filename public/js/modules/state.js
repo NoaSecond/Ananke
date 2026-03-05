@@ -1,4 +1,12 @@
-export const API_URL = '/api';
+export const basePath = window.location.pathname.replace(/\/$/, '');
+export const API_URL = basePath + '/api';
+
+export function getFullUrl(url) {
+    if (url && url.startsWith('/')) {
+        return basePath + url;
+    }
+    return url;
+}
 
 export const state = {
     socket: null,

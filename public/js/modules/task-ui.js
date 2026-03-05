@@ -1,6 +1,6 @@
 import { elements } from './dom.js';
 import * as API from './api.js';
-import { state } from './state.js';
+import { state, getFullUrl } from './state.js';
 import { openModal, closeModal, showConfirm } from './modals.js';
 import { renderBoard, saveData, saveTaskOnly } from './board-ui.js';
 import { Logger, getInitials, getContrastYIQ } from './utils.js';
@@ -618,7 +618,7 @@ export const openViewTaskModal = (task, workflow) => {
         const currentUserObj = isCurrentUser ? state.currentUser : a;
         const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : a.avatar_url;
         return `
-            ${avatarUrl ? `<img src="${avatarUrl}" class="task-assignee-avatar" title="${currentUserObj.name}" style="object-fit: cover;">` : `<div class="task-assignee-avatar" title="${currentUserObj.name}">${getInitials(currentUserObj)}</div>`}
+            ${avatarUrl ? `<img src="${getFullUrl(avatarUrl)}" class="task-assignee-avatar" title="${currentUserObj.name}" style="object-fit: cover;">` : `<div class="task-assignee-avatar" title="${currentUserObj.name}">${getInitials(currentUserObj)}</div>`}
             <span style="font-size:0.9rem;">${currentUserObj.name}</span>
         `;
     }).join('');
@@ -956,7 +956,7 @@ const renderTaskAssignees = () => {
         const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : user.avatar_url;
         el.innerHTML = `
             <span class="material-symbols-outlined drag-handle" style="font-size: 14px; margin-right: 4px; opacity: 0.5; cursor: grab;">drag_indicator</span>
-            ${avatarUrl ? `<img src="${avatarUrl}" class="assignee-avatar-small" style="object-fit: cover;">` : `<div class="assignee-avatar-small">${getInitials(currentUserObj)}</div>`}
+            ${avatarUrl ? `<img src="${getFullUrl(avatarUrl)}" class="assignee-avatar-small" style="object-fit: cover;">` : `<div class="assignee-avatar-small">${getInitials(currentUserObj)}</div>`}
             <span>${currentUserObj.name}</span>
             <span class="remove-assignee" style="cursor: pointer; opacity: 0.7; margin-left: 4px;">&times;</span>
         `;
@@ -1004,7 +1004,7 @@ const renderAssigneePickerList = async () => {
             const currentUserObj = isCurrentUser ? state.currentUser : u;
             const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : u.avatar_url;
             div.innerHTML = `
-                ${avatarUrl ? `<img src="${avatarUrl}" class="assignee-avatar-small" style="object-fit: cover;">` : `<div class="assignee-avatar-small">${getInitials(currentUserObj)}</div>`}
+                ${avatarUrl ? `<img src="${getFullUrl(avatarUrl)}" class="assignee-avatar-small" style="object-fit: cover;">` : `<div class="assignee-avatar-small">${getInitials(currentUserObj)}</div>`}
                 <span>${currentUserObj.name}</span>
              `;
             div.onclick = () => {
@@ -1034,9 +1034,9 @@ const renderMediaGallery = (media, container, isEditable = false) => {
 
         let content = '';
         if (item.type === 'image') {
-            content = `<img src="${item.data}" alt="Media ${index}">`;
+            content = `<img src="${getFullUrl(item.data)}" alt="Media ${index}">`;
         } else if (item.type === 'video') {
-            content = `<video src="${item.data}" ${!isEditable ? 'controls' : ''}></video>`;
+            content = `<video src="${getFullUrl(item.data)}" ${!isEditable ? 'controls' : ''}></video>`;
         }
 
         // Actions Overlay
@@ -1082,7 +1082,7 @@ const renderMediaGallery = (media, container, isEditable = false) => {
                     e.stopPropagation();
                     if (item.type === 'image') {
                         const win = window.open();
-                        win.document.write(`<body style="margin:0; background:#000; display:flex; align-items:center; justify-content:center; height:100vh;"><img src="${item.data}" style="max-width:100%; max-height:100%; object-fit:contain;"></body>`);
+                        win.document.write(`<body style="margin:0; background:#000; display:flex; align-items:center; justify-content:center; height:100vh;"><img src="${getFullUrl(item.data)}" style="max-width:100%; max-height:100%; object-fit:contain;"></body>`);
                     }
                 };
             }
