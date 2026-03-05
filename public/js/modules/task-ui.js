@@ -996,6 +996,16 @@ const renderAssigneePickerList = async () => {
         // Let's stick to import * as API at top. (Check file imports)
 
         const users = data.users || [];
+        if (state.currentUser) {
+            users.sort((a, b) => {
+                const aIsCurrent = a.id === state.currentUser.id || a.name === state.currentUser.name;
+                const bIsCurrent = b.id === state.currentUser.id || b.name === state.currentUser.name;
+                if (aIsCurrent && !bIsCurrent) return -1;
+                if (!aIsCurrent && bIsCurrent) return 1;
+                return (a.name || '').localeCompare(b.name || '');
+            });
+        }
+
         elements.assigneeListEl.innerHTML = '';
         users.forEach(u => {
             const div = document.createElement('div');
