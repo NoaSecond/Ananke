@@ -1,4 +1,4 @@
-import { state } from './state.js';
+import { state, getFullUrl } from './state.js';
 import { elements } from './dom.js';
 import { Logger, ErrorHandler } from './utils.js';
 import { openTaskEditModal, openViewTaskModal } from './task-ui.js';
@@ -154,7 +154,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     const currentUserObj = isCurrentUser ? state.currentUser : a;
                     const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : a.avatar_url;
                     return avatarUrl
-                        ? `<img src="${avatarUrl}" class="task-assignee-avatar" title="${currentUserObj.name}" style="object-fit: cover;">`
+                        ? `<img src="${getFullUrl(avatarUrl)}" class="task-assignee-avatar" title="${currentUserObj.name}" style="object-fit: cover;">`
                         : `<div class="task-assignee-avatar" title="${currentUserObj.name}">${getInitials(currentUserObj)}</div>`;
                 }).join('');
 
