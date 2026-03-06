@@ -230,6 +230,23 @@ export const initTaskListeners = () => {
         openTaskEditModal(currentViewingTask, currentViewingWorkflow);
     });
 
+    elements.taskForm.editToViewBtn.addEventListener('click', () => {
+        const taskId = elements.taskForm.id.value;
+        let foundTask = null;
+        let foundWorkflow = null;
+        for (const workflow of state.boardData.workflows) {
+            foundTask = workflow.tasks.find(t => t.id == taskId);
+            if (foundTask) {
+                foundWorkflow = workflow;
+                break;
+            }
+        }
+        if (foundTask) {
+            closeModal(elements.taskModal);
+            openViewTaskModal(foundTask, foundWorkflow);
+        }
+    });
+
     // Auto-resize textarea listener
     elements.taskForm.description.addEventListener('input', (e) => {
         autoResizeTextarea(e.target);

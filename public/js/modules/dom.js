@@ -24,6 +24,7 @@ export const elements = {
         saveBtn: document.getElementById('save-task-btn'),
         deleteBtn: document.getElementById('delete-task-btn'),
         duplicateBtn: document.getElementById('duplicate-task-btn'),
+        editToViewBtn: document.getElementById('edit-to-view-btn'),
         columnSelect: document.getElementById('task-column-select'),
         tagsContainer: document.getElementById('task-tags-container'),
         newTagName: document.getElementById('new-tag-name'),
