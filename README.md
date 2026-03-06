@@ -68,3 +68,9 @@ For the first connection, use the following credentials to log in as the owner:
 - **Password:** `admin123`
 
 Then you can update the account details in the settings.
+
+-----
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

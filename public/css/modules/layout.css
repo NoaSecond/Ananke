@@ -161,3 +161,52 @@ body.has-custom-bg {
     background-position: center !important;
     background-attachment: fixed !important;
 }
+
+/* --- Online Users --- */
+.online-users-container {
+    display: flex;
+    align-items: center;
+    margin-right: 15px;
+}
+
+.online-users-container .online-user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-left: -10px;
+    border: 2px solid var(--card-bg);
+    background-color: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    transition: transform 0.2s, z-index 0.2s;
+    cursor: default;
+    position: relative;
+}
+
+.online-users-container .online-user-avatar::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    background-color: #4caf50;
+    border: 2px solid var(--card-bg);
+    border-radius: 50%;
+    z-index: 2;
+}
+
+.online-users-container .online-user-avatar:first-child {
+    margin-left: 0;
+}
+
+.online-users-container .online-user-avatar:hover {
+    transform: translateY(-2px);
+    z-index: 10;
+}

@@ -334,9 +334,9 @@ export const initBoardListeners = () => {
             const workflow = state.boardData.workflows.find(w => w.id == duplicateWorkflowBtn.dataset.workflowId);
             if (workflow) {
                 const newWorkflow = JSON.parse(JSON.stringify(workflow));
-                newWorkflow.id = Date.now();
+                newWorkflow.id = crypto.randomUUID();
                 newWorkflow.title = `${workflow.title} (Copy)`;
-                newWorkflow.tasks.forEach((t, i) => { t.id = Date.now() + i + 1; });
+                newWorkflow.tasks.forEach((t, i) => { t.id = crypto.randomUUID(); });
                 state.boardData.workflows.push(newWorkflow);
                 renderBoard();
                 saveData();
@@ -373,7 +373,7 @@ export const initBoardListeners = () => {
             }
             if (duplicateTaskBtn) {
                 const newTask = JSON.parse(JSON.stringify(task));
-                newTask.id = Date.now();
+                newTask.id = crypto.randomUUID();
                 newTask.title = `${task.title} (Copy)`;
                 const taskIndex = workflow.tasks.indexOf(task);
                 workflow.tasks.splice(taskIndex + 1, 0, newTask);
@@ -402,7 +402,7 @@ export const initBoardListeners = () => {
         if (title) {
             if (type === 'workflow') {
                 const newWorkflow = {
-                    id: Date.now(),
+                    id: crypto.randomUUID(),
                     title,
                     color: `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`,
                     tasks: []
@@ -414,7 +414,7 @@ export const initBoardListeners = () => {
                 if (workflow) {
                     const today = new Date().toISOString().split('T')[0];
                     const newTask = {
-                        id: Date.now(),
+                        id: crypto.randomUUID(),
                         title,
                         description: 'Click to edit...',
                         color: '#6b7280',

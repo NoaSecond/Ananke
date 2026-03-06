@@ -113,7 +113,7 @@ export const initTaskListeners = () => {
             const task = workflow.tasks.find(t => t.id == taskId);
             if (task) {
                 const newTask = JSON.parse(JSON.stringify(task));
-                newTask.id = Date.now();
+                newTask.id = crypto.randomUUID();
                 newTask.title = `${task.title} (Copy)`;
                 const taskIndex = workflow.tasks.findIndex(t => t.id == taskId);
                 workflow.tasks.splice(taskIndex + 1, 0, newTask);
@@ -228,6 +228,23 @@ export const initTaskListeners = () => {
     elements.viewTaskDisplay.editBtn.addEventListener('click', () => {
         closeModal(elements.viewTaskModal);
         openTaskEditModal(currentViewingTask, currentViewingWorkflow);
+    });
+
+    elements.taskForm.editToViewBtn.addEventListener('click', () => {
+        const taskId = elements.taskForm.id.value;
+        let foundTask = null;
+        let foundWorkflow = null;
+        for (const workflow of state.boardData.workflows) {
+            foundTask = workflow.tasks.find(t => t.id == taskId);
+            if (foundTask) {
+                foundWorkflow = workflow;
+                break;
+            }
+        }
+        if (foundTask) {
+            closeModal(elements.taskModal);
+            openViewTaskModal(foundTask, foundWorkflow);
+        }
     });
 
     // Auto-resize textarea listener
@@ -607,6 +624,9 @@ export const openViewTaskModal = (task, workflow) => {
     }
 
     elements.viewTaskDisplay.title.textContent = task.title;
+    if (elements.viewTaskDisplay.id) {
+        elements.viewTaskDisplay.id.textContent = `ID: ${task.id}`;
+    }
 
     // Conditionally show/hide sections
     const hasDesc = !!task.description;

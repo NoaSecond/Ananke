@@ -24,6 +24,7 @@ export const elements = {
         saveBtn: document.getElementById('save-task-btn'),
         deleteBtn: document.getElementById('delete-task-btn'),
         duplicateBtn: document.getElementById('duplicate-task-btn'),
+        editToViewBtn: document.getElementById('edit-to-view-btn'),
         columnSelect: document.getElementById('task-column-select'),
         tagsContainer: document.getElementById('task-tags-container'),
         newTagName: document.getElementById('new-tag-name'),
@@ -44,6 +45,7 @@ export const elements = {
     viewTaskModal: document.getElementById('view-task-modal'),
     viewTaskDisplay: {
         title: document.getElementById('view-task-title'),
+        id: document.getElementById('view-task-id'),
         desc: document.getElementById('view-task-desc'),
         descSection: document.getElementById('view-task-desc-section'),
         tags: document.getElementById('view-task-tags'),
@@ -94,6 +96,7 @@ export const elements = {
     clearLogsBtn: document.getElementById('clear-logs-btn'),
 
     // Header & Settings
+    onlineUsersContainer: document.getElementById('online-users-container'),
     serverLogsBtn: document.getElementById('server-logs-btn'),
     settingsToggleBtn: document.getElementById('settings-toggle-btn'),
     settingsMenu: document.getElementById('settings-menu'),

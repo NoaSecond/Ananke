@@ -198,17 +198,32 @@ io.use((socket, next) => {
 
     jwt.verify(jwtToken, JWT_SECRET, (err, decoded) => {
         if (err) return next(new Error("Authentication error"));
-        db.get("SELECT role FROM users WHERE id = ?", [decoded.id], (dbErr, row) => {
+        db.get("SELECT role, email, avatar_url, first_name, last_name FROM users WHERE id = ?", [decoded.id], (dbErr, row) => {
             if (dbErr || !row) return next(new Error("Authentication error"));
             decoded.role = row.role;
+            decoded.email = row.email;
+            decoded.avatar_url = row.avatar_url;
             socket.user = decoded;
             next();
         });
     });
 });
 
+const onlineUsers = new Map();
+
 io.on('connection', (socket) => {
     logger.socket(`User connected: ${socket.user.name} (${socket.user.role}) [ID: ${socket.id}]`);
+
+    onlineUsers.set(socket.id, {
+        id: socket.user.id,
+        name: socket.user.name,
+        role: socket.user.role,
+        avatar_url: socket.user.avatar_url,
+        email: socket.user.email
+    });
+
+    // Broadcast latest online users list to all connected clients
+    io.emit('onlineUsers', Array.from(onlineUsers.values()));
 
     // Send initial board data
     db.get("SELECT data FROM board_store WHERE id = 1", (err, row) => {
@@ -369,6 +384,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', (reason) => {
+        onlineUsers.delete(socket.id);
+        io.emit('onlineUsers', Array.from(onlineUsers.values()));
         logger.socket(`User disconnected: ${socket.user.name} (${reason})`);
     });
 });
