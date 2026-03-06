@@ -254,6 +254,31 @@ document.addEventListener('DOMContentLoaded', () => {
             appendLog(logEntry);
         });
 
+        state.socket.on('onlineUsers', (users) => {
+            if (!elements.onlineUsersContainer) return;
+            elements.onlineUsersContainer.innerHTML = '';
+
+            const uniqueUsersMap = new Map();
+            users.forEach(u => uniqueUsersMap.set(u.id, u));
+            const uniqueUsers = Array.from(uniqueUsersMap.values());
+
+            uniqueUsers.forEach(user => {
+                const userEl = document.createElement('div');
+                userEl.className = 'online-user-avatar';
+                userEl.title = user.name + (user.role ? ` (${user.role})` : '');
+
+                if (user.avatar_url) {
+                    userEl.style.backgroundImage = `url('${user.avatar_url}')`;
+                    userEl.style.backgroundSize = 'cover';
+                    userEl.style.backgroundPosition = 'center';
+                } else {
+                    const initials = (user.name || 'U').substring(0, 2).toUpperCase();
+                    userEl.textContent = initials;
+                }
+                elements.onlineUsersContainer.appendChild(userEl);
+            });
+        });
+
         state.socket.on('connect', () => {
             Logger.info('🔌 Connected to server');
         });

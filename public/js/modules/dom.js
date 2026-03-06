@@ -94,6 +94,7 @@ export const elements = {
     clearLogsBtn: document.getElementById('clear-logs-btn'),
 
     // Header & Settings
+    onlineUsersContainer: document.getElementById('online-users-container'),
     serverLogsBtn: document.getElementById('server-logs-btn'),
     settingsToggleBtn: document.getElementById('settings-toggle-btn'),
     settingsMenu: document.getElementById('settings-menu'),
