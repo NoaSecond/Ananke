@@ -44,6 +44,7 @@ export const elements = {
     viewTaskModal: document.getElementById('view-task-modal'),
     viewTaskDisplay: {
         title: document.getElementById('view-task-title'),
+        id: document.getElementById('view-task-id'),
         desc: document.getElementById('view-task-desc'),
         descSection: document.getElementById('view-task-desc-section'),
         tags: document.getElementById('view-task-tags'),

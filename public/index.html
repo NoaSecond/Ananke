@@ -439,7 +439,10 @@
     <div id="view-task-modal" class="modal-overlay">
         <div class="modal-content task-modal-content">
             <div class="modal-header-custom">
-                <h2 id="view-task-title" style="margin: 0; flex-grow: 1;"></h2>
+                <div style="flex-grow: 1; min-width: 0; margin-right: 10px;">
+                    <h2 id="view-task-title" style="margin: 0; word-break: break-word;"></h2>
+                    <span id="view-task-id" style="font-size: 0.75rem; opacity: 0.6; font-family: monospace;"></span>
+                </div>
                 <div class="header-controls">
                     <button id="view-to-edit-btn" class="icon-only-btn" title="Edit Task">
                         <span class="material-symbols-outlined">edit</span>

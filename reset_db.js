@@ -1,6 +1,7 @@
 require('dotenv').config();
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 
 const dbPath = process.env.DB_PATH || './ananke.db';
 const db = new sqlite3.Database(dbPath);
@@ -9,10 +10,10 @@ const defaultData = {
     projectName: 'Nouveau Projet',
     tags: [],
     workflows: [
-        { id: 1, title: 'To Do', color: '#ef4444', tasks: [] },
-        { id: 2, title: 'In Progress', color: '#f97316', tasks: [] },
-        { id: 3, title: 'To Test', color: '#3b82f6', tasks: [] },
-        { id: 4, title: 'Done', color: '#22c55e', tasks: [] }
+        { id: crypto.randomUUID(), title: 'To Do', color: '#ef4444', tasks: [] },
+        { id: crypto.randomUUID(), title: 'In Progress', color: '#f97316', tasks: [] },
+        { id: crypto.randomUUID(), title: 'To Test', color: '#3b82f6', tasks: [] },
+        { id: crypto.randomUUID(), title: 'Done', color: '#22c55e', tasks: [] }
     ],
     background: { type: 'gradient', value: 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)' }
 };
