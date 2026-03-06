@@ -1,5 +1,5 @@
 import { Logger } from './modules/utils.js';
-import { state, API_URL, basePath } from './modules/state.js';
+import { state, API_URL, basePath, getFullUrl } from './modules/state.js';
 import { elements } from './modules/dom.js';
 import { initModals } from './modules/modals.js';
 import { initAuth } from './modules/auth-ui.js';
@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 userEl.title = user.name + (user.role ? ` (${user.role})` : '');
 
                 if (user.avatar_url) {
-                    userEl.style.backgroundImage = `url('${user.avatar_url}')`;
+                    userEl.style.backgroundImage = `url('${getFullUrl(user.avatar_url)}')`;
                     userEl.style.backgroundSize = 'cover';
                     userEl.style.backgroundPosition = 'center';
                 } else {
