@@ -32,7 +32,8 @@ router.post('/login', (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 24 * 60 * 60 * 1000
+            maxAge: 24 * 60 * 60 * 1000,
+            path: '/'
         });
 
         res.json({
@@ -168,7 +169,7 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
                     JWT_SECRET,
                     { expiresIn: '24h' }
                 );
-                res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 24 * 3600000 });
+                res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 24 * 3600000, path: '/' });
                 logger.info(`User setup completed: ${displayName} (${user.email})`);
                 res.json({ success: true, user: { ...user, name: displayName, password_hash: undefined } });
             } else {
@@ -187,7 +188,7 @@ router.post('/logout', (req, res) => {
 
 // Get Current User
 router.get('/me', authenticateToken, (req, res) => {
-    db.get("SELECT id, first_name, last_name, email, role, is_setup_complete, avatar_url FROM users WHERE id = ?", [req.user.id], (err, row) => {
+    db.get("SELECT * FROM users WHERE id = ?", [req.user.id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (row) {
             const displayName = row.first_name ? `${row.first_name} ${row.last_name}` : row.email;
@@ -200,7 +201,7 @@ router.get('/me', authenticateToken, (req, res) => {
 
 // List Users
 router.get('/users', authenticateToken, requireRole('admin'), (req, res) => {
-    db.all("SELECT id, first_name, last_name, email, role, is_setup_complete, avatar_url FROM users", (err, rows) => {
+    db.all("SELECT * FROM users", (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         const users = rows.map(u => ({
             ...u,
@@ -253,7 +254,7 @@ router.delete('/users/:id', authenticateToken, requireRole('admin'), (req, res) 
 
 // List Simple (Assignees)
 router.get('/list', authenticateToken, (req, res) => {
-    db.all("SELECT id, first_name, last_name, email, avatar_url FROM users", (err, rows) => {
+    db.all("SELECT * FROM users", (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         const users = rows.map(u => ({
             id: u.id,
