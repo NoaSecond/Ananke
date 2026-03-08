@@ -11,10 +11,20 @@ export const closeModal = (modal) => {
 export const initModals = () => {
     [elements.addModal, elements.viewTaskModal, elements.taskModal, elements.workflowModal, elements.projectModal, elements.confirmModal, elements.userManagementModal, elements.bgModal, elements.logsModal].forEach(modal => {
         if (!modal) return;
+        modal.addEventListener('mousedown', (e) => {
+            modal._mouseDownTarget = e.target;
+        });
+
         modal.addEventListener('click', (e) => {
             const closeBtn = e.target.closest('.modal-close-btn');
-            if (e.target === modal || closeBtn) {
-                closeModal(modal);
+            if ((e.target === modal && modal._mouseDownTarget === modal) || closeBtn) {
+                if (modal === elements.taskModal && typeof window.checkTaskDirty === 'function' && window.checkTaskDirty()) {
+                    showConfirm("You have unsaved changes. Discard them?", () => {
+                        closeModal(modal);
+                    });
+                } else {
+                    closeModal(modal);
+                }
             }
         });
     });

@@ -47,6 +47,38 @@ export const openTaskEditModal = (task, workflow) => {
     });
 
     openModal(elements.taskModal);
+
+    window.originalTaskStateStr = JSON.stringify({
+        title: elements.taskForm.title.value,
+        description: elements.taskForm.description.value,
+        color: elements.taskForm.color.value,
+        columnSelect: elements.taskForm.columnSelect.value,
+        showTags: elements.taskForm.showTags.checked,
+        showDesc: elements.taskForm.showDesc.checked,
+        showAssignees: elements.taskForm.showAssignees.checked,
+        tags: tempTags,
+        customFields: tempCustomFields,
+        assignees: tempAssignees,
+        media: tempMedia
+    });
+};
+
+window.checkTaskDirty = () => {
+    if (!elements.taskModal.classList.contains('visible')) return false;
+    const currentState = JSON.stringify({
+        title: elements.taskForm.title.value,
+        description: elements.taskForm.description.value,
+        color: elements.taskForm.color.value,
+        columnSelect: elements.taskForm.columnSelect.value,
+        showTags: elements.taskForm.showTags.checked,
+        showDesc: elements.taskForm.showDesc.checked,
+        showAssignees: elements.taskForm.showAssignees.checked,
+        tags: tempTags,
+        customFields: tempCustomFields,
+        assignees: tempAssignees,
+        media: tempMedia
+    });
+    return window.originalTaskStateStr !== currentState;
 };
 
 export const initTaskListeners = () => {
