@@ -283,6 +283,7 @@ function handleLoginSuccess(user, initSocketCallback) {
     checkVersion(user);
 
     if (initSocketCallback) initSocketCallback();
+    refreshSearchUsers().catch(e => console.error(e));
     if (!user.is_setup_complete) {
         openSetupModal(true);
     }

@@ -47,6 +47,38 @@ export const openTaskEditModal = (task, workflow) => {
     });
 
     openModal(elements.taskModal);
+
+    window.originalTaskStateStr = JSON.stringify({
+        title: elements.taskForm.title.value,
+        description: elements.taskForm.description.value,
+        color: elements.taskForm.color.value,
+        columnSelect: elements.taskForm.columnSelect.value,
+        showTags: elements.taskForm.showTags.checked,
+        showDesc: elements.taskForm.showDesc.checked,
+        showAssignees: elements.taskForm.showAssignees.checked,
+        tags: tempTags,
+        customFields: tempCustomFields,
+        assignees: tempAssignees,
+        media: tempMedia
+    });
+};
+
+window.checkTaskDirty = () => {
+    if (!elements.taskModal.classList.contains('visible')) return false;
+    const currentState = JSON.stringify({
+        title: elements.taskForm.title.value,
+        description: elements.taskForm.description.value,
+        color: elements.taskForm.color.value,
+        columnSelect: elements.taskForm.columnSelect.value,
+        showTags: elements.taskForm.showTags.checked,
+        showDesc: elements.taskForm.showDesc.checked,
+        showAssignees: elements.taskForm.showAssignees.checked,
+        tags: tempTags,
+        customFields: tempCustomFields,
+        assignees: tempAssignees,
+        media: tempMedia
+    });
+    return window.originalTaskStateStr !== currentState;
 };
 
 export const initTaskListeners = () => {
@@ -633,13 +665,17 @@ export const openViewTaskModal = (task, workflow) => {
     elements.viewTaskDisplay.descSection.style.display = hasDesc ? 'block' : 'none';
     if (hasDesc) elements.viewTaskDisplay.desc.innerHTML = marked.parse(task.description);
 
+    elements.viewTaskAssignees.style.flexWrap = 'wrap';
+    elements.viewTaskAssignees.style.gap = '8px';
     elements.viewTaskAssignees.innerHTML = (task.assignees || []).map(a => {
         const isCurrentUser = state.currentUser && (a.id === state.currentUser.id || a.name === state.currentUser.name);
         const currentUserObj = isCurrentUser ? state.currentUser : a;
         const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : a.avatar_url;
         return `
-            ${avatarUrl ? `<img src="${getFullUrl(avatarUrl)}" class="task-assignee-avatar" title="${currentUserObj.name}" style="object-fit: cover;">` : `<div class="task-assignee-avatar" title="${currentUserObj.name}">${getInitials(currentUserObj)}</div>`}
-            <span style="font-size:0.9rem;">${currentUserObj.name}</span>
+            <div class="assignee-chip" style="border: 1px solid var(--border-color); background: var(--bg-color);">
+                ${avatarUrl ? `<img src="${getFullUrl(avatarUrl)}" class="assignee-avatar-small" title="${currentUserObj.name}" style="object-fit: cover;">` : `<div class="assignee-avatar-small" title="${currentUserObj.name}">${getInitials(currentUserObj)}</div>`}
+                <span style="font-size:0.9rem;">${currentUserObj.name}</span>
+            </div>
         `;
     }).join('');
 
