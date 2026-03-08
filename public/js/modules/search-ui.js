@@ -92,9 +92,9 @@ export function handleSearch() {
     }
 
     // Parse query for tags and persons
-    // Format: Tag:Blabla Person:Blabla Text
-    const tagsMatch = query.match(/tag:([^\s]*)/g);
-    const personsMatch = query.match(/person:([^\s]*)/g);
+    // Format: Tag:"Blabla space" Person:Blabla Text
+    const tagsMatch = query.match(/tag:"([^"]+)"|tag:([^\s]+)/g);
+    const personsMatch = query.match(/person:"([^"]+)"|person:([^\s]+)/g);
 
     // Remote prefixes to get literal search text
     let plainText = query;
@@ -102,7 +102,9 @@ export function handleSearch() {
     if (tagsMatch) {
         tagsMatch.forEach(m => {
             plainText = plainText.replace(m, '');
-            const val = m.split(':')[1];
+            // Extract value with or without quotes
+            let val = m.replace(/^tag:/, '');
+            if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
             if (val) requiredTags.push(val.toLowerCase());
         });
     }
@@ -111,7 +113,8 @@ export function handleSearch() {
     if (personsMatch) {
         personsMatch.forEach(m => {
             plainText = plainText.replace(m, '');
-            const val = m.split(':')[1];
+            let val = m.replace(/^person:/, '');
+            if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
             if (val) requiredPersons.push(val.toLowerCase());
         });
     }
@@ -267,9 +270,11 @@ function applyAutocomplete(type, name, matchText, matchIndex) {
     const before = value.substring(0, matchIndex);
     const after = value.substring(matchIndex + matchText.length);
 
-    input.value = before + type + ':' + name + ' ' + after;
+    // If the name has spaces, wrap it in quotes for the regex parsing
+    const formattedName = name.includes(' ') ? `"${name}"` : name;
+    input.value = before + type + ':' + formattedName + ' ' + after;
     input.focus();
-    input.setSelectionRange(before.length + type.length + name.length + 2, before.length + type.length + name.length + 2);
+    input.setSelectionRange(before.length + type.length + formattedName.length + 2, before.length + type.length + formattedName.length + 2);
 
     closeAutocomplete();
     handleSearch();
