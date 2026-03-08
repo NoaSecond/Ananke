@@ -633,13 +633,17 @@ export const openViewTaskModal = (task, workflow) => {
     elements.viewTaskDisplay.descSection.style.display = hasDesc ? 'block' : 'none';
     if (hasDesc) elements.viewTaskDisplay.desc.innerHTML = marked.parse(task.description);
 
+    elements.viewTaskAssignees.style.flexWrap = 'wrap';
+    elements.viewTaskAssignees.style.gap = '8px';
     elements.viewTaskAssignees.innerHTML = (task.assignees || []).map(a => {
         const isCurrentUser = state.currentUser && (a.id === state.currentUser.id || a.name === state.currentUser.name);
         const currentUserObj = isCurrentUser ? state.currentUser : a;
         const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : a.avatar_url;
         return `
-            ${avatarUrl ? `<img src="${getFullUrl(avatarUrl)}" class="task-assignee-avatar" title="${currentUserObj.name}" style="object-fit: cover;">` : `<div class="task-assignee-avatar" title="${currentUserObj.name}">${getInitials(currentUserObj)}</div>`}
-            <span style="font-size:0.9rem;">${currentUserObj.name}</span>
+            <div class="assignee-chip" style="border: 1px solid var(--border-color); background: var(--bg-color);">
+                ${avatarUrl ? `<img src="${getFullUrl(avatarUrl)}" class="assignee-avatar-small" title="${currentUserObj.name}" style="object-fit: cover;">` : `<div class="assignee-avatar-small" title="${currentUserObj.name}">${getInitials(currentUserObj)}</div>`}
+                <span style="font-size:0.9rem;">${currentUserObj.name}</span>
+            </div>
         `;
     }).join('');
 
