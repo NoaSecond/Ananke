@@ -1,5 +1,5 @@
 import { elements } from './dom.js';
-import { state } from './state.js';
+import { state, getFullUrl } from './state.js';
 import { renderBoard } from './board-ui.js';
 import { openModal, closeModal } from './modals.js';
 import { Logger } from './utils.js';
@@ -148,7 +148,8 @@ function updatePreview(bg) {
     } else if (bg.type === 'gradient') {
         preview.style.background = bg.value;
     } else if (bg.type === 'image') {
-        preview.style.backgroundImage = `url("${bg.value}")`;
+        const bgUrl = getFullUrl(bg.value);
+        preview.style.backgroundImage = `url("${bgUrl}")`;
         preview.style.backgroundSize = 'cover';
         preview.style.backgroundPosition = 'center';
     } else {
@@ -170,7 +171,8 @@ export function applyBackground(bg) {
     } else if (bg.type === 'gradient') {
         document.body.style.background = bg.value;
     } else if (bg.type === 'image') {
-        document.body.style.backgroundImage = `url("${bg.value}")`;
+        const bgUrl = getFullUrl(bg.value);
+        document.body.style.backgroundImage = `url("${bgUrl}")`;
         document.body.style.backgroundSize = 'cover';
         document.body.style.backgroundPosition = 'center';
         document.body.style.backgroundAttachment = 'fixed';
