@@ -198,7 +198,11 @@ export function initAuth(initSocketCallback) {
                     elements.setupModal.classList.remove('visible');
                     Logger.success('Profile updated');
 
-                    if (!state.socket) initSocketCallback();
+                    if (!state.socket) {
+                        initSocketCallback();
+                    } else {
+                        state.socket.emit('profileUpdated');
+                    }
                 } else {
                     messageEl.textContent = res.error || 'Update failed';
                 }

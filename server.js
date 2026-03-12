@@ -232,6 +232,27 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Handle Profile Updates from Clients
+    socket.on('profileUpdated', () => {
+        db.get("SELECT role, email, avatar_url, first_name, last_name FROM users WHERE id = ?", [socket.user.id], (dbErr, row) => {
+            if (!dbErr && row) {
+                socket.user.role = row.role;
+                socket.user.email = row.email;
+                socket.user.avatar_url = row.avatar_url;
+                socket.user.name = row.first_name ? `${row.first_name} ${row.last_name}` : row.email;
+
+                onlineUsers.set(socket.id, {
+                    id: socket.user.id,
+                    name: socket.user.name,
+                    role: socket.user.role,
+                    avatar_url: socket.user.avatar_url,
+                    email: socket.user.email
+                });
+                io.emit('onlineUsers', Array.from(onlineUsers.values()));
+            }
+        });
+    });
+
     // Handle Board Updates from Clients
     socket.on('updateBoard', (newBoardData) => {
         // RBAC Check for Edit
