@@ -1,4 +1,5 @@
 import { API_URL, state } from './state.js';
+import { compressImage } from './utils.js';
 
 export async function login(email, password) {
     const res = await fetch(`${API_URL}/auth/login`, {
@@ -72,7 +73,8 @@ export async function getBoard() {
 export async function uploadFiles(files) {
     const formData = new FormData();
     for (const file of files) {
-        formData.append('files', file);
+        const compressedFile = await compressImage(file);
+        formData.append('files', compressedFile);
     }
     const res = await fetch(`${API_URL}/upload`, {
         method: 'POST',

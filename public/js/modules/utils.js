@@ -139,3 +139,54 @@ export const getContrastYIQ = (hexcolor) => {
     var yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
     return (yiq >= 128) ? '#000000' : 'white';
 };
+
+export async function compressImage(file, maxWidth = 2560, quality = 0.8) {
+    if (!file.type.startsWith('image/')) return file;
+    if (file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
+    if (file.size <= 1048576) return file; // Skip if <= 1MB (1024 * 1024)
+
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > maxWidth) {
+                    height = Math.round(height * (maxWidth / width));
+                    width = maxWidth;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                
+                if (file.type === 'image/jpeg') {
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, width, height);
+                }
+                
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+
+                canvas.toBlob((blob) => {
+                    if (blob && blob.size < file.size) {
+                        resolve(new File([blob], file.name, {
+                            type: outputType,
+                            lastModified: Date.now()
+                        }));
+                    } else {
+                        resolve(file);
+                    }
+                }, outputType, quality);
+            };
+            img.onerror = () => resolve(file);
+        };
+        reader.onerror = () => resolve(file);
+    });
+}
