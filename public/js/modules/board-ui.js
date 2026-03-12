@@ -71,6 +71,14 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
         elements.projectTitle.style.cursor = isReader ? 'default' : 'pointer';
     }
 
+    const scrollPositions = new Map();
+    document.querySelectorAll('.task-list').forEach(list => {
+        const workflowId = list.dataset.workflowId;
+        if (workflowId) {
+            scrollPositions.set(workflowId, list.scrollTop);
+        }
+    });
+
     elements.kanbanBoard.innerHTML = '';
     if (!state.boardData.workflows || state.boardData.workflows.length === 0) {
         elements.kanbanBoard.innerHTML = '<p style="text-align: center; width: 100%; opacity: 0.7;">Your board is empty. Add a column to start!</p>';
@@ -196,6 +204,16 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                 taskList.appendChild(taskCard);
             });
             elements.kanbanBoard.appendChild(columnEl);
+        });
+
+        // Restore scroll positions
+        requestAnimationFrame(() => {
+            document.querySelectorAll('.task-list').forEach(list => {
+                const workflowId = list.dataset.workflowId;
+                if (workflowId && scrollPositions.has(workflowId)) {
+                    list.scrollTop = scrollPositions.get(workflowId);
+                }
+            });
         });
     }
     Logger.success('✨ Board rendered successfully');
