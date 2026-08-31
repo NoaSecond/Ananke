@@ -175,6 +175,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
 
                 taskCard.innerHTML = `
                     ${taskActionsHtml}
+                    ${(task.showIdOnCard && task.id) ? `<div class="task-card-id" style="font-size: 0.7rem; opacity: 0.55; font-family: monospace; margin-bottom: 4px; user-select: text;">ID: ${task.id}</div>` : ''}
                     <h4>${task.title}</h4>
                     ${(task.showTags !== false && task.tags && task.tags.length > 0) ? `
                     <div class="task-tags-display">

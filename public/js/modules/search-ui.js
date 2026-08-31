@@ -91,12 +91,13 @@ export function handleSearch() {
         return;
     }
 
-    // Parse query for tags and persons
-    // Format: Tag:"Blabla space" Person:Blabla Text
+    // Parse query for tags, persons, and IDs
+    // Format: Tag:"Blabla space" Person:Blabla id:123 Text
     const tagsMatch = query.match(/tag:"([^"]+)"|tag:([^\s]+)/g);
     const personsMatch = query.match(/person:"([^"]+)"|person:([^\s]+)/g);
+    const idsMatch = query.match(/id:"([^"]+)"|id:([^\s]+)/g);
 
-    // Remote prefixes to get literal search text
+    // Remove prefixes to get literal search text
     let plainText = query;
     const requiredTags = [];
     if (tagsMatch) {
@@ -116,6 +117,16 @@ export function handleSearch() {
             let val = m.replace(/^person:/, '');
             if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
             if (val) requiredPersons.push(val.toLowerCase());
+        });
+    }
+
+    const requiredIds = [];
+    if (idsMatch) {
+        idsMatch.forEach(m => {
+            plainText = plainText.replace(m, '');
+            let val = m.replace(/^id:/, '');
+            if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+            if (val) requiredIds.push(val.toLowerCase());
         });
     }
 
@@ -144,10 +155,17 @@ export function handleSearch() {
             matchesPersons = requiredPersons.every(rp => taskAssignees.some(ta => ta.includes(rp)));
         }
 
+        let matchesIds = true;
+        if (requiredIds.length > 0) {
+            const currentTaskId = String(task.id || '').toLowerCase();
+            matchesIds = requiredIds.every(ri => currentTaskId.includes(ri));
+        }
+
         let matchesText = true;
         if (plainText) {
-            const title = task.title.toLowerCase();
+            const title = (task.title || '').toLowerCase();
             const desc = (task.description || '').toLowerCase();
+            const taskIdStr = String(task.id || '').toLowerCase();
             let customFieldsMatch = false;
             if (task.customFields) {
                 customFieldsMatch = task.customFields.some(cf => {
@@ -156,10 +174,10 @@ export function handleSearch() {
                     return cfName.includes(plainText) || cfValue.includes(plainText);
                 });
             }
-            matchesText = title.includes(plainText) || desc.includes(plainText) || customFieldsMatch;
+            matchesText = title.includes(plainText) || desc.includes(plainText) || taskIdStr.includes(plainText) || customFieldsMatch;
         }
 
-        if (matchesTags && matchesPersons && matchesText) {
+        if (matchesTags && matchesPersons && matchesIds && matchesText) {
             card.classList.remove('hidden-by-search');
         } else {
             card.classList.add('hidden-by-search');
@@ -181,6 +199,7 @@ function handleAutocomplete() {
 
     const tagMatch = textBeforeCursor.match(/tag:([^\s]*)$/i);
     const personMatch = textBeforeCursor.match(/person:([^\s]*)$/i);
+    const idMatch = textBeforeCursor.match(/id:([^\s]*)$/i);
 
     if (tagMatch) {
         const query = tagMatch[1].toLowerCase();
@@ -211,6 +230,20 @@ function handleAutocomplete() {
             return { type: 'Person', name: personName, count };
         });
         showAutocomplete(personsWithOptions, personMatch[0], personMatch.index);
+    } else if (idMatch) {
+        const query = idMatch[1].toLowerCase();
+        const allMatchingTasks = [];
+        (state.boardData.workflows || []).forEach(w => (w.tasks || []).forEach(task => {
+            if (task.id && String(task.id).toLowerCase().includes(query)) {
+                allMatchingTasks.push(task);
+            }
+        }));
+        const idsWithOptions = allMatchingTasks.slice(0, 10).map(t => ({
+            type: 'ID',
+            name: String(t.id),
+            title: t.title
+        }));
+        showAutocomplete(idsWithOptions, idMatch[0], idMatch.index);
     } else {
         closeAutocomplete();
     }
@@ -224,6 +257,7 @@ function showSearchTips() {
             <div style="display: grid; gap: 0.4rem;">
                 <div>• Type <code style="background: var(--bg-color); padding: 2px 4px; border-radius: 4px;">tag:</code> for autocompletion</div>
                 <div>• Type <code style="background: var(--bg-color); padding: 2px 4px; border-radius: 4px;">person:</code> for assignees</div>
+                <div>• Type <code style="background: var(--bg-color); padding: 2px 4px; border-radius: 4px;">id:</code> for ticket ID</div>
                 <div>• Combine options and text freely</div>
             </div>
         </div>
@@ -245,12 +279,13 @@ function showAutocomplete(options, matchText, matchIndex) {
         const item = document.createElement('div');
         item.className = 'autocomplete-item';
         item.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                     <span class="item-type">${opt.type}</span>
-                    <span class="item-value">${opt.name}</span>
+                    <span class="item-value" ${opt.type === 'ID' ? 'style="font-family: monospace; font-size: 0.85rem;"' : ''}>${opt.name}</span>
+                    ${opt.title ? `<span style="opacity: 0.6; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis;">— ${opt.title}</span>` : ''}
                 </div>
-                ${opt.count !== undefined ? `<span style="opacity: 0.6; font-size: 0.8rem;">${opt.count} card${opt.count !== 1 ? 's' : ''}</span>` : ''}
+                ${opt.count !== undefined ? `<span style="opacity: 0.6; font-size: 0.8rem; flex-shrink: 0;">${opt.count} card${opt.count !== 1 ? 's' : ''}</span>` : ''}
             </div>
         `;
         item.onclick = () => {

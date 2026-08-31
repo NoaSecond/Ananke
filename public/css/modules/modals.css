@@ -129,6 +129,7 @@ body.dark-mode .modal-close-btn:hover {
     border: 1px solid transparent;
     background: transparent;
     flex-grow: 1;
+    width: 100%;
     padding: 0.5rem;
     color: var(--text-color);
     border-radius: 6px;
