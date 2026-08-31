@@ -96,7 +96,7 @@
         },
         "datePublished": "2025-01-26",
         "dateModified": "2026-03-12",
-        "version": "2.8.13",
+        "version": "2.9.0",
         "downloadUrl": "https://github.com/NoaSecond/Ananke",
         "featureList": [
             "Interactive Kanban Board",
@@ -509,6 +509,19 @@
 
             <div class="modal-body-scroll">
                 <input type="hidden" id="task-id-input">
+
+                <div class="task-id-section" style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <label style="margin-bottom: 0.2rem; display: block; font-size: 0.85rem;">Task ID</label>
+                        <span id="task-id-display" style="font-size: 0.8rem; opacity: 0.7; font-family: monospace; user-select: all;"></span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+                        <input type="checkbox" id="task-show-id-input" style="width: auto; margin: 0; cursor: pointer;">
+                        <label for="task-show-id-input" style="margin: 0; font-size: 0.85rem; opacity: 0.9; cursor: pointer;">Show ID on card</label>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
 
                 <label for="task-color-input">Strip Color</label>
                 <input type="color" id="task-color-input">

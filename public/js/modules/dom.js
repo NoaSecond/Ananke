@@ -18,6 +18,8 @@ export const elements = {
     taskModal: document.getElementById('task-modal'),
     taskForm: {
         id: document.getElementById('task-id-input'),
+        idDisplay: document.getElementById('task-id-display'),
+        showId: document.getElementById('task-show-id-input'),
         title: document.getElementById('task-title-input'),
         description: document.getElementById('task-desc-input'),
         color: document.getElementById('task-color-input'),

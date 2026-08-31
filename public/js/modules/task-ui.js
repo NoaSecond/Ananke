@@ -16,6 +16,12 @@ let currentViewingWorkflow = null;
 // --- Task Editing Logic ---
 export const openTaskEditModal = (task, workflow) => {
     elements.taskForm.id.value = task.id;
+    if (elements.taskForm.idDisplay) {
+        elements.taskForm.idDisplay.textContent = task.id || '';
+    }
+    if (elements.taskForm.showId) {
+        elements.taskForm.showId.checked = task.showIdOnCard === true;
+    }
     elements.taskForm.title.value = task.title;
     elements.taskForm.description.value = task.description;
     elements.taskForm.color.value = task.color;
@@ -53,6 +59,7 @@ export const openTaskEditModal = (task, workflow) => {
         description: elements.taskForm.description.value,
         color: elements.taskForm.color.value,
         columnSelect: elements.taskForm.columnSelect.value,
+        showId: elements.taskForm.showId ? elements.taskForm.showId.checked : false,
         showTags: elements.taskForm.showTags.checked,
         showDesc: elements.taskForm.showDesc.checked,
         showAssignees: elements.taskForm.showAssignees.checked,
@@ -70,6 +77,7 @@ window.checkTaskDirty = () => {
         description: elements.taskForm.description.value,
         color: elements.taskForm.color.value,
         columnSelect: elements.taskForm.columnSelect.value,
+        showId: elements.taskForm.showId ? elements.taskForm.showId.checked : false,
         showTags: elements.taskForm.showTags.checked,
         showDesc: elements.taskForm.showDesc.checked,
         showAssignees: elements.taskForm.showAssignees.checked,
@@ -99,6 +107,7 @@ export const initTaskListeners = () => {
                 task.customFields = [...tempCustomFields];
                 task.assignees = [...tempAssignees];
                 task.media = [...tempMedia];
+                task.showIdOnCard = elements.taskForm.showId ? elements.taskForm.showId.checked : false;
                 task.showTags = elements.taskForm.showTags.checked;
                 task.showDescriptionOnCard = elements.taskForm.showDesc.checked;
                 task.showAssigneesOnCard = elements.taskForm.showAssignees.checked;
