@@ -60,6 +60,7 @@ const upload = multer({
 });
 
 const app = express();
+app.disable('x-powered-by');
 const server = http.createServer(app);
 const io = new Server(server, {
     maxHttpBufferSize: 1e7 // [HIGH-06] 10MB max par message WebSocket
@@ -163,7 +164,8 @@ app.delete('/api/media', authenticateToken, (req, res) => {
     }
 });
 
-app.get('/api/version', async (req, res) => {
+// [MED-03] — Protégé par authenticateToken pour empêcher le fingerprinting par des tiers non connectés
+app.get('/api/version', authenticateToken, async (req, res) => {
     try {
         const pkgData = await fs.promises.readFile(path.join(__dirname, 'package.json'), 'utf8');
         const pkg = JSON.parse(pkgData);

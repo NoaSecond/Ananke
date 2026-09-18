@@ -311,11 +311,16 @@ function handleLoginSuccess(user, initSocketCallback) {
 }
 
 async function checkVersion(user) {
-    if (!['admin', 'owner'].includes(user.role)) return;
     try {
-        const localRes = await fetch(API_URL + '/version');
-        const localData = await localRes.json();
+        const localData = await API.getVersion();
         const localVersion = localData.version;
+
+        const versionDisplay = document.getElementById('app-version-display');
+        if (versionDisplay && localVersion) {
+            versionDisplay.textContent = `v${localVersion}`;
+        }
+
+        if (!['admin', 'owner'].includes(user.role)) return;
 
         const remoteRes = await fetch('https://raw.githubusercontent.com/NoaSecond/Ananke/main/package.json?t=' + Date.now());
         const remoteData = await remoteRes.json();

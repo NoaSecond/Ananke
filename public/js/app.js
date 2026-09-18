@@ -14,17 +14,6 @@ import { initSearch } from './modules/search-ui.js';
 document.addEventListener('DOMContentLoaded', () => {
     Logger.info('🚀 Ananke application started');
 
-    // Fetch and display version dynamically
-    fetch(API_URL + '/version')
-        .then(res => res.json())
-        .then(data => {
-            const versionDisplay = document.getElementById('app-version-display');
-            if (versionDisplay && data.version) {
-                versionDisplay.textContent = `v${data.version}`;
-            }
-        })
-        .catch(err => Logger.error(`Failed to fetch app version: ${err}`));
-
     // --- Initialization ---
     initModals();
     initBoardListeners();

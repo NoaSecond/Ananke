@@ -36,6 +36,14 @@ export async function getMe() {
     throw new Error('Not authenticated');
 }
 
+export async function getVersion() {
+    const res = await apiFetch(`${API_URL}/version`);
+    if (res.ok) {
+        return res.json();
+    }
+    throw new Error('Failed to fetch version');
+}
+
 export async function completeSetup(data) {
     const res = await apiFetch(`${API_URL}/auth/complete-setup`, {
         method: 'POST',
