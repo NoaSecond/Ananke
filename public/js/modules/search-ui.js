@@ -1,6 +1,7 @@
 import { elements } from './dom.js';
 import { state } from './state.js';
 import { getUsers, getSimpleList } from './api.js';
+import { Logger } from './utils.js';
 
 let users = [];
 let selectedIndex = -1;
@@ -77,7 +78,7 @@ export async function refreshSearchUsers() {
             users = response.users;
         }
     } catch (e) {
-        console.error('Failed to fetch users for search', e);
+        Logger.warn('Failed to fetch users for search', e);
     }
 }
 

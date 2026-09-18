@@ -45,7 +45,7 @@ export function initAuth(initSocketCallback) {
     if (elements.setupCloseBtn) {
         elements.setupCloseBtn.onclick = () => {
             sessionAvatarUploads.forEach(url => {
-                API.deleteMedia(url).catch(e => console.error(e));
+                API.deleteMedia(url).catch(e => Logger.warn('Avatar cleanup notice', e));
             });
             sessionAvatarUploads = [];
             elements.setupModal.classList.remove('visible');
@@ -172,11 +172,11 @@ export function initAuth(initSocketCallback) {
 
             try {
                 if (oldAvatarUrl && oldAvatarUrl.startsWith('/uploads/') && currentAvatarUrl !== oldAvatarUrl) {
-                    API.deleteMedia(oldAvatarUrl).catch(e => console.error(e));
+                    API.deleteMedia(oldAvatarUrl).catch(e => Logger.warn('Old avatar cleanup notice', e));
                 }
                 sessionAvatarUploads.forEach(url => {
                     if (url !== currentAvatarUrl) {
-                        API.deleteMedia(url).catch(e => console.error(e));
+                        API.deleteMedia(url).catch(e => Logger.warn('Avatar cleanup notice', e));
                     }
                 });
                 sessionAvatarUploads = [];
@@ -192,7 +192,7 @@ export function initAuth(initSocketCallback) {
                             renderBoard();
                             await refreshSearchUsers();
                         } catch (e) {
-                            console.error('Failed to trigger board re-render', e);
+                            Logger.warn('Failed to trigger board re-render', e);
                         }
                     }
 
@@ -208,7 +208,7 @@ export function initAuth(initSocketCallback) {
                     messageEl.textContent = res.error || 'Update failed';
                 }
             } catch (err) {
-                console.error(err);
+                Logger.error('Setup completion error', err);
                 messageEl.textContent = 'Network error';
             }
         });
@@ -304,7 +304,7 @@ function handleLoginSuccess(user, initSocketCallback) {
     checkVersion(user);
 
     if (initSocketCallback) initSocketCallback();
-    refreshSearchUsers().catch(e => console.error(e));
+    refreshSearchUsers().catch(e => Logger.warn('User search refresh error', e));
     if (!user.is_setup_complete) {
         openSetupModal(true);
     }
@@ -343,7 +343,7 @@ async function checkVersion(user) {
             }
         }
     } catch (e) {
-        console.error('Failed to check version', e);
+        Logger.warn('Failed to check version', e);
     }
 }
 

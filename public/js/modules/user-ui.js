@@ -59,7 +59,7 @@ export async function loadUsers() {
             listEl.innerHTML = '<div style="padding:1rem; text-align:center; color:var(--danger-color);">Failed to load list.</div>';
         }
     } catch (e) {
-        console.error(e);
+        Logger.error('Failed to load user list', e);
         listEl.innerHTML = '<div style="padding:1rem; text-align:center; color:var(--danger-color);">Loading error. Check permissions.</div>';
     }
 }

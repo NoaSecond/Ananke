@@ -303,6 +303,15 @@ app.post('/api/board', authenticateToken, (req, res) => {
     });
 });
 
+// [LOW-01] — Gestionnaire d'erreurs Express centralisé : masque les stack traces
+app.use((err, req, res, next) => {
+    logger.error(`Unhandled error: ${err.message}`, err.stack);
+    const isProd = process.env.NODE_ENV === 'production';
+    res.status(err.status || 500).json({
+        error: isProd ? 'Une erreur interne est survenue' : err.message
+    });
+});
+
 // Socket.io Middleware for Auth
 io.use((socket, next) => {
     // Extract token from cookie

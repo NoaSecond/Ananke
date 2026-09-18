@@ -28,9 +28,11 @@ export const Logger = {
     },
 
     error(message, error = null) {
-        this.log('ERROR', message, error);
-        if (error && error.stack) {
-            console.error('📋 Stack trace:', error.stack);
+        // [LOW-01] — Masquage des stack traces dans la console navigateur
+        const errDetail = error instanceof Error ? error.message : (typeof error === 'string' ? error : null);
+        this.log('ERROR', errDetail ? `${message} (${errDetail})` : message);
+        if (window.__ANANKE_DEBUG__ && error && error.stack) {
+            console.debug('📋 Stack trace (debug):', error.stack);
         }
     },
 
