@@ -12,7 +12,7 @@ export function initThemeListeners() {
     if (elements.bgCustomizeBtn) {
         elements.bgCustomizeBtn.onclick = () => {
             // Cleanup any leftovers from a previous canceled session
-            sessionBgUploads.forEach(url => API.deleteMedia(url).catch(e => console.error(e)));
+            sessionBgUploads.forEach(url => API.deleteMedia(url).catch(e => Logger.warn('Cleanup media notice', e)));
             sessionBgUploads = [];
 
             tempBg = state.boardData.background ? { ...state.boardData.background } : { type: 'default', value: '' };
@@ -116,7 +116,7 @@ export function initThemeListeners() {
 
             sessionBgUploads.forEach(url => {
                 if (!tempBg || tempBg.value !== url) {
-                    API.deleteMedia(url).catch(e => console.error(e));
+                    API.deleteMedia(url).catch(e => Logger.warn('Cleanup media notice', e));
                 }
             });
             sessionBgUploads = [];

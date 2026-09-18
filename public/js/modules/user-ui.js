@@ -59,7 +59,7 @@ export async function loadUsers() {
             listEl.innerHTML = '<div style="padding:1rem; text-align:center; color:var(--danger-color);">Failed to load list.</div>';
         }
     } catch (e) {
-        console.error(e);
+        Logger.error('Failed to load user list', e);
         listEl.innerHTML = '<div style="padding:1rem; text-align:center; color:var(--danger-color);">Loading error. Check permissions.</div>';
     }
 }
@@ -83,12 +83,12 @@ function renderUserList(users) {
             </div>
             <div style="display:flex; align-items:center; gap:0.5rem;">
                 ${!isOwner ? `
-                    <select onchange="window.changeUserRole(${u.id}, this.value)" class="small-select role-select" data-role="${u.role}">
+                    <select onchange="window.changeUserRole('${u.id}', this.value)" class="small-select role-select" data-role="${u.role}">
                         <option value="reader" ${u.role === 'reader' ? 'selected' : ''}>Reader</option>
                         <option value="editor" ${u.role === 'editor' ? 'selected' : ''}>Editor</option>
                         <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>
-                    ${!isSelf ? `<button onclick="window.deleteUser(${u.id})" class="delete-user-btn">Delete</button>` : ''}
+                    ${!isSelf ? `<button onclick="window.deleteUser('${u.id}')" class="delete-user-btn">Delete</button>` : ''}
                 ` : '<span class="role-badge owner">Owner</span>'}
             </div>
         </div>

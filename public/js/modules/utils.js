@@ -28,9 +28,11 @@ export const Logger = {
     },
 
     error(message, error = null) {
-        this.log('ERROR', message, error);
-        if (error && error.stack) {
-            console.error('📋 Stack trace:', error.stack);
+        // Masquage des stack traces dans la console navigateur
+        const errDetail = error instanceof Error ? error.message : (typeof error === 'string' ? error : null);
+        this.log('ERROR', errDetail ? `${message} (${errDetail})` : message);
+        if (window.__ANANKE_DEBUG__ && error && error.stack) {
+            console.debug('📋 Stack trace (debug):', error.stack);
         }
     },
 
@@ -189,4 +191,39 @@ export async function compressImage(file, maxWidth = 2560, quality = 0.8) {
         };
         reader.onerror = () => resolve(file);
     });
+}
+
+/**
+ * Échappe les caractères HTML dangereux pour éviter les injections XSS
+ */
+export function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/**
+ * Parse le Markdown avec marked et l'assainit avec DOMPurify
+ * Bloque les balises script, iframes, onerror inline, URLs javascript:, etc.
+ */
+export function renderSafeMarkdown(content) {
+    if (!content) return '';
+    const rawHtml = typeof marked !== 'undefined' ? marked.parse(content) : escapeHtml(content);
+    if (typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(rawHtml, {
+            ALLOWED_TAGS: [
+                'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'del',
+                'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'a', 'code', 'pre', 'blockquote', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span'
+            ],
+            ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
+            ALLOW_DATA_ATTR: false
+        });
+    }
+    // Fallback si DOMPurify n'est pas chargé
+    return escapeHtml(rawHtml);
 }

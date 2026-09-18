@@ -10,6 +10,7 @@ let oldAvatarUrl = null;
 let sessionAvatarUploads = [];
 
 export function initAuth(initSocketCallback) {
+    API.setUnauthorizedHandler(handleUnauthorized);
     checkAuth(initSocketCallback);
 
     // Login Form Listener
@@ -44,7 +45,7 @@ export function initAuth(initSocketCallback) {
     if (elements.setupCloseBtn) {
         elements.setupCloseBtn.onclick = () => {
             sessionAvatarUploads.forEach(url => {
-                API.deleteMedia(url).catch(e => console.error(e));
+                API.deleteMedia(url).catch(e => Logger.warn('Avatar cleanup notice', e));
             });
             sessionAvatarUploads = [];
             elements.setupModal.classList.remove('visible');
@@ -171,11 +172,11 @@ export function initAuth(initSocketCallback) {
 
             try {
                 if (oldAvatarUrl && oldAvatarUrl.startsWith('/uploads/') && currentAvatarUrl !== oldAvatarUrl) {
-                    API.deleteMedia(oldAvatarUrl).catch(e => console.error(e));
+                    API.deleteMedia(oldAvatarUrl).catch(e => Logger.warn('Old avatar cleanup notice', e));
                 }
                 sessionAvatarUploads.forEach(url => {
                     if (url !== currentAvatarUrl) {
-                        API.deleteMedia(url).catch(e => console.error(e));
+                        API.deleteMedia(url).catch(e => Logger.warn('Avatar cleanup notice', e));
                     }
                 });
                 sessionAvatarUploads = [];
@@ -191,7 +192,7 @@ export function initAuth(initSocketCallback) {
                             renderBoard();
                             await refreshSearchUsers();
                         } catch (e) {
-                            console.error('Failed to trigger board re-render', e);
+                            Logger.warn('Failed to trigger board re-render', e);
                         }
                     }
 
@@ -207,7 +208,7 @@ export function initAuth(initSocketCallback) {
                     messageEl.textContent = res.error || 'Update failed';
                 }
             } catch (err) {
-                console.error(err);
+                Logger.error('Setup completion error', err);
                 messageEl.textContent = 'Network error';
             }
         });
@@ -272,6 +273,22 @@ function showAuth() {
     elements.authOverlay.style.display = 'flex';
     elements.kanbanBoard.style.display = 'none';
     document.body.classList.add('auth-mode');
+    // Fermer tous les modaux ouverts
+    document.querySelectorAll('.modal.visible, .modal-overlay.visible').forEach(m => m.classList.remove('visible'));
+}
+
+// Exporté : appelé quand une requête reçoit un 401 ou quand le socket reconnecte.
+// Remet l'interface dans l'état "non authentifié" proprement.
+export function handleUnauthorized() {
+    state.currentUser = null;
+    if (state.socket) {
+        state.socket.disconnect();
+        state.socket = null;
+    }
+    if (elements.setupModal) {
+        elements.setupModal.classList.remove('visible');
+    }
+    showAuth();
 }
 
 function hideAuth() {
@@ -287,18 +304,23 @@ function handleLoginSuccess(user, initSocketCallback) {
     checkVersion(user);
 
     if (initSocketCallback) initSocketCallback();
-    refreshSearchUsers().catch(e => console.error(e));
+    refreshSearchUsers().catch(e => Logger.warn('User search refresh error', e));
     if (!user.is_setup_complete) {
         openSetupModal(true);
     }
 }
 
 async function checkVersion(user) {
-    if (!['admin', 'owner'].includes(user.role)) return;
     try {
-        const localRes = await fetch(API_URL + '/version');
-        const localData = await localRes.json();
+        const localData = await API.getVersion();
         const localVersion = localData.version;
+
+        const versionDisplay = document.getElementById('app-version-display');
+        if (versionDisplay && localVersion) {
+            versionDisplay.textContent = `v${localVersion}`;
+        }
+
+        if (!['admin', 'owner'].includes(user.role)) return;
 
         const remoteRes = await fetch('https://raw.githubusercontent.com/NoaSecond/Ananke/main/package.json?t=' + Date.now());
         const remoteData = await remoteRes.json();
@@ -321,7 +343,7 @@ async function checkVersion(user) {
             }
         }
     } catch (e) {
-        console.error('Failed to check version', e);
+        Logger.warn('Failed to check version', e);
     }
 }
 

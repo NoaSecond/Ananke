@@ -5,17 +5,98 @@ const { Server } = require("socket.io");
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const db = require('./src/config/database');
+const { getInstanceId } = require('./src/config/database');
 const { router: authRouter, authenticateToken } = require('./src/routes/auth');
 const jwt = require('jsonwebtoken');
 const morgan = require('morgan');
 const logger = require('./src/utils/logger');
 const { describeChanges } = require('./src/utils/boardDiff');
 const multer = require('multer');
+const crypto = require('crypto');
+const helmet = require('helmet');
 
 const fs = require('fs');
 if (!fs.existsSync(path.join(__dirname, 'public', 'uploads'))) {
     fs.mkdirSync(path.join(__dirname, 'public', 'uploads'), { recursive: true });
 }
+
+// Whitelist MIME stricte : seuls les images et vidéos sont acceptées
+const ALLOWED_MIMES = [
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    'video/mp4', 'video/webm'
+];
+
+// Whitelist MIME et extensions pour les avatars base64
+const ALLOWED_AVATAR_MIMES = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif'
+};
+
+// Validation MIME stricte, limite de taille (10MB) et suppression des anciens fichiers de fond
+const MAX_BG_SIZE = 10 * 1024 * 1024;
+
+function processBoardBackground(newBoardData, oldBoardData) {
+    if (
+        newBoardData.background &&
+        newBoardData.background.type === 'image' &&
+        typeof newBoardData.background.value === 'string' &&
+        newBoardData.background.value.startsWith('data:image')
+    ) {
+        const matches = newBoardData.background.value.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+            const mime = matches[1].toLowerCase();
+            const ext = ALLOWED_AVATAR_MIMES[mime];
+            if (!ext) {
+                logger.warn(`Type MIME de fond d'écran non autorisé rejeté : ${mime}`);
+                newBoardData.background = oldBoardData && oldBoardData.background ? oldBoardData.background : { type: 'default', value: '' };
+                return;
+            }
+
+            const buffer = Buffer.from(matches[2], 'base64');
+            if (buffer.length > MAX_BG_SIZE) {
+                logger.warn(`Fond d'écran trop volumineux rejeté (${buffer.length} octets, max: ${MAX_BG_SIZE})`);
+                newBoardData.background = oldBoardData && oldBoardData.background ? oldBoardData.background : { type: 'default', value: '' };
+                return;
+            }
+
+            const bgPath = path.join(__dirname, 'public', 'uploads', 'background');
+            if (!fs.existsSync(bgPath)) fs.mkdirSync(bgPath, { recursive: true });
+
+            // Nettoyage de l'ancien fichier de fond sur disque s'il existe
+            if (
+                oldBoardData &&
+                oldBoardData.background &&
+                typeof oldBoardData.background.value === 'string' &&
+                oldBoardData.background.value.startsWith('/uploads/background/')
+            ) {
+                const oldFileName = path.basename(oldBoardData.background.value);
+                const oldFilePath = path.join(bgPath, oldFileName);
+                if (fs.existsSync(oldFilePath)) {
+                    try {
+                        fs.unlinkSync(oldFilePath);
+                    } catch (e) {
+                        logger.error(`Impossible de supprimer l'ancien fond : ${e.message}`);
+                    }
+                }
+            }
+
+            const fileName = `bg_${crypto.randomUUID().slice(0, 8)}_${Date.now()}.${ext}`;
+            fs.writeFileSync(path.join(bgPath, fileName), buffer);
+            newBoardData.background.value = `/uploads/background/${fileName}`;
+            logger.info(`Nouveau fond d'écran enregistré : ${fileName} (${Math.round(buffer.length / 1024)} KB)`);
+        }
+    }
+}
+
+const fileFilter = (req, file, cb) => {
+    if (ALLOWED_MIMES.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error(`Type de fichier non autorisé : ${file.mimetype}`), false);
+    }
+};
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -23,15 +104,53 @@ const storage = multer.diskStorage({
     },
     filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + '-' + file.originalname);
+        // Sanitisation du nom original : path.basename + suppression des caractères spéciaux
+        const safeOriginalName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
+        cb(null, uniqueSuffix + '-' + safeOriginalName);
     }
 });
-const upload = multer({ storage: storage });
+
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10 MB max par fichier
+});
 
 const app = express();
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+
+// Content Security Policy & HTTP Security Headers
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com'],
+            scriptSrcAttr: ["'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com', 'data:'],
+            imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+            connectSrc: ["'self'", 'ws:', 'wss:', 'https://raw.githubusercontent.com'],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+            upgradeInsecureRequests: null
+        }
+    },
+    crossOriginEmbedderPolicy: false
+}));
+
+// Redirection HTTPS obligatoire en production
+if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+        if (!req.secure && req.headers['x-forwarded-proto'] !== 'https') {
+            return res.redirect(301, `https://${req.headers.host}${req.url}`);
+        }
+        next();
+    });
+}
 const server = http.createServer(app);
 const io = new Server(server, {
-    maxHttpBufferSize: 1e8 // 100MB
+    maxHttpBufferSize: 1e7 // 10MB max par message WebSocket
 });
 
 logger.onLogCallback = (logEntry) => {
@@ -44,11 +163,22 @@ logger.onLogCallback = (logEntry) => {
     }
 };
 
-const JWT_SECRET = process.env.JWT_SECRET || 'ananke-secret-key-prod-rev2';
+// Le secret JWT NE DOIT JAMAIS avoir de fallback hardcodé.
+// Si JWT_SECRET est absent ou correspond à l'ancienne valeur compromise, le serveur refuse de démarrer.
+const COMPROMISED_SECRETS = ['ananke-secret-key-prod-rev2'];
+if (!process.env.JWT_SECRET || COMPROMISED_SECRETS.includes(process.env.JWT_SECRET)) {
+    logger.error('FATAL: JWT_SECRET must be set to a strong, unique value. Use: node -e "require(\'crypto\').randomBytes(64).toString(\'hex\')" to generate one.');
+    process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+// Réduction des limites de payload pour éviter les attaques DoS mémoire
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cookieParser());
+
+// Protéger les fichiers uploadés : authentification requise
+app.use('/uploads', authenticateToken, express.static(path.join(__dirname, 'public', 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // HTTP Logging
@@ -79,8 +209,19 @@ app.get('/api/board', authenticateToken, (req, res) => {
     });
 });
 
+const rateLimit = require('express-rate-limit');
+
+// Rate limiting sur les uploads : max 30 uploads par minute par IP
+const uploadLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de requêtes d\'upload. Veuillez patienter une minute.' }
+});
+
 // File Upload API
-app.post('/api/upload', authenticateToken, upload.array('files', 10), (req, res) => {
+app.post('/api/upload', authenticateToken, uploadLimiter, upload.array('files', 10), (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No files uploaded.' });
@@ -113,7 +254,8 @@ app.delete('/api/media', authenticateToken, (req, res) => {
     }
 });
 
-app.get('/api/version', async (req, res) => {
+// Protégé par authenticateToken pour empêcher le fingerprinting par des tiers non connectés
+app.get('/api/version', authenticateToken, async (req, res) => {
     try {
         const pkgData = await fs.promises.readFile(path.join(__dirname, 'package.json'), 'utf8');
         const pkg = JSON.parse(pkgData);
@@ -147,18 +289,8 @@ app.post('/api/board', authenticateToken, (req, res) => {
 
         const oldBoardData = row ? JSON.parse(row.data) : { workflows: [] };
 
-        // Handle background
-        if (newBoardData.background && newBoardData.background.type === 'image' && typeof newBoardData.background.value === 'string' && newBoardData.background.value.startsWith('data:image')) {
-            const matches = newBoardData.background.value.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-            if (matches && matches.length === 3) {
-                const ext = matches[1].split('/')[1];
-                const bgPath = path.join(__dirname, 'public', 'uploads', 'background');
-                if (!fs.existsSync(bgPath)) fs.mkdirSync(bgPath, { recursive: true });
-                const fileName = `bg_${Date.now()}.${ext}`;
-                fs.writeFileSync(path.join(bgPath, fileName), Buffer.from(matches[2], 'base64'));
-                newBoardData.background.value = `/uploads/background/${fileName}`;
-            }
-        }
+        // Traitement sécurisé du fond d'écran
+        processBoardBackground(newBoardData, oldBoardData);
 
         const changes = describeChanges(oldBoardData, newBoardData);
 
@@ -184,6 +316,15 @@ app.post('/api/board', authenticateToken, (req, res) => {
     });
 });
 
+// Gestionnaire d'erreurs Express centralisé : masque les stack traces
+app.use((err, req, res, next) => {
+    logger.error(`Unhandled error: ${err.message}`, err.stack);
+    const isProd = process.env.NODE_ENV === 'production';
+    res.status(err.status || 500).json({
+        error: isProd ? 'Une erreur interne est survenue' : err.message
+    });
+});
+
 // Socket.io Middleware for Auth
 io.use((socket, next) => {
     // Extract token from cookie
@@ -198,14 +339,25 @@ io.use((socket, next) => {
 
     jwt.verify(jwtToken, JWT_SECRET, (err, decoded) => {
         if (err) return next(new Error("Authentication error"));
-        db.get("SELECT role, email, avatar_url, first_name, last_name FROM users WHERE id = ?", [decoded.id], (dbErr, row) => {
-            if (dbErr || !row) return next(new Error("Authentication error"));
-            decoded.role = row.role;
-            decoded.email = row.email;
-            decoded.avatar_url = row.avatar_url;
-            socket.user = decoded;
-            next();
-        });
+
+        getInstanceId().then(instanceId => {
+            if (decoded.iid !== instanceId) {
+                return next(new Error("Authentication error"));
+            }
+            db.get("SELECT role, email, avatar_url, first_name, last_name, token_version FROM users WHERE id = ?", [decoded.id], (dbErr, row) => {
+                if (dbErr || !row) return next(new Error("Authentication error"));
+                const expectedVersion = row.token_version || 1;
+                const tokenVersion = decoded.tv || 1;
+                if (tokenVersion !== expectedVersion) {
+                    return next(new Error("Authentication error"));
+                }
+                decoded.role = row.role;
+                decoded.email = row.email;
+                decoded.avatar_url = row.avatar_url;
+                socket.user = decoded;
+                next();
+            });
+        }).catch(() => next(new Error("Authentication error")));
     });
 });
 
@@ -271,18 +423,8 @@ io.on('connection', (socket) => {
 
             const oldBoardData = row ? JSON.parse(row.data) : { workflows: [] };
 
-            // Check for base64 background and convert
-            if (newBoardData.background && newBoardData.background.type === 'image' && typeof newBoardData.background.value === 'string' && newBoardData.background.value.startsWith('data:image')) {
-                const matches = newBoardData.background.value.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-                if (matches && matches.length === 3) {
-                    const ext = matches[1].split('/')[1];
-                    const bgPath = path.join(__dirname, 'public', 'uploads', 'background');
-                    if (!fs.existsSync(bgPath)) fs.mkdirSync(bgPath, { recursive: true });
-                    const fileName = `bg_${Date.now()}.${ext}`;
-                    fs.writeFileSync(path.join(bgPath, fileName), Buffer.from(matches[2], 'base64'));
-                    newBoardData.background.value = `/uploads/background/${fileName}`;
-                }
-            }
+            // Traitement sécurisé du fond d'écran
+            processBoardBackground(newBoardData, oldBoardData);
 
             // Cleanup base64 avatars in tasks if they are passed
             if (newBoardData.workflows) {
@@ -294,13 +436,18 @@ io.on('connection', (socket) => {
                                     if (a.avatar_url && typeof a.avatar_url === 'string' && a.avatar_url.startsWith('data:image')) {
                                         const matches = a.avatar_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
                                         if (matches && matches.length === 3) {
-                                            const ext = matches[1].split('/')[1];
-                                            const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
-                                            if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
-                                            const personName = (a.name || a.email || 'user').replace(/[^a-z0-9]/gi, '_');
-                                            const fileName = `${personName}.${ext}`;
-                                            fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
-                                            a.avatar_url = `/uploads/Person/${fileName}`;
+                                            const mime = matches[1].toLowerCase();
+                                            const ext = ALLOWED_AVATAR_MIMES[mime];
+                                            if (ext) {
+                                                const buffer = Buffer.from(matches[2], 'base64');
+                                                if (buffer.length > 5 * 1024 * 1024) return;
+                                                const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
+                                                if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
+                                                const targetId = a.id ? a.id : crypto.randomUUID().slice(0, 8);
+                                                const fileName = `avatar_${targetId}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
+                                                fs.writeFileSync(path.join(personPath, fileName), buffer);
+                                                a.avatar_url = `/uploads/Person/${fileName}`;
+                                            }
                                         }
                                     }
                                 });
@@ -355,13 +502,16 @@ io.on('connection', (socket) => {
                     if (a.avatar_url && typeof a.avatar_url === 'string' && a.avatar_url.startsWith('data:image')) {
                         const matches = a.avatar_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
                         if (matches && matches.length === 3) {
-                            const ext = matches[1].split('/')[1];
-                            const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
-                            if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
-                            const personName = (a.name || a.email || 'user').replace(/[^a-z0-9]/gi, '_');
-                            const fileName = `${personName}.${ext}`;
-                            fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
-                            a.avatar_url = `/uploads/Person/${fileName}`;
+                            const mime = matches[1].toLowerCase();
+                            const ext = ALLOWED_AVATAR_MIMES[mime];
+                            if (ext) {
+                                const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
+                                if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
+                                const targetId = a.id ? a.id : crypto.randomUUID().slice(0, 8);
+                                const fileName = `avatar_${targetId}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
+                                fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
+                                a.avatar_url = `/uploads/Person/${fileName}`;
+                            }
                         }
                     }
                 });

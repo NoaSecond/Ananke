@@ -2,7 +2,7 @@ import { Logger } from './modules/utils.js';
 import { state, API_URL, basePath, getFullUrl } from './modules/state.js';
 import { elements } from './modules/dom.js';
 import { initModals } from './modules/modals.js';
-import { initAuth } from './modules/auth-ui.js';
+import { initAuth, handleUnauthorized, updateUserUI } from './modules/auth-ui.js';
 import { initBoardListeners, renderBoard } from './modules/board-ui.js';
 import { initTaskListeners, refreshTaskView } from './modules/task-ui.js';
 import { initWorkflowListeners } from './modules/workflow-ui.js';
@@ -13,17 +13,6 @@ import { initSearch } from './modules/search-ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     Logger.info('🚀 Ananke application started');
-
-    // Fetch and display version dynamically
-    fetch(API_URL + '/version')
-        .then(res => res.json())
-        .then(data => {
-            const versionDisplay = document.getElementById('app-version-display');
-            if (versionDisplay && data.version) {
-                versionDisplay.textContent = `v${data.version}`;
-            }
-        })
-        .catch(err => Logger.error(`Failed to fetch app version: ${err}`));
 
     // --- Initialization ---
     initModals();
@@ -241,6 +230,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         state.socket = io({ path: basePath + '/socket.io' });
 
+        // Erreur d'authentification socket (session expirée, reset serveur, instance différente)
+        state.socket.on('connect_error', (err) => {
+            if (err && err.message && err.message.toLowerCase().includes('auth')) {
+                Logger.warn('Erreur d\'authentification Socket.io — retour à la connexion');
+                handleUnauthorized();
+            }
+        });
+
+        // Reconnexion après redémarrage du serveur : re-valider la session côté serveur
+        if (state.socket.io) {
+            state.socket.io.on('reconnect', async () => {
+                try {
+                    const data = await API.getMe();
+                    state.currentUser = data.user;
+                    updateUserUI();
+                } catch (e) {
+                    Logger.warn('Session expirée lors de la reconnexion socket — déconnexion');
+                    handleUnauthorized();
+                }
+            });
+        }
+
         state.socket.on('boardUpdate', (data) => {
             if (!state.isDraggingInternal) {
                 state.boardData = data;
@@ -283,4 +294,18 @@ document.addEventListener('DOMContentLoaded', () => {
             Logger.info('🔌 Connected to server');
         });
     }
+
+    // Vérification de validité de session dès que l'onglet redevient actif
+    const verifySessionOnActive = () => {
+        if (state.currentUser) {
+            API.getMe().catch(() => {
+                Logger.warn('Session non valide lors du focus — retour au login');
+                handleUnauthorized();
+            });
+        }
+    };
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') verifySessionOnActive();
+    });
+    window.addEventListener('focus', verifySessionOnActive);
 });

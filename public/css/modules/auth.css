@@ -13,8 +13,13 @@
     z-index: 9999;
 }
 
+body.auth-mode .auth-overlay {
+    display: flex;
+}
+
 body.auth-mode header,
-body.auth-mode footer {
+body.auth-mode footer,
+body.auth-mode #kanban-board {
     display: none !important;
 }
 

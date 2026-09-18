@@ -1,54 +1,87 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const db = require('../config/database');
+const { getInstanceId } = require('../config/database');
 const logger = require('../utils/logger');
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'ananke-secret-key-prod-rev2';
+// Types MIME autorisés pour les avatars base64
+const ALLOWED_AVATAR_MIMES = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif'
+};
+
+// Pas de fallback. Le guard dans server.js garantit que JWT_SECRET est défini et sûr.
+const JWT_SECRET = process.env.JWT_SECRET;
+
+const rateLimit = require('express-rate-limit');
+
+// Rate limiting sur le login : max 10 tentatives par 15 min par IP
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de tentatives de connexion. Veuillez réessayer dans 15 minutes.' }
+});
 
 // Login
-router.post('/login', (req, res) => {
+router.post('/login', loginLimiter, (req, res) => {
     const { email, password } = req.body;
     db.get("SELECT * FROM users WHERE email = ?", [email], (err, user) => {
         if (err) {
             logger.error(`Database error during login: ${err.message}`);
             return res.status(500).json({ error: err.message });
         }
+        const clientIp = req.ip || req.socket.remoteAddress;
         if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-            logger.warn(`Failed login attempt for email: ${email}`);
+            // Logger l'adresse IP lors des échecs de connexion
+            logger.warn(`Failed login attempt for email: ${email} from IP: ${clientIp}`);
             return res.status(401).json({ error: 'Identifiants invalides' });
         }
 
         const displayName = user.first_name ? `${user.first_name} ${user.last_name}` : (user.name || user.email);
-        logger.info(`User logged in: ${displayName} (${user.role})`);
+        logger.info(`User logged in: ${displayName} (${user.role}) from IP: ${clientIp}`);
 
-        const token = jwt.sign(
-            { id: user.id, role: user.role, name: displayName, is_setup_complete: user.is_setup_complete },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        // Inclure l'instance_id dans le JWT pour détecter les tokens cross-instance ou post-reset
+        getInstanceId().then(instanceId => {
+            const token = jwt.sign(
+                { id: user.id, role: user.role, name: displayName, is_setup_complete: user.is_setup_complete, tv: user.token_version || 1, iid: instanceId },
+                JWT_SECRET,
+                { expiresIn: '24h' }
+            );
 
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 24 * 60 * 60 * 1000,
-            path: '/'
-        });
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict', // Bloque les requêtes CSRF cross-origin
+                maxAge: 24 * 60 * 60 * 1000,
+                path: '/'
+            });
 
-        res.json({
-            success: true,
-            require_setup: user.is_setup_complete === 0,
-            user: {
-                id: user.id,
-                name: displayName,
-                role: user.role,
-                email: user.email,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                is_setup_complete: user.is_setup_complete,
-                avatar_url: user.avatar_url
-            }
+            res.json({
+                success: true,
+                require_setup: user.is_setup_complete === 0,
+                user: {
+                    id: user.id,
+                    name: displayName,
+                    role: user.role,
+                    email: user.email,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    is_setup_complete: user.is_setup_complete,
+                    avatar_url: user.avatar_url
+                }
+            });
+        }).catch(err => {
+            logger.error(`Impossible de lire l'instance_id : ${err.message}`);
+            res.status(500).json({ error: 'Erreur interne du serveur' });
         });
     });
 });
@@ -59,13 +92,33 @@ const authenticateToken = (req, res, next) => {
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ error: 'Forbidden' });
-        db.get("SELECT role FROM users WHERE id = ?", [user.id], (dbErr, row) => {
-            if (dbErr || !row) return res.status(403).json({ error: 'Forbidden' });
-            user.role = row.role;
-            req.user = user;
-            next();
-        });
+        if (err) {
+            res.clearCookie('token', { path: '/' });
+            return res.status(401).json({ error: 'Session expirée ou invalide.' });
+        }
+        // Vérification du rôle, token_version ET instance_id
+        // (révocation au changement de mdp, après reset, et cross-instance)
+        getInstanceId().then(instanceId => {
+            if (user.iid !== instanceId) {
+                res.clearCookie('token', { path: '/' });
+                return res.status(401).json({ error: 'Session invalide, veuillez vous reconnecter.' });
+            }
+            db.get("SELECT role, token_version FROM users WHERE id = ?", [user.id], (dbErr, row) => {
+                if (dbErr || !row) {
+                    res.clearCookie('token', { path: '/' });
+                    return res.status(401).json({ error: 'Utilisateur introuvable.' });
+                }
+                const expectedVersion = row.token_version || 1;
+                const tokenVersion    = user.tv         || 1;
+                if (tokenVersion !== expectedVersion) {
+                    res.clearCookie('token', { path: '/' });
+                    return res.status(401).json({ error: 'Session expirée, veuillez vous reconnecter.' });
+                }
+                user.role = row.role;
+                req.user = user;
+                next();
+            });
+        }).catch(() => res.status(500).json({ error: 'Erreur interne du serveur' }));
     });
 };
 
@@ -94,11 +147,26 @@ router.post('/create-account', authenticateToken, requireRole('admin'), (req, re
         return res.status(400).json({ error: 'Email et Mot de passe requis' });
     }
 
-    const hash = bcrypt.hashSync(password, 10);
     const userRole = role || 'reader';
+    // Seul un Owner peut créer un autre compte Owner. Un Admin ne peut créer que reader/editor/admin.
+    const allowedRoles = req.user.role === 'owner'
+        ? ['reader', 'editor', 'admin', 'owner']
+        : ['reader', 'editor', 'admin'];
 
-    db.run("INSERT INTO users (email, password_hash, role, is_setup_complete) VALUES (?, ?, ?, 0)",
-        [email, hash, userRole],
+    if (!allowedRoles.includes(userRole)) {
+        return res.status(403).json({ error: 'Rôle non autorisé ou invalide' });
+    }
+
+    // Validation basique du format d'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Format d\'adresse email invalide' });
+    }
+
+    const hash = bcrypt.hashSync(password, 10);
+    const newUserId = crypto.randomUUID();
+    db.run("INSERT INTO users (id, email, password_hash, role, is_setup_complete) VALUES (?, ?, ?, ?, 0)",
+        [newUserId, email, hash, userRole],
         function (err) {
             if (err) {
                 if (err.message.includes('UNIQUE constraint failed')) {
@@ -109,7 +177,7 @@ router.post('/create-account', authenticateToken, requireRole('admin'), (req, re
                 return res.status(500).json({ error: err.message });
             }
             logger.success(`Account created: ${email} with role ${userRole} (by ${req.user.name})`);
-            res.json({ id: this.lastID, success: true, message: 'Compte créé avec succès' });
+            res.json({ id: newUserId, success: true, message: 'Compte créé avec succès' });
         }
     );
 });
@@ -123,12 +191,18 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
         return res.status(400).json({ error: 'Champs requis manquants' });
     }
 
+    // Validation du format d'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Format d\'adresse email invalide' });
+    }
+
     let query = "UPDATE users SET first_name = ?, last_name = ?, email = ?, is_setup_complete = 1";
     let params = [firstName, lastName, email];
 
     if (password) {
         const hash = bcrypt.hashSync(password, 10);
-        query += ", password_hash = ?";
+        query += ", password_hash = ?, token_version = COALESCE(token_version, 1) + 1";
         params.push(hash);
     }
 
@@ -136,15 +210,27 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
     if (avatar_url && avatar_url.startsWith('data:image')) {
         const matches = avatar_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
         if (matches && matches.length === 3) {
-            const ext = matches[1].split('/')[1];
-            const fs = require('fs');
-            const path = require('path');
-            const personPath = path.join(__dirname, '..', '..', 'public', 'uploads', 'Person');
-            if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
-            const personName = `${firstName}_${lastName}`.replace(/[^a-z0-9]/gi, '_');
-            const fileName = `${personName}.${ext}`;
-            fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
-            avatarUrlToSave = `/uploads/Person/${fileName}`;
+            const mime = matches[1].toLowerCase();
+            const ext = ALLOWED_AVATAR_MIMES[mime];
+            if (ext) {
+                const personPath = path.join(__dirname, '..', '..', 'public', 'uploads', 'Person');
+                if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
+
+                // Supprimer l'ancien avatar du disque pour éviter les orphelins
+                db.get("SELECT avatar_url FROM users WHERE id = ?", [userId], (err, row) => {
+                    if (row && row.avatar_url && row.avatar_url.startsWith('/uploads/Person/')) {
+                        const oldPath = path.join(__dirname, '..', '..', 'public', path.normalize(row.avatar_url));
+                        if (fs.existsSync(oldPath)) {
+                            try { fs.unlinkSync(oldPath); } catch (_) {}
+                        }
+                    }
+                });
+
+                // Nom de fichier aléatoire basé sur l'ID utilisateur et un UUID (anti-collision & anti-usurpation)
+                const fileName = `user_${userId}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
+                fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
+                avatarUrlToSave = `/uploads/Person/${fileName}`;
+            }
         }
     }
 
@@ -161,15 +247,17 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
 
         // Update token immediately? Client should re-login or better: we issue new token?
         // Let's Re-issue token to reflect updated name and setup status
-        db.get("SELECT * FROM users WHERE id = ?", [userId], (err, user) => {
+        db.get("SELECT id, email, first_name, last_name, role, is_setup_complete, avatar_url, token_version FROM users WHERE id = ?", [userId], async (err, user) => {
             if (user) {
                 const displayName = `${user.first_name} ${user.last_name}`;
+                const instanceId = await getInstanceId().catch(() => null);
+                // Nouveau token avec le token_version à jour et instance_id
                 const token = jwt.sign(
-                    { id: user.id, role: user.role, name: displayName, is_setup_complete: 1 },
+                    { id: user.id, role: user.role, name: displayName, is_setup_complete: 1, tv: user.token_version || 1, iid: instanceId },
                     JWT_SECRET,
                     { expiresIn: '24h' }
                 );
-                res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 24 * 3600000, path: '/' });
+                res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 24 * 3600000, path: '/' });
                 logger.info(`User setup completed: ${displayName} (${user.email})`);
                 res.json({ success: true, user: { ...user, name: displayName, password_hash: undefined } });
             } else {
@@ -187,8 +275,9 @@ router.post('/logout', (req, res) => {
 });
 
 // Get Current User
+// Projection explicite sans password_hash ni token_version
 router.get('/me', authenticateToken, (req, res) => {
-    db.get("SELECT * FROM users WHERE id = ?", [req.user.id], (err, row) => {
+    db.get("SELECT id, email, first_name, last_name, role, is_setup_complete, avatar_url FROM users WHERE id = ?", [req.user.id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (row) {
             const displayName = row.first_name ? `${row.first_name} ${row.last_name}` : row.email;
@@ -200,8 +289,9 @@ router.get('/me', authenticateToken, (req, res) => {
 });
 
 // List Users
+// Projection explicite sans password_hash
 router.get('/users', authenticateToken, requireRole('admin'), (req, res) => {
-    db.all("SELECT * FROM users", (err, rows) => {
+    db.all("SELECT id, email, first_name, last_name, role, is_setup_complete, avatar_url FROM users", (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         const users = rows.map(u => ({
             ...u,
@@ -236,7 +326,7 @@ router.put('/users/:id/role', authenticateToken, requireRole('admin'), (req, res
 router.delete('/users/:id', authenticateToken, requireRole('admin'), (req, res) => {
     const userId = req.params.id;
     // Prevent deleting self or Owner
-    if (parseInt(userId) === req.user.id) {
+    if (String(userId) === String(req.user.id)) {
         return res.status(400).json({ error: 'Impossible de se supprimer soi-même' });
     }
 
@@ -254,7 +344,7 @@ router.delete('/users/:id', authenticateToken, requireRole('admin'), (req, res) 
 
 // List Simple (Assignees)
 router.get('/list', authenticateToken, (req, res) => {
-    db.all("SELECT * FROM users", (err, rows) => {
+    db.all("SELECT id, first_name, last_name, email, avatar_url FROM users", (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         const users = rows.map(u => ({
             id: u.id,
