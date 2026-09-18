@@ -27,7 +27,7 @@ async function reset() {
         db.run("DROP TABLE IF EXISTS instance_config");
 
         db.run(`CREATE TABLE users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
             email TEXT UNIQUE,
             password_hash TEXT,
             first_name TEXT,
@@ -53,8 +53,9 @@ async function reset() {
         db.run(`INSERT INTO instance_config (key, value) VALUES ('instance_id', ?)`, [crypto.randomUUID()]);
 
         const hashedPassword = await bcrypt.hash('admin123', 10);
-        db.run(`INSERT INTO users (email, password_hash, first_name, last_name, role, is_setup_complete) 
-                VALUES ('admin@setup.ananke', ?, '', '', 'owner', 0)`, [hashedPassword]);
+        const adminId = crypto.randomUUID();
+        db.run(`INSERT INTO users (id, email, password_hash, first_name, last_name, role, is_setup_complete) 
+                VALUES (?, 'admin@setup.ananke', ?, '', '', 'owner', 0)`, [adminId, hashedPassword]);
 
         db.run(`INSERT INTO board_store (id, data) VALUES (1, ?)`, [JSON.stringify(defaultData)]);
 

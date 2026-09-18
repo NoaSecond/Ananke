@@ -16,9 +16,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 function initDb() {
     db.serialize(() => {
-        // Users table
+        // Users table [MED-08: IDs non séquentiels / UUIDs]
         db.run(`CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
             email TEXT UNIQUE,
             password_hash TEXT,
             first_name TEXT,
@@ -26,16 +26,57 @@ function initDb() {
             role TEXT DEFAULT 'reader',
             is_setup_complete INTEGER DEFAULT 0,
             avatar_url TEXT,
+            token_version INTEGER DEFAULT 1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`, (err) => {
             if (!err) {
-                // Attempt to migrate if old table exists (simple check: try adding columns, ignore error if exist)
-                // This is a "lazy" migration for development speed
+                // Migration paresseuse pour les colonnes manquantes
                 db.run("ALTER TABLE users ADD COLUMN first_name TEXT", () => { });
                 db.run("ALTER TABLE users ADD COLUMN last_name TEXT", () => { });
                 db.run("ALTER TABLE users ADD COLUMN is_setup_complete INTEGER DEFAULT 0", () => { });
                 db.run("ALTER TABLE users ADD COLUMN avatar_url TEXT", () => { });
                 db.run("ALTER TABLE users ADD COLUMN token_version INTEGER DEFAULT 1", () => { });
+
+                // Migration MED-08 : si la colonne id est toujours INTEGER, migrer vers UUID
+                db.all("PRAGMA table_info(users)", (pragmaErr, columns) => {
+                    if (pragmaErr || !columns) return;
+                    const idCol = columns.find(c => c.name === 'id');
+                    if (idCol && idCol.type.toUpperCase() === 'INTEGER') {
+                        logger.info('[MED-08] Migration des IDs utilisateurs vers UUID...');
+                        db.serialize(() => {
+                            db.run(`CREATE TABLE users_uuid_migration (
+                                id TEXT PRIMARY KEY,
+                                email TEXT UNIQUE,
+                                password_hash TEXT,
+                                first_name TEXT,
+                                last_name TEXT,
+                                role TEXT DEFAULT 'reader',
+                                is_setup_complete INTEGER DEFAULT 0,
+                                avatar_url TEXT,
+                                token_version INTEGER DEFAULT 1,
+                                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                            )`);
+
+                            db.all("SELECT * FROM users", (selectErr, rows) => {
+                                if (!selectErr && rows) {
+                                    rows.forEach(u => {
+                                        const newId = crypto.randomUUID();
+                                        db.run(
+                                            `INSERT INTO users_uuid_migration (id, email, password_hash, first_name, last_name, role, is_setup_complete, avatar_url, token_version, created_at)
+                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                            [newId, u.email, u.password_hash, u.first_name, u.last_name, u.role, u.is_setup_complete, u.avatar_url, u.token_version || 1, u.created_at]
+                                        );
+                                    });
+                                }
+                                db.run("DROP TABLE users", () => {
+                                    db.run("ALTER TABLE users_uuid_migration RENAME TO users", () => {
+                                        logger.success('[MED-08] Migration des utilisateurs vers UUID terminée.');
+                                    });
+                                });
+                            });
+                        });
+                    }
+                });
             }
         });
 

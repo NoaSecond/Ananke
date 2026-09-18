@@ -83,12 +83,12 @@ function renderUserList(users) {
             </div>
             <div style="display:flex; align-items:center; gap:0.5rem;">
                 ${!isOwner ? `
-                    <select onchange="window.changeUserRole(${u.id}, this.value)" class="small-select role-select" data-role="${u.role}">
+                    <select onchange="window.changeUserRole('${u.id}', this.value)" class="small-select role-select" data-role="${u.role}">
                         <option value="reader" ${u.role === 'reader' ? 'selected' : ''}>Reader</option>
                         <option value="editor" ${u.role === 'editor' ? 'selected' : ''}>Editor</option>
                         <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>
-                    ${!isSelf ? `<button onclick="window.deleteUser(${u.id})" class="delete-user-btn">Delete</button>` : ''}
+                    ${!isSelf ? `<button onclick="window.deleteUser('${u.id}')" class="delete-user-btn">Delete</button>` : ''}
                 ` : '<span class="role-badge owner">Owner</span>'}
             </div>
         </div>

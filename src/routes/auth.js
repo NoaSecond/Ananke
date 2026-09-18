@@ -164,8 +164,9 @@ router.post('/create-account', authenticateToken, requireRole('admin'), (req, re
     }
 
     const hash = bcrypt.hashSync(password, 10);
-    db.run("INSERT INTO users (email, password_hash, role, is_setup_complete) VALUES (?, ?, ?, 0)",
-        [email, hash, userRole],
+    const newUserId = crypto.randomUUID();
+    db.run("INSERT INTO users (id, email, password_hash, role, is_setup_complete) VALUES (?, ?, ?, ?, 0)",
+        [newUserId, email, hash, userRole],
         function (err) {
             if (err) {
                 if (err.message.includes('UNIQUE constraint failed')) {
@@ -176,7 +177,7 @@ router.post('/create-account', authenticateToken, requireRole('admin'), (req, re
                 return res.status(500).json({ error: err.message });
             }
             logger.success(`Account created: ${email} with role ${userRole} (by ${req.user.name})`);
-            res.json({ id: this.lastID, success: true, message: 'Compte créé avec succès' });
+            res.json({ id: newUserId, success: true, message: 'Compte créé avec succès' });
         }
     );
 });
@@ -319,7 +320,7 @@ router.put('/users/:id/role', authenticateToken, requireRole('admin'), (req, res
 router.delete('/users/:id', authenticateToken, requireRole('admin'), (req, res) => {
     const userId = req.params.id;
     // Prevent deleting self or Owner
-    if (parseInt(userId) === req.user.id) {
+    if (String(userId) === String(req.user.id)) {
         return res.status(400).json({ error: 'Impossible de se supprimer soi-même' });
     }
 

@@ -75,7 +75,7 @@ async function main() {
         const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || '—';
         console.log(
             `  ${c.bold}${c.cyan}[${i + 1}]${c.reset}` +
-            `  ${String(u.id).padEnd(4)} ` +
+            `  ${String(u.id).slice(0, 8)}… ` +
             `${u.email.padEnd(35)} ` +
             `${name.padEnd(25)} ` +
             `${colorRole(u.role)}`
