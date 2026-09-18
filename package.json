@@ -4,6 +4,8 @@
   "description": "Hosted Collaborative Kanban Board",
   "main": "server.js",
   "scripts": {
+    "setup": "node setup.js",
+    "reset": "node setup.js --reset",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },

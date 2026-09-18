@@ -44,7 +44,14 @@ logger.onLogCallback = (logEntry) => {
     }
 };
 
-const JWT_SECRET = process.env.JWT_SECRET || 'ananke-secret-key-prod-rev2';
+// [CRIT-01/02] — Le secret JWT NE DOIT JAMAIS avoir de fallback hardcodé.
+// Si JWT_SECRET est absent ou correspond à l'ancienne valeur compromise, le serveur refuse de démarrer.
+const COMPROMISED_SECRETS = ['ananke-secret-key-prod-rev2'];
+if (!process.env.JWT_SECRET || COMPROMISED_SECRETS.includes(process.env.JWT_SECRET)) {
+    logger.error('FATAL: JWT_SECRET must be set to a strong, unique value. Use: node -e "require(\'crypto\').randomBytes(64).toString(\'hex\')" to generate one.');
+    process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));

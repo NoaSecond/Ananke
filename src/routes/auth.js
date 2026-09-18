@@ -5,7 +5,8 @@ const db = require('../config/database');
 const logger = require('../utils/logger');
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'ananke-secret-key-prod-rev2';
+// [CRIT-01/02] — Pas de fallback. Le guard dans server.js garantit que JWT_SECRET est défini et sûr.
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Login
 router.post('/login', (req, res) => {

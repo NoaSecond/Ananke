@@ -17,8 +17,8 @@ cd Ananke
 # Install dependencies
 npm install
 
-# Initialize database
-node reset_db.js
+# Initialize environment and database (generates .env + creates ananke.db)
+npm run setup
 
 # Start the application on a specific port
 npm start
@@ -42,8 +42,8 @@ cd Ananke
 # Install dependencies
 npm install
 
-# Initialize database
-node reset_db.js
+# Initialize environment and database (generates .env + creates ananke.db)
+npm run setup
 
 # Start the application with PM2 on a specific port
 PORT=8975 pm2 start npm --name "Ananke" -- start
