@@ -145,9 +145,23 @@ router.post('/create-account', authenticateToken, requireRole('admin'), (req, re
         return res.status(400).json({ error: 'Email et Mot de passe requis' });
     }
 
-    const hash = bcrypt.hashSync(password, 10);
     const userRole = role || 'reader';
+    // [MED-02] Seul un Owner peut créer un autre compte Owner. Un Admin ne peut créer que reader/editor/admin.
+    const allowedRoles = req.user.role === 'owner'
+        ? ['reader', 'editor', 'admin', 'owner']
+        : ['reader', 'editor', 'admin'];
 
+    if (!allowedRoles.includes(userRole)) {
+        return res.status(403).json({ error: 'Rôle non autorisé ou invalide' });
+    }
+
+    // [LOW-05] Validation basique du format d'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Format d\'adresse email invalide' });
+    }
+
+    const hash = bcrypt.hashSync(password, 10);
     db.run("INSERT INTO users (email, password_hash, role, is_setup_complete) VALUES (?, ?, ?, 0)",
         [email, hash, userRole],
         function (err) {
@@ -224,7 +238,7 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
 
         // Update token immediately? Client should re-login or better: we issue new token?
         // Let's Re-issue token to reflect updated name and setup status
-        db.get("SELECT * FROM users WHERE id = ?", [userId], async (err, user) => {
+        db.get("SELECT id, email, first_name, last_name, role, is_setup_complete, avatar_url, token_version FROM users WHERE id = ?", [userId], async (err, user) => {
             if (user) {
                 const displayName = `${user.first_name} ${user.last_name}`;
                 const instanceId = await getInstanceId().catch(() => null);
@@ -252,8 +266,9 @@ router.post('/logout', (req, res) => {
 });
 
 // Get Current User
+// [MED-01] Projection explicite sans password_hash ni token_version
 router.get('/me', authenticateToken, (req, res) => {
-    db.get("SELECT * FROM users WHERE id = ?", [req.user.id], (err, row) => {
+    db.get("SELECT id, email, first_name, last_name, role, is_setup_complete, avatar_url FROM users WHERE id = ?", [req.user.id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (row) {
             const displayName = row.first_name ? `${row.first_name} ${row.last_name}` : row.email;
@@ -265,8 +280,9 @@ router.get('/me', authenticateToken, (req, res) => {
 });
 
 // List Users
+// [MED-01] Projection explicite sans password_hash
 router.get('/users', authenticateToken, requireRole('admin'), (req, res) => {
-    db.all("SELECT * FROM users", (err, rows) => {
+    db.all("SELECT id, email, first_name, last_name, role, is_setup_complete, avatar_url FROM users", (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         const users = rows.map(u => ({
             ...u,
@@ -319,7 +335,7 @@ router.delete('/users/:id', authenticateToken, requireRole('admin'), (req, res) 
 
 // List Simple (Assignees)
 router.get('/list', authenticateToken, (req, res) => {
-    db.all("SELECT * FROM users", (err, rows) => {
+    db.all("SELECT id, first_name, last_name, email, avatar_url FROM users", (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         const users = rows.map(u => ({
             id: u.id,
