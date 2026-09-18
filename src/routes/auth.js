@@ -1,10 +1,21 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const db = require('../config/database');
 const { getInstanceId } = require('../config/database');
 const logger = require('../utils/logger');
 const router = express.Router();
+
+// [HIGH-02/CRIT-03] Types MIME autorisés pour les avatars base64
+const ALLOWED_AVATAR_MIMES = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif'
+};
 
 // [CRIT-01/02] — Pas de fallback. Le guard dans server.js garantit que JWT_SECRET est défini et sûr.
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -165,15 +176,27 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
     if (avatar_url && avatar_url.startsWith('data:image')) {
         const matches = avatar_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
         if (matches && matches.length === 3) {
-            const ext = matches[1].split('/')[1];
-            const fs = require('fs');
-            const path = require('path');
-            const personPath = path.join(__dirname, '..', '..', 'public', 'uploads', 'Person');
-            if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
-            const personName = `${firstName}_${lastName}`.replace(/[^a-z0-9]/gi, '_');
-            const fileName = `${personName}.${ext}`;
-            fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
-            avatarUrlToSave = `/uploads/Person/${fileName}`;
+            const mime = matches[1].toLowerCase();
+            const ext = ALLOWED_AVATAR_MIMES[mime];
+            if (ext) {
+                const personPath = path.join(__dirname, '..', '..', 'public', 'uploads', 'Person');
+                if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
+
+                // Supprimer l'ancien avatar du disque pour éviter les orphelins
+                db.get("SELECT avatar_url FROM users WHERE id = ?", [userId], (err, row) => {
+                    if (row && row.avatar_url && row.avatar_url.startsWith('/uploads/Person/')) {
+                        const oldPath = path.join(__dirname, '..', '..', 'public', path.normalize(row.avatar_url));
+                        if (fs.existsSync(oldPath)) {
+                            try { fs.unlinkSync(oldPath); } catch (_) {}
+                        }
+                    }
+                });
+
+                // [HIGH-02] — Nom de fichier aléatoire basé sur l'ID utilisateur et un UUID (anti-collision & anti-usurpation)
+                const fileName = `user_${userId}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
+                fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
+                avatarUrlToSave = `/uploads/Person/${fileName}`;
+            }
         }
     }
 

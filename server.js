@@ -12,6 +12,7 @@ const morgan = require('morgan');
 const logger = require('./src/utils/logger');
 const { describeChanges } = require('./src/utils/boardDiff');
 const multer = require('multer');
+const crypto = require('crypto');
 
 const fs = require('fs');
 if (!fs.existsSync(path.join(__dirname, 'public', 'uploads'))) {
@@ -23,6 +24,14 @@ const ALLOWED_MIMES = [
     'image/jpeg', 'image/png', 'image/webp', 'image/gif',
     'video/mp4', 'video/webm'
 ];
+
+// [HIGH-02] — Whitelist MIME et extensions pour les avatars base64
+const ALLOWED_AVATAR_MIMES = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif'
+};
 
 const fileFilter = (req, file, cb) => {
     if (ALLOWED_MIMES.includes(file.mimetype)) {
@@ -334,13 +343,16 @@ io.on('connection', (socket) => {
                                     if (a.avatar_url && typeof a.avatar_url === 'string' && a.avatar_url.startsWith('data:image')) {
                                         const matches = a.avatar_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
                                         if (matches && matches.length === 3) {
-                                            const ext = matches[1].split('/')[1];
-                                            const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
-                                            if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
-                                            const personName = (a.name || a.email || 'user').replace(/[^a-z0-9]/gi, '_');
-                                            const fileName = `${personName}.${ext}`;
-                                            fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
-                                            a.avatar_url = `/uploads/Person/${fileName}`;
+                                            const mime = matches[1].toLowerCase();
+                                            const ext = ALLOWED_AVATAR_MIMES[mime];
+                                            if (ext) {
+                                                const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
+                                                if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
+                                                const targetId = a.id ? a.id : crypto.randomUUID().slice(0, 8);
+                                                const fileName = `avatar_${targetId}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
+                                                fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
+                                                a.avatar_url = `/uploads/Person/${fileName}`;
+                                            }
                                         }
                                     }
                                 });
@@ -395,13 +407,16 @@ io.on('connection', (socket) => {
                     if (a.avatar_url && typeof a.avatar_url === 'string' && a.avatar_url.startsWith('data:image')) {
                         const matches = a.avatar_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
                         if (matches && matches.length === 3) {
-                            const ext = matches[1].split('/')[1];
-                            const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
-                            if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
-                            const personName = (a.name || a.email || 'user').replace(/[^a-z0-9]/gi, '_');
-                            const fileName = `${personName}.${ext}`;
-                            fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
-                            a.avatar_url = `/uploads/Person/${fileName}`;
+                            const mime = matches[1].toLowerCase();
+                            const ext = ALLOWED_AVATAR_MIMES[mime];
+                            if (ext) {
+                                const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
+                                if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
+                                const targetId = a.id ? a.id : crypto.randomUUID().slice(0, 8);
+                                const fileName = `avatar_${targetId}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
+                                fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
+                                a.avatar_url = `/uploads/Person/${fileName}`;
+                            }
                         }
                     }
                 });
