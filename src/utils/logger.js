@@ -18,7 +18,7 @@ try {
 const logsHistory = [];
 const MAX_LOGS = 1000;
 
-// [MED-05] — Charger l'historique récent depuis le fichier de log au démarrage
+// Charger l'historique récent depuis le fichier de log au démarrage
 function initHistoryFromFile() {
     try {
         if (fs.existsSync(LOG_FILE)) {
@@ -92,7 +92,7 @@ function saveLog(type, message, args) {
         logsHistory.shift();
     }
 
-    // [MED-05] — Persistance asynchrone sur disque
+    // Persistance asynchrone sur disque
     checkLogRotation();
     const logLine = `[${timestamp}] [${type}] ${formattedMessage}\n`;
     fs.appendFile(LOG_FILE, logLine, (err) => {

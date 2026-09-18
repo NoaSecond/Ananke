@@ -28,7 +28,7 @@ export const Logger = {
     },
 
     error(message, error = null) {
-        // [LOW-01] — Masquage des stack traces dans la console navigateur
+        // Masquage des stack traces dans la console navigateur
         const errDetail = error instanceof Error ? error.message : (typeof error === 'string' ? error : null);
         this.log('ERROR', errDetail ? `${message} (${errDetail})` : message);
         if (window.__ANANKE_DEBUG__ && error && error.stack) {
@@ -207,7 +207,7 @@ export function escapeHtml(str) {
 }
 
 /**
- * [HIGH-03] Parse le Markdown avec marked et l'assainit avec DOMPurify
+ * Parse le Markdown avec marked et l'assainit avec DOMPurify
  * Bloque les balises script, iframes, onerror inline, URLs javascript:, etc.
  */
 export function renderSafeMarkdown(content) {

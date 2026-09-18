@@ -20,13 +20,13 @@ if (!fs.existsSync(path.join(__dirname, 'public', 'uploads'))) {
     fs.mkdirSync(path.join(__dirname, 'public', 'uploads'), { recursive: true });
 }
 
-// [CRIT-03] — Whitelist MIME stricte : seuls les images et vidéos sont acceptées
+// Whitelist MIME stricte : seuls les images et vidéos sont acceptées
 const ALLOWED_MIMES = [
     'image/jpeg', 'image/png', 'image/webp', 'image/gif',
     'video/mp4', 'video/webm'
 ];
 
-// [HIGH-02] — Whitelist MIME et extensions pour les avatars base64
+// Whitelist MIME et extensions pour les avatars base64
 const ALLOWED_AVATAR_MIMES = {
     'image/jpeg': 'jpg',
     'image/png': 'png',
@@ -34,7 +34,7 @@ const ALLOWED_AVATAR_MIMES = {
     'image/gif': 'gif'
 };
 
-// [MED-09] — Validation MIME stricte, limite de taille (10MB) et suppression des anciens fichiers de fond
+// Validation MIME stricte, limite de taille (10MB) et suppression des anciens fichiers de fond
 const MAX_BG_SIZE = 10 * 1024 * 1024;
 
 function processBoardBackground(newBoardData, oldBoardData) {
@@ -49,14 +49,14 @@ function processBoardBackground(newBoardData, oldBoardData) {
             const mime = matches[1].toLowerCase();
             const ext = ALLOWED_AVATAR_MIMES[mime];
             if (!ext) {
-                logger.warn(`[MED-09] Type MIME de fond d'écran non autorisé rejeté : ${mime}`);
+                logger.warn(`Type MIME de fond d'écran non autorisé rejeté : ${mime}`);
                 newBoardData.background = oldBoardData && oldBoardData.background ? oldBoardData.background : { type: 'default', value: '' };
                 return;
             }
 
             const buffer = Buffer.from(matches[2], 'base64');
             if (buffer.length > MAX_BG_SIZE) {
-                logger.warn(`[MED-09] Fond d'écran trop volumineux rejeté (${buffer.length} octets, max: ${MAX_BG_SIZE})`);
+                logger.warn(`Fond d'écran trop volumineux rejeté (${buffer.length} octets, max: ${MAX_BG_SIZE})`);
                 newBoardData.background = oldBoardData && oldBoardData.background ? oldBoardData.background : { type: 'default', value: '' };
                 return;
             }
@@ -104,7 +104,7 @@ const storage = multer.diskStorage({
     },
     filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        // [HIGH-01] — Sanitisation du nom original : path.basename + suppression des caractères spéciaux
+        // Sanitisation du nom original : path.basename + suppression des caractères spéciaux
         const safeOriginalName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
         cb(null, uniqueSuffix + '-' + safeOriginalName);
     }
@@ -113,14 +113,14 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage,
     fileFilter,
-    limits: { fileSize: 10 * 1024 * 1024 } // [CRIT-03] — 10 MB max par fichier
+    limits: { fileSize: 10 * 1024 * 1024 } // 10 MB max par fichier
 });
 
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
-// [MED-04] — Content Security Policy & HTTP Security Headers
+// Content Security Policy & HTTP Security Headers
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -138,9 +138,19 @@ app.use(helmet({
     },
     crossOriginEmbedderPolicy: false
 }));
+
+// Redirection HTTPS obligatoire en production
+if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+        if (!req.secure && req.headers['x-forwarded-proto'] !== 'https') {
+            return res.redirect(301, `https://${req.headers.host}${req.url}`);
+        }
+        next();
+    });
+}
 const server = http.createServer(app);
 const io = new Server(server, {
-    maxHttpBufferSize: 1e7 // [HIGH-06] 10MB max par message WebSocket
+    maxHttpBufferSize: 1e7 // 10MB max par message WebSocket
 });
 
 logger.onLogCallback = (logEntry) => {
@@ -153,7 +163,7 @@ logger.onLogCallback = (logEntry) => {
     }
 };
 
-// [CRIT-01/02] — Le secret JWT NE DOIT JAMAIS avoir de fallback hardcodé.
+// Le secret JWT NE DOIT JAMAIS avoir de fallback hardcodé.
 // Si JWT_SECRET est absent ou correspond à l'ancienne valeur compromise, le serveur refuse de démarrer.
 const COMPROMISED_SECRETS = ['ananke-secret-key-prod-rev2'];
 if (!process.env.JWT_SECRET || COMPROMISED_SECRETS.includes(process.env.JWT_SECRET)) {
@@ -162,10 +172,13 @@ if (!process.env.JWT_SECRET || COMPROMISED_SECRETS.includes(process.env.JWT_SECR
 }
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// [HIGH-06] — Réduction des limites de payload pour éviter les attaques DoS mémoire
+// Réduction des limites de payload pour éviter les attaques DoS mémoire
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cookieParser());
+
+// Protéger les fichiers uploadés : authentification requise
+app.use('/uploads', authenticateToken, express.static(path.join(__dirname, 'public', 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // HTTP Logging
@@ -198,7 +211,7 @@ app.get('/api/board', authenticateToken, (req, res) => {
 
 const rateLimit = require('express-rate-limit');
 
-// [HIGH-05] — Rate limiting sur les uploads : max 30 uploads par minute par IP
+// Rate limiting sur les uploads : max 30 uploads par minute par IP
 const uploadLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 30,
@@ -241,7 +254,7 @@ app.delete('/api/media', authenticateToken, (req, res) => {
     }
 });
 
-// [MED-03] — Protégé par authenticateToken pour empêcher le fingerprinting par des tiers non connectés
+// Protégé par authenticateToken pour empêcher le fingerprinting par des tiers non connectés
 app.get('/api/version', authenticateToken, async (req, res) => {
     try {
         const pkgData = await fs.promises.readFile(path.join(__dirname, 'package.json'), 'utf8');
@@ -276,7 +289,7 @@ app.post('/api/board', authenticateToken, (req, res) => {
 
         const oldBoardData = row ? JSON.parse(row.data) : { workflows: [] };
 
-        // [MED-09] Traitement sécurisé du fond d'écran
+        // Traitement sécurisé du fond d'écran
         processBoardBackground(newBoardData, oldBoardData);
 
         const changes = describeChanges(oldBoardData, newBoardData);
@@ -303,7 +316,7 @@ app.post('/api/board', authenticateToken, (req, res) => {
     });
 });
 
-// [LOW-01] — Gestionnaire d'erreurs Express centralisé : masque les stack traces
+// Gestionnaire d'erreurs Express centralisé : masque les stack traces
 app.use((err, req, res, next) => {
     logger.error(`Unhandled error: ${err.message}`, err.stack);
     const isProd = process.env.NODE_ENV === 'production';
@@ -410,7 +423,7 @@ io.on('connection', (socket) => {
 
             const oldBoardData = row ? JSON.parse(row.data) : { workflows: [] };
 
-            // [MED-09] Traitement sécurisé du fond d'écran
+            // Traitement sécurisé du fond d'écran
             processBoardBackground(newBoardData, oldBoardData);
 
             // Cleanup base64 avatars in tasks if they are passed

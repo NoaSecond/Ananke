@@ -9,7 +9,7 @@ const { getInstanceId } = require('../config/database');
 const logger = require('../utils/logger');
 const router = express.Router();
 
-// [HIGH-02/CRIT-03] Types MIME autorisés pour les avatars base64
+// Types MIME autorisés pour les avatars base64
 const ALLOWED_AVATAR_MIMES = {
     'image/jpeg': 'jpg',
     'image/png': 'png',
@@ -17,12 +17,12 @@ const ALLOWED_AVATAR_MIMES = {
     'image/gif': 'gif'
 };
 
-// [CRIT-01/02] — Pas de fallback. Le guard dans server.js garantit que JWT_SECRET est défini et sûr.
+// Pas de fallback. Le guard dans server.js garantit que JWT_SECRET est défini et sûr.
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const rateLimit = require('express-rate-limit');
 
-// [HIGH-05] — Rate limiting sur le login : max 10 tentatives par 15 min par IP
+// Rate limiting sur le login : max 10 tentatives par 15 min par IP
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10,
@@ -41,7 +41,7 @@ router.post('/login', loginLimiter, (req, res) => {
         }
         const clientIp = req.ip || req.socket.remoteAddress;
         if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-            // [MED-06] — Logger l'adresse IP lors des échecs de connexion pour détecter le brute-force
+            // Logger l'adresse IP lors des échecs de connexion
             logger.warn(`Failed login attempt for email: ${email} from IP: ${clientIp}`);
             return res.status(401).json({ error: 'Identifiants invalides' });
         }
@@ -60,7 +60,7 @@ router.post('/login', loginLimiter, (req, res) => {
             res.cookie('token', token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict', // [HIGH-04] — Bloque les requêtes CSRF cross-origin
+                sameSite: 'strict', // Bloque les requêtes CSRF cross-origin
                 maxAge: 24 * 60 * 60 * 1000,
                 path: '/'
             });
@@ -148,7 +148,7 @@ router.post('/create-account', authenticateToken, requireRole('admin'), (req, re
     }
 
     const userRole = role || 'reader';
-    // [MED-02] Seul un Owner peut créer un autre compte Owner. Un Admin ne peut créer que reader/editor/admin.
+    // Seul un Owner peut créer un autre compte Owner. Un Admin ne peut créer que reader/editor/admin.
     const allowedRoles = req.user.role === 'owner'
         ? ['reader', 'editor', 'admin', 'owner']
         : ['reader', 'editor', 'admin'];
@@ -157,7 +157,7 @@ router.post('/create-account', authenticateToken, requireRole('admin'), (req, re
         return res.status(403).json({ error: 'Rôle non autorisé ou invalide' });
     }
 
-    // [LOW-05] Validation basique du format d'email
+    // Validation basique du format d'email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         return res.status(400).json({ error: 'Format d\'adresse email invalide' });
@@ -191,6 +191,12 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
         return res.status(400).json({ error: 'Champs requis manquants' });
     }
 
+    // Validation du format d'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Format d\'adresse email invalide' });
+    }
+
     let query = "UPDATE users SET first_name = ?, last_name = ?, email = ?, is_setup_complete = 1";
     let params = [firstName, lastName, email];
 
@@ -220,7 +226,7 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
                     }
                 });
 
-                // [HIGH-02] — Nom de fichier aléatoire basé sur l'ID utilisateur et un UUID (anti-collision & anti-usurpation)
+                // Nom de fichier aléatoire basé sur l'ID utilisateur et un UUID (anti-collision & anti-usurpation)
                 const fileName = `user_${userId}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
                 fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
                 avatarUrlToSave = `/uploads/Person/${fileName}`;
@@ -251,7 +257,7 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
                     JWT_SECRET,
                     { expiresIn: '24h' }
                 );
-                res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 24 * 3600000, path: '/' }); // [HIGH-04]
+                res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 24 * 3600000, path: '/' });
                 logger.info(`User setup completed: ${displayName} (${user.email})`);
                 res.json({ success: true, user: { ...user, name: displayName, password_hash: undefined } });
             } else {
@@ -269,7 +275,7 @@ router.post('/logout', (req, res) => {
 });
 
 // Get Current User
-// [MED-01] Projection explicite sans password_hash ni token_version
+// Projection explicite sans password_hash ni token_version
 router.get('/me', authenticateToken, (req, res) => {
     db.get("SELECT id, email, first_name, last_name, role, is_setup_complete, avatar_url FROM users WHERE id = ?", [req.user.id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -283,7 +289,7 @@ router.get('/me', authenticateToken, (req, res) => {
 });
 
 // List Users
-// [MED-01] Projection explicite sans password_hash
+// Projection explicite sans password_hash
 router.get('/users', authenticateToken, requireRole('admin'), (req, res) => {
     db.all("SELECT id, email, first_name, last_name, role, is_setup_complete, avatar_url FROM users", (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });

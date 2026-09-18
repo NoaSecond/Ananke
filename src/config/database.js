@@ -16,7 +16,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 function initDb() {
     db.serialize(() => {
-        // Users table [MED-08: IDs non séquentiels / UUIDs]
+        // Users table
         db.run(`CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             email TEXT UNIQUE,
@@ -37,12 +37,12 @@ function initDb() {
                 db.run("ALTER TABLE users ADD COLUMN avatar_url TEXT", () => { });
                 db.run("ALTER TABLE users ADD COLUMN token_version INTEGER DEFAULT 1", () => { });
 
-                // Migration MED-08 : si la colonne id est toujours INTEGER, migrer vers UUID
+                // Migration : si la colonne id est toujours INTEGER, migrer vers UUID
                 db.all("PRAGMA table_info(users)", (pragmaErr, columns) => {
                     if (pragmaErr || !columns) return;
                     const idCol = columns.find(c => c.name === 'id');
                     if (idCol && idCol.type.toUpperCase() === 'INTEGER') {
-                        logger.info('[MED-08] Migration des IDs utilisateurs vers UUID...');
+                        logger.info('Migration des IDs utilisateurs vers UUID...');
                         db.serialize(() => {
                             db.run(`CREATE TABLE users_uuid_migration (
                                 id TEXT PRIMARY KEY,
@@ -70,7 +70,7 @@ function initDb() {
                                 }
                                 db.run("DROP TABLE users", () => {
                                     db.run("ALTER TABLE users_uuid_migration RENAME TO users", () => {
-                                        logger.success('[MED-08] Migration des utilisateurs vers UUID terminée.');
+                                        logger.success('Migration des utilisateurs vers UUID terminée.');
                                     });
                                 });
                             });
