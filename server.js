@@ -13,6 +13,7 @@ const logger = require('./src/utils/logger');
 const { describeChanges } = require('./src/utils/boardDiff');
 const multer = require('multer');
 const crypto = require('crypto');
+const helmet = require('helmet');
 
 const fs = require('fs');
 if (!fs.existsSync(path.join(__dirname, 'public', 'uploads'))) {
@@ -61,6 +62,25 @@ const upload = multer({
 
 const app = express();
 app.disable('x-powered-by');
+
+// [MED-04] — Content Security Policy & HTTP Security Headers
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com'],
+            scriptSrcAttr: ["'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com', 'data:'],
+            imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+            connectSrc: ["'self'", 'ws:', 'wss:', 'https://raw.githubusercontent.com'],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+            upgradeInsecureRequests: null
+        }
+    },
+    crossOriginEmbedderPolicy: false
+}));
 const server = http.createServer(app);
 const io = new Server(server, {
     maxHttpBufferSize: 1e7 // [HIGH-06] 10MB max par message WebSocket
