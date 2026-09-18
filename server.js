@@ -62,7 +62,7 @@ const upload = multer({
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-    maxHttpBufferSize: 1e8 // 100MB
+    maxHttpBufferSize: 1e7 // [HIGH-06] 10MB max par message WebSocket
 });
 
 logger.onLogCallback = (logEntry) => {
@@ -84,8 +84,9 @@ if (!process.env.JWT_SECRET || COMPROMISED_SECRETS.includes(process.env.JWT_SECR
 }
 const JWT_SECRET = process.env.JWT_SECRET;
 
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+// [HIGH-06] — Réduction des limites de payload pour éviter les attaques DoS mémoire
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -117,8 +118,19 @@ app.get('/api/board', authenticateToken, (req, res) => {
     });
 });
 
+const rateLimit = require('express-rate-limit');
+
+// [HIGH-05] — Rate limiting sur les uploads : max 30 uploads par minute par IP
+const uploadLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de requêtes d\'upload. Veuillez patienter une minute.' }
+});
+
 // File Upload API
-app.post('/api/upload', authenticateToken, upload.array('files', 10), (req, res) => {
+app.post('/api/upload', authenticateToken, uploadLimiter, upload.array('files', 10), (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No files uploaded.' });

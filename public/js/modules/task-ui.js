@@ -3,7 +3,7 @@ import * as API from './api.js';
 import { state, getFullUrl } from './state.js';
 import { openModal, closeModal, showConfirm } from './modals.js';
 import { renderBoard, saveData, saveTaskOnly } from './board-ui.js';
-import { Logger, getInitials, getContrastYIQ } from './utils.js';
+import { Logger, getInitials, getContrastYIQ, renderSafeMarkdown, escapeHtml } from './utils.js';
 import { trackEvent } from './board-ui.js';
 
 let tempTags = [];
@@ -672,7 +672,7 @@ export const openViewTaskModal = (task, workflow) => {
     // Conditionally show/hide sections
     const hasDesc = !!task.description;
     elements.viewTaskDisplay.descSection.style.display = hasDesc ? 'block' : 'none';
-    if (hasDesc) elements.viewTaskDisplay.desc.innerHTML = marked.parse(task.description);
+    if (hasDesc) elements.viewTaskDisplay.desc.innerHTML = renderSafeMarkdown(task.description);
 
     elements.viewTaskAssignees.style.flexWrap = 'wrap';
     elements.viewTaskAssignees.style.gap = '8px';
@@ -680,10 +680,11 @@ export const openViewTaskModal = (task, workflow) => {
         const isCurrentUser = state.currentUser && (a.id === state.currentUser.id || a.name === state.currentUser.name);
         const currentUserObj = isCurrentUser ? state.currentUser : a;
         const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : a.avatar_url;
+        const safeName = escapeHtml(currentUserObj.name);
         return `
             <div class="assignee-chip" style="border: 1px solid var(--border-color); background: var(--bg-color);">
-                ${avatarUrl ? `<img src="${getFullUrl(avatarUrl)}" class="assignee-avatar-small" title="${currentUserObj.name}" style="object-fit: cover;">` : `<div class="assignee-avatar-small" title="${currentUserObj.name}">${getInitials(currentUserObj)}</div>`}
-                <span style="font-size:0.9rem;">${currentUserObj.name}</span>
+                ${avatarUrl ? `<img src="${getFullUrl(avatarUrl)}" class="assignee-avatar-small" title="${safeName}" style="object-fit: cover;">` : `<div class="assignee-avatar-small" title="${safeName}">${getInitials(currentUserObj)}</div>`}
+                <span style="font-size:0.9rem;">${safeName}</span>
             </div>
         `;
     }).join('');
@@ -691,7 +692,7 @@ export const openViewTaskModal = (task, workflow) => {
     const hasTags = (task.tags || []).length > 0;
     elements.viewTaskDisplay.tagsSection.style.display = hasTags ? 'block' : 'none';
     if (hasTags) {
-        elements.viewTaskDisplay.tags.innerHTML = task.tags.map(tag => `<span class="tag-pill" style="background:${tag.color}; color:${getContrastYIQ(tag.color)}">${tag.name}</span>`).join('');
+        elements.viewTaskDisplay.tags.innerHTML = task.tags.map(tag => `<span class="tag-pill" style="background:${escapeHtml(tag.color)}; color:${getContrastYIQ(tag.color)}">${escapeHtml(tag.name)}</span>`).join('');
     }
 
     const hasCustomFields = (task.customFields || []).length > 0;
@@ -1183,10 +1184,10 @@ const renderComments = (task) => {
 
         div.innerHTML = `
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                <strong style="font-size: 0.85rem; color: var(--primary-color);">${comment.author}</strong>
-                <small style="opacity: 0.5; font-size: 0.75rem;">${date}</small>
+                <strong style="font-size: 0.85rem; color: var(--primary-color);">${escapeHtml(comment.author)}</strong>
+                <small style="opacity: 0.5; font-size: 0.75rem;">${escapeHtml(date)}</small>
             </div>
-            <div style="font-size: 0.9rem; line-height: 1.4; white-space: pre-wrap;">${comment.text}</div>
+            <div style="font-size: 0.9rem; line-height: 1.4; white-space: pre-wrap;">${escapeHtml(comment.text)}</div>
         `;
         container.appendChild(div);
     });

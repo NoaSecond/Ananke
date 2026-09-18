@@ -20,8 +20,19 @@ const ALLOWED_AVATAR_MIMES = {
 // [CRIT-01/02] — Pas de fallback. Le guard dans server.js garantit que JWT_SECRET est défini et sûr.
 const JWT_SECRET = process.env.JWT_SECRET;
 
+const rateLimit = require('express-rate-limit');
+
+// [HIGH-05] — Rate limiting sur le login : max 10 tentatives par 15 min par IP
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de tentatives de connexion. Veuillez réessayer dans 15 minutes.' }
+});
+
 // Login
-router.post('/login', (req, res) => {
+router.post('/login', loginLimiter, (req, res) => {
     const { email, password } = req.body;
     db.get("SELECT * FROM users WHERE email = ?", [email], (err, user) => {
         if (err) {

@@ -5,7 +5,7 @@ import { openTaskEditModal, openViewTaskModal } from './task-ui.js';
 import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
 import { handleSearch } from './search-ui.js';
-import { getInitials, getContrastYIQ } from './utils.js';
+import { getInitials, getContrastYIQ, renderSafeMarkdown, escapeHtml } from './utils.js';
 import * as API from './api.js';
 
 export const trackEvent = (action, category = 'Kanban', label = null, value = null) => {
@@ -175,18 +175,18 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
 
                 taskCard.innerHTML = `
                     ${taskActionsHtml}
-                    ${(task.showIdOnCard && task.id) ? `<div class="task-card-id" style="font-size: 0.7rem; opacity: 0.55; font-family: monospace; margin-bottom: 4px; user-select: text;">ID: ${task.id}</div>` : ''}
-                    <h4>${task.title}</h4>
+                    ${(task.showIdOnCard && task.id) ? `<div class="task-card-id" style="font-size: 0.7rem; opacity: 0.55; font-family: monospace; margin-bottom: 4px; user-select: text;">ID: ${escapeHtml(task.id)}</div>` : ''}
+                    <h4>${escapeHtml(task.title)}</h4>
                     ${(task.showTags !== false && task.tags && task.tags.length > 0) ? `
                     <div class="task-tags-display">
-                        ${task.tags.map(tag => `<span class="tag-pill-small" style="background-color: ${tag.color}; color: ${getContrastYIQ(tag.color || '#3b82f6')};" title="${tag.name}">${tag.name}</span>`).join('')}
+                        ${task.tags.map(tag => `<span class="tag-pill-small" style="background-color: ${escapeHtml(tag.color)}; color: ${getContrastYIQ(tag.color || '#3b82f6')};" title="${escapeHtml(tag.name)}">${escapeHtml(tag.name)}</span>`).join('')}
                     </div>` : ''}
                     ${((task.showAssigneesOnCard !== false && assigneesHtml) || commentsHtml) ? `
                     <div class="task-card-footer">
                         ${(task.showAssigneesOnCard !== false && assigneesHtml) ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
                         ${commentsHtml}
                     </div>` : ''}
-                    ${(task.showDescriptionOnCard !== false && task.description) ? `<div class="task-card-description">${marked.parse(task.description)}</div>` : ''}
+                    ${(task.showDescriptionOnCard !== false && task.description) ? `<div class="task-card-description">${renderSafeMarkdown(task.description)}</div>` : ''}
                     ${(task.customFields || []).filter(f => f.showOnCard).map(f => {
                     let val = f.value;
                     if (f.type === 'link') {
