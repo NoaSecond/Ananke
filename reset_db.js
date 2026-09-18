@@ -24,6 +24,7 @@ async function reset() {
     db.serialize(async () => {
         db.run("DROP TABLE IF EXISTS users");
         db.run("DROP TABLE IF EXISTS board_store");
+        db.run("DROP TABLE IF EXISTS instance_config");
 
         db.run(`CREATE TABLE users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,6 +42,14 @@ async function reset() {
             data TEXT
         )`);
 
+        // instance_config : identifiant unique par instance/reset.
+        // Inclus dans chaque JWT — change à chaque reset, invalide tous les anciens tokens.
+        db.run(`CREATE TABLE instance_config (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )`);
+        db.run(`INSERT INTO instance_config (key, value) VALUES ('instance_id', ?)`, [crypto.randomUUID()]);
+
         const hashedPassword = await bcrypt.hash('admin123', 10);
         db.run(`INSERT INTO users (email, password_hash, first_name, last_name, role, is_setup_complete) 
                 VALUES ('admin@setup.ananke', ?, '', '', 'owner', 0)`, [hashedPassword]);
@@ -49,6 +58,7 @@ async function reset() {
 
         console.log('Database reset complete.');
         console.log('Admin user: admin@setup.ananke / admin123');
+        console.log('New instance_id generated — all previous sessions are now invalid.');
         db.close();
     });
 }

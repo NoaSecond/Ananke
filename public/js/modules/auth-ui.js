@@ -10,6 +10,7 @@ let oldAvatarUrl = null;
 let sessionAvatarUploads = [];
 
 export function initAuth(initSocketCallback) {
+    API.setUnauthorizedHandler(handleUnauthorized);
     checkAuth(initSocketCallback);
 
     // Login Form Listener
@@ -272,6 +273,22 @@ function showAuth() {
     elements.authOverlay.style.display = 'flex';
     elements.kanbanBoard.style.display = 'none';
     document.body.classList.add('auth-mode');
+    // Fermer tous les modaux ouverts
+    document.querySelectorAll('.modal.visible, .modal-overlay.visible').forEach(m => m.classList.remove('visible'));
+}
+
+// Exporté : appelé quand une requête reçoit un 401 ou quand le socket reconnecte.
+// Remet l'interface dans l'état "non authentifié" proprement.
+export function handleUnauthorized() {
+    state.currentUser = null;
+    if (state.socket) {
+        state.socket.disconnect();
+        state.socket = null;
+    }
+    if (elements.setupModal) {
+        elements.setupModal.classList.remove('visible');
+    }
+    showAuth();
 }
 
 function hideAuth() {

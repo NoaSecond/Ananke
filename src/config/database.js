@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const crypto = require('crypto');
 const logger = require('../utils/logger');
 
 const dbPath = process.env.DB_PATH ? path.resolve(process.env.DB_PATH) : path.resolve(__dirname, '../../ananke.db');
@@ -38,6 +39,21 @@ function initDb() {
             }
         });
 
+        // Table instance_config : UUID unique par instance, changé à chaque reset.
+        // Utilisé pour invalider tous les JWT après un reset ou sur une autre instance.
+        db.run(`CREATE TABLE IF NOT EXISTS instance_config (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )`, () => {
+            db.get("SELECT value FROM instance_config WHERE key = 'instance_id'", (err, row) => {
+                if (!row) {
+                    // Première installation : génération automatique de l'instance_id
+                    db.run("INSERT INTO instance_config (key, value) VALUES ('instance_id', ?)", [crypto.randomUUID()]);
+                    logger.info('instance_id généré (première installation).');
+                }
+            });
+        });
+
         // Board table (Single Row Store for JSON Blob)
         db.run(`CREATE TABLE IF NOT EXISTS board_store (
             id INTEGER PRIMARY KEY DEFAULT 1,
@@ -66,3 +82,13 @@ function initDb() {
 }
 
 module.exports = db;
+
+// Retourne l'instance_id unique de cette installation/reset.
+// Promesse pour s'assurer que la BDD est prête.
+module.exports.getInstanceId = () => new Promise((resolve, reject) => {
+    db.get("SELECT value FROM instance_config WHERE key = 'instance_id'", (err, row) => {
+        if (err || !row) return reject(new Error('instance_id introuvable en BDD'));
+        resolve(row.value);
+    });
+});
+

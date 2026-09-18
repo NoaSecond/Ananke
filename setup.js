@@ -43,6 +43,9 @@ const COMPROMISED_SECRETS = [
     '',
 ];
 
+// Détection du flag --reset dès le début (utilisé à la fois pour JWT et BDD)
+const forceReset = process.argv.includes('--reset');
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Génère un secret JWT de 64 octets en hex (128 caractères). */
@@ -115,7 +118,15 @@ if (envExists) {
 let changed = false;
 const currentSecret = existingVars['JWT_SECRET'] || '';
 
-if (COMPROMISED_SECRETS.includes(currentSecret)) {
+if (forceReset) {
+    // Un reset BDD doit toujours invalider toutes les sessions existantes.
+    // Sans nouveau secret, un ancien cookie JWT (id=1, tv=1) resterait valide
+    // sur la nouvelle BDD réinitialisée → contournement de l'authentification.
+    const newSecret = generateSecret();
+    existingVars['JWT_SECRET'] = newSecret;
+    changed = true;
+    warn(`--reset : JWT_SECRET régénéré pour invalider toutes les sessions  ${c.gray}(${newSecret.slice(0, 16)}…)${c.reset}`);
+} else if (COMPROMISED_SECRETS.includes(currentSecret)) {
     if (currentSecret !== '') {
         warn('JWT_SECRET compromis détecté — remplacement automatique');
     }
@@ -143,10 +154,9 @@ if (changed || !envExists) {
 sep();
 
 // ── Initialisation de la base de données ──────────────────────────────────────
-const DB_PATH       = path.join(__dirname, process.env.DB_PATH || 'ananke.db');
-const RESET_SCRIPT  = path.join(__dirname, 'reset_db.js');
-const forceReset    = process.argv.includes('--reset');
-const dbExists      = fs.existsSync(DB_PATH);
+const DB_PATH      = path.join(__dirname, process.env.DB_PATH || 'ananke.db');
+const RESET_SCRIPT = path.join(__dirname, 'reset_db.js');
+const dbExists     = fs.existsSync(DB_PATH);
 
 console.log(`${c.bold}  Base de données${c.reset}`);
 sep();
@@ -179,6 +189,17 @@ if (!fs.existsSync(RESET_SCRIPT)) {
 sep();
 console.log(`${c.green}${c.bold}  Setup terminé.${c.reset} Lance ${c.cyan}npm start${c.reset} pour démarrer Ananke.`);
 console.log('');
+
+// Après un --reset, forcer le redémarrage de nodemon en touchant server.js
+// pour que le nouveau JWT_SECRET soit chargé en mémoire immédiatement.
+if (forceReset) {
+    const serverPath = path.join(__dirname, 'server.js');
+    if (fs.existsSync(serverPath)) {
+        const now = new Date();
+        fs.utimesSync(serverPath, now, now);
+        info(`Redémarrage du serveur déclenché (nodemon détecte server.js modifié).`);
+    }
+}
 
 // Rappel sécurité
 if (!fs.existsSync(path.join(__dirname, '.gitignore')) ||

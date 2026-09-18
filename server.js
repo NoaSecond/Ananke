@@ -5,6 +5,7 @@ const { Server } = require("socket.io");
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const db = require('./src/config/database');
+const { getInstanceId } = require('./src/config/database');
 const { router: authRouter, authenticateToken } = require('./src/routes/auth');
 const jwt = require('jsonwebtoken');
 const morgan = require('morgan');
@@ -226,14 +227,25 @@ io.use((socket, next) => {
 
     jwt.verify(jwtToken, JWT_SECRET, (err, decoded) => {
         if (err) return next(new Error("Authentication error"));
-        db.get("SELECT role, email, avatar_url, first_name, last_name FROM users WHERE id = ?", [decoded.id], (dbErr, row) => {
-            if (dbErr || !row) return next(new Error("Authentication error"));
-            decoded.role = row.role;
-            decoded.email = row.email;
-            decoded.avatar_url = row.avatar_url;
-            socket.user = decoded;
-            next();
-        });
+
+        getInstanceId().then(instanceId => {
+            if (decoded.iid !== instanceId) {
+                return next(new Error("Authentication error"));
+            }
+            db.get("SELECT role, email, avatar_url, first_name, last_name, token_version FROM users WHERE id = ?", [decoded.id], (dbErr, row) => {
+                if (dbErr || !row) return next(new Error("Authentication error"));
+                const expectedVersion = row.token_version || 1;
+                const tokenVersion = decoded.tv || 1;
+                if (tokenVersion !== expectedVersion) {
+                    return next(new Error("Authentication error"));
+                }
+                decoded.role = row.role;
+                decoded.email = row.email;
+                decoded.avatar_url = row.avatar_url;
+                socket.user = decoded;
+                next();
+            });
+        }).catch(() => next(new Error("Authentication error")));
     });
 });
 

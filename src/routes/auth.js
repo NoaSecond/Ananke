@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/database');
+const { getInstanceId } = require('../config/database');
 const logger = require('../utils/logger');
 const router = express.Router();
 
@@ -24,32 +25,39 @@ router.post('/login', (req, res) => {
         const displayName = user.first_name ? `${user.first_name} ${user.last_name}` : (user.name || user.email);
         logger.info(`User logged in: ${displayName} (${user.role})`);
 
-        const token = jwt.sign(
-            { id: user.id, role: user.role, name: displayName, is_setup_complete: user.is_setup_complete, tv: user.token_version || 1 },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        // Inclure l'instance_id dans le JWT pour détecter les tokens cross-instance ou post-reset
+        getInstanceId().then(instanceId => {
+            const token = jwt.sign(
+                { id: user.id, role: user.role, name: displayName, is_setup_complete: user.is_setup_complete, tv: user.token_version || 1, iid: instanceId },
+                JWT_SECRET,
+                { expiresIn: '24h' }
+            );
 
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 24 * 60 * 60 * 1000,
-            path: '/'
-        });
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict', // [HIGH-04] — Bloque les requêtes CSRF cross-origin
+                maxAge: 24 * 60 * 60 * 1000,
+                path: '/'
+            });
 
-        res.json({
-            success: true,
-            require_setup: user.is_setup_complete === 0,
-            user: {
-                id: user.id,
-                name: displayName,
-                role: user.role,
-                email: user.email,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                is_setup_complete: user.is_setup_complete,
-                avatar_url: user.avatar_url
-            }
+            res.json({
+                success: true,
+                require_setup: user.is_setup_complete === 0,
+                user: {
+                    id: user.id,
+                    name: displayName,
+                    role: user.role,
+                    email: user.email,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    is_setup_complete: user.is_setup_complete,
+                    avatar_url: user.avatar_url
+                }
+            });
+        }).catch(err => {
+            logger.error(`Impossible de lire l'instance_id : ${err.message}`);
+            res.status(500).json({ error: 'Erreur interne du serveur' });
         });
     });
 });
@@ -60,19 +68,33 @@ const authenticateToken = (req, res, next) => {
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ error: 'Forbidden' });
-        // Vérification du rôle ET du token_version (révocation au changement de mot de passe)
-        db.get("SELECT role, token_version FROM users WHERE id = ?", [user.id], (dbErr, row) => {
-            if (dbErr || !row) return res.status(403).json({ error: 'Forbidden' });
-            const expectedVersion = row.token_version || 1;
-            const tokenVersion    = user.tv         || 1;
-            if (tokenVersion !== expectedVersion) {
-                return res.status(401).json({ error: 'Session expirée, veuillez vous reconnecter.' });
+        if (err) {
+            res.clearCookie('token', { path: '/' });
+            return res.status(401).json({ error: 'Session expirée ou invalide.' });
+        }
+        // Vérification du rôle, token_version ET instance_id
+        // (révocation au changement de mdp, après reset, et cross-instance)
+        getInstanceId().then(instanceId => {
+            if (user.iid !== instanceId) {
+                res.clearCookie('token', { path: '/' });
+                return res.status(401).json({ error: 'Session invalide, veuillez vous reconnecter.' });
             }
-            user.role = row.role;
-            req.user = user;
-            next();
-        });
+            db.get("SELECT role, token_version FROM users WHERE id = ?", [user.id], (dbErr, row) => {
+                if (dbErr || !row) {
+                    res.clearCookie('token', { path: '/' });
+                    return res.status(401).json({ error: 'Utilisateur introuvable.' });
+                }
+                const expectedVersion = row.token_version || 1;
+                const tokenVersion    = user.tv         || 1;
+                if (tokenVersion !== expectedVersion) {
+                    res.clearCookie('token', { path: '/' });
+                    return res.status(401).json({ error: 'Session expirée, veuillez vous reconnecter.' });
+                }
+                user.role = row.role;
+                req.user = user;
+                next();
+            });
+        }).catch(() => res.status(500).json({ error: 'Erreur interne du serveur' }));
     });
 };
 
@@ -168,16 +190,17 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
 
         // Update token immediately? Client should re-login or better: we issue new token?
         // Let's Re-issue token to reflect updated name and setup status
-        db.get("SELECT * FROM users WHERE id = ?", [userId], (err, user) => {
+        db.get("SELECT * FROM users WHERE id = ?", [userId], async (err, user) => {
             if (user) {
                 const displayName = `${user.first_name} ${user.last_name}`;
-                // Nouveau token avec le token_version à jour (invalide les anciens tokens si mdp changé)
+                const instanceId = await getInstanceId().catch(() => null);
+                // Nouveau token avec le token_version à jour et instance_id
                 const token = jwt.sign(
-                    { id: user.id, role: user.role, name: displayName, is_setup_complete: 1, tv: user.token_version || 1 },
+                    { id: user.id, role: user.role, name: displayName, is_setup_complete: 1, tv: user.token_version || 1, iid: instanceId },
                     JWT_SECRET,
                     { expiresIn: '24h' }
                 );
-                res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 24 * 3600000, path: '/' });
+                res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 24 * 3600000, path: '/' }); // [HIGH-04]
                 logger.info(`User setup completed: ${displayName} (${user.email})`);
                 res.json({ success: true, user: { ...user, name: displayName, password_hash: undefined } });
             } else {
