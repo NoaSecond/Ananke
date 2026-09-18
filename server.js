@@ -34,6 +34,62 @@ const ALLOWED_AVATAR_MIMES = {
     'image/gif': 'gif'
 };
 
+// [MED-09] — Validation MIME stricte, limite de taille (10MB) et suppression des anciens fichiers de fond
+const MAX_BG_SIZE = 10 * 1024 * 1024;
+
+function processBoardBackground(newBoardData, oldBoardData) {
+    if (
+        newBoardData.background &&
+        newBoardData.background.type === 'image' &&
+        typeof newBoardData.background.value === 'string' &&
+        newBoardData.background.value.startsWith('data:image')
+    ) {
+        const matches = newBoardData.background.value.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+            const mime = matches[1].toLowerCase();
+            const ext = ALLOWED_AVATAR_MIMES[mime];
+            if (!ext) {
+                logger.warn(`[MED-09] Type MIME de fond d'écran non autorisé rejeté : ${mime}`);
+                newBoardData.background = oldBoardData && oldBoardData.background ? oldBoardData.background : { type: 'default', value: '' };
+                return;
+            }
+
+            const buffer = Buffer.from(matches[2], 'base64');
+            if (buffer.length > MAX_BG_SIZE) {
+                logger.warn(`[MED-09] Fond d'écran trop volumineux rejeté (${buffer.length} octets, max: ${MAX_BG_SIZE})`);
+                newBoardData.background = oldBoardData && oldBoardData.background ? oldBoardData.background : { type: 'default', value: '' };
+                return;
+            }
+
+            const bgPath = path.join(__dirname, 'public', 'uploads', 'background');
+            if (!fs.existsSync(bgPath)) fs.mkdirSync(bgPath, { recursive: true });
+
+            // Nettoyage de l'ancien fichier de fond sur disque s'il existe
+            if (
+                oldBoardData &&
+                oldBoardData.background &&
+                typeof oldBoardData.background.value === 'string' &&
+                oldBoardData.background.value.startsWith('/uploads/background/')
+            ) {
+                const oldFileName = path.basename(oldBoardData.background.value);
+                const oldFilePath = path.join(bgPath, oldFileName);
+                if (fs.existsSync(oldFilePath)) {
+                    try {
+                        fs.unlinkSync(oldFilePath);
+                    } catch (e) {
+                        logger.error(`Impossible de supprimer l'ancien fond : ${e.message}`);
+                    }
+                }
+            }
+
+            const fileName = `bg_${crypto.randomUUID().slice(0, 8)}_${Date.now()}.${ext}`;
+            fs.writeFileSync(path.join(bgPath, fileName), buffer);
+            newBoardData.background.value = `/uploads/background/${fileName}`;
+            logger.info(`Nouveau fond d'écran enregistré : ${fileName} (${Math.round(buffer.length / 1024)} KB)`);
+        }
+    }
+}
+
 const fileFilter = (req, file, cb) => {
     if (ALLOWED_MIMES.includes(file.mimetype)) {
         cb(null, true);
@@ -220,18 +276,8 @@ app.post('/api/board', authenticateToken, (req, res) => {
 
         const oldBoardData = row ? JSON.parse(row.data) : { workflows: [] };
 
-        // Handle background
-        if (newBoardData.background && newBoardData.background.type === 'image' && typeof newBoardData.background.value === 'string' && newBoardData.background.value.startsWith('data:image')) {
-            const matches = newBoardData.background.value.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-            if (matches && matches.length === 3) {
-                const ext = matches[1].split('/')[1];
-                const bgPath = path.join(__dirname, 'public', 'uploads', 'background');
-                if (!fs.existsSync(bgPath)) fs.mkdirSync(bgPath, { recursive: true });
-                const fileName = `bg_${Date.now()}.${ext}`;
-                fs.writeFileSync(path.join(bgPath, fileName), Buffer.from(matches[2], 'base64'));
-                newBoardData.background.value = `/uploads/background/${fileName}`;
-            }
-        }
+        // [MED-09] Traitement sécurisé du fond d'écran
+        processBoardBackground(newBoardData, oldBoardData);
 
         const changes = describeChanges(oldBoardData, newBoardData);
 
@@ -355,18 +401,8 @@ io.on('connection', (socket) => {
 
             const oldBoardData = row ? JSON.parse(row.data) : { workflows: [] };
 
-            // Check for base64 background and convert
-            if (newBoardData.background && newBoardData.background.type === 'image' && typeof newBoardData.background.value === 'string' && newBoardData.background.value.startsWith('data:image')) {
-                const matches = newBoardData.background.value.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-                if (matches && matches.length === 3) {
-                    const ext = matches[1].split('/')[1];
-                    const bgPath = path.join(__dirname, 'public', 'uploads', 'background');
-                    if (!fs.existsSync(bgPath)) fs.mkdirSync(bgPath, { recursive: true });
-                    const fileName = `bg_${Date.now()}.${ext}`;
-                    fs.writeFileSync(path.join(bgPath, fileName), Buffer.from(matches[2], 'base64'));
-                    newBoardData.background.value = `/uploads/background/${fileName}`;
-                }
-            }
+            // [MED-09] Traitement sécurisé du fond d'écran
+            processBoardBackground(newBoardData, oldBoardData);
 
             // Cleanup base64 avatars in tasks if they are passed
             if (newBoardData.workflows) {
@@ -381,11 +417,13 @@ io.on('connection', (socket) => {
                                             const mime = matches[1].toLowerCase();
                                             const ext = ALLOWED_AVATAR_MIMES[mime];
                                             if (ext) {
+                                                const buffer = Buffer.from(matches[2], 'base64');
+                                                if (buffer.length > 5 * 1024 * 1024) return;
                                                 const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
                                                 if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
                                                 const targetId = a.id ? a.id : crypto.randomUUID().slice(0, 8);
                                                 const fileName = `avatar_${targetId}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
-                                                fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
+                                                fs.writeFileSync(path.join(personPath, fileName), buffer);
                                                 a.avatar_url = `/uploads/Person/${fileName}`;
                                             }
                                         }
