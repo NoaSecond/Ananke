@@ -17,16 +17,37 @@ if (!fs.existsSync(path.join(__dirname, 'public', 'uploads'))) {
     fs.mkdirSync(path.join(__dirname, 'public', 'uploads'), { recursive: true });
 }
 
+// [CRIT-03] — Whitelist MIME stricte : seuls les images et vidéos sont acceptées
+const ALLOWED_MIMES = [
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    'video/mp4', 'video/webm'
+];
+
+const fileFilter = (req, file, cb) => {
+    if (ALLOWED_MIMES.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error(`Type de fichier non autorisé : ${file.mimetype}`), false);
+    }
+};
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, path.join(__dirname, 'public', 'uploads'));
     },
     filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + '-' + file.originalname);
+        // [HIGH-01] — Sanitisation du nom original : path.basename + suppression des caractères spéciaux
+        const safeOriginalName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
+        cb(null, uniqueSuffix + '-' + safeOriginalName);
     }
 });
-const upload = multer({ storage: storage });
+
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 } // [CRIT-03] — 10 MB max par fichier
+});
 
 const app = express();
 const server = http.createServer(app);
