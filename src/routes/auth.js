@@ -39,13 +39,15 @@ router.post('/login', loginLimiter, (req, res) => {
             logger.error(`Database error during login: ${err.message}`);
             return res.status(500).json({ error: err.message });
         }
+        const clientIp = req.ip || req.socket.remoteAddress;
         if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-            logger.warn(`Failed login attempt for email: ${email}`);
+            // [MED-06] — Logger l'adresse IP lors des échecs de connexion pour détecter le brute-force
+            logger.warn(`Failed login attempt for email: ${email} from IP: ${clientIp}`);
             return res.status(401).json({ error: 'Identifiants invalides' });
         }
 
         const displayName = user.first_name ? `${user.first_name} ${user.last_name}` : (user.name || user.email);
-        logger.info(`User logged in: ${displayName} (${user.role})`);
+        logger.info(`User logged in: ${displayName} (${user.role}) from IP: ${clientIp}`);
 
         // Inclure l'instance_id dans le JWT pour détecter les tokens cross-instance ou post-reset
         getInstanceId().then(instanceId => {

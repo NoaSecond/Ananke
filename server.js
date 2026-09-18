@@ -62,6 +62,7 @@ const upload = multer({
 
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', 1);
 
 // [MED-04] — Content Security Policy & HTTP Security Headers
 app.use(helmet({
