@@ -25,7 +25,7 @@ router.post('/login', (req, res) => {
         logger.info(`User logged in: ${displayName} (${user.role})`);
 
         const token = jwt.sign(
-            { id: user.id, role: user.role, name: displayName, is_setup_complete: user.is_setup_complete },
+            { id: user.id, role: user.role, name: displayName, is_setup_complete: user.is_setup_complete, tv: user.token_version || 1 },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -61,8 +61,14 @@ const authenticateToken = (req, res, next) => {
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) return res.status(403).json({ error: 'Forbidden' });
-        db.get("SELECT role FROM users WHERE id = ?", [user.id], (dbErr, row) => {
+        // Vérification du rôle ET du token_version (révocation au changement de mot de passe)
+        db.get("SELECT role, token_version FROM users WHERE id = ?", [user.id], (dbErr, row) => {
             if (dbErr || !row) return res.status(403).json({ error: 'Forbidden' });
+            const expectedVersion = row.token_version || 1;
+            const tokenVersion    = user.tv         || 1;
+            if (tokenVersion !== expectedVersion) {
+                return res.status(401).json({ error: 'Session expirée, veuillez vous reconnecter.' });
+            }
             user.role = row.role;
             req.user = user;
             next();
@@ -129,7 +135,7 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
 
     if (password) {
         const hash = bcrypt.hashSync(password, 10);
-        query += ", password_hash = ?";
+        query += ", password_hash = ?, token_version = COALESCE(token_version, 1) + 1";
         params.push(hash);
     }
 
@@ -165,8 +171,9 @@ router.post('/complete-setup', authenticateToken, (req, res) => {
         db.get("SELECT * FROM users WHERE id = ?", [userId], (err, user) => {
             if (user) {
                 const displayName = `${user.first_name} ${user.last_name}`;
+                // Nouveau token avec le token_version à jour (invalide les anciens tokens si mdp changé)
                 const token = jwt.sign(
-                    { id: user.id, role: user.role, name: displayName, is_setup_complete: 1 },
+                    { id: user.id, role: user.role, name: displayName, is_setup_complete: 1, tv: user.token_version || 1 },
                     JWT_SECRET,
                     { expiresIn: '24h' }
                 );

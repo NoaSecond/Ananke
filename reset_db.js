@@ -32,7 +32,8 @@ async function reset() {
             first_name TEXT,
             last_name TEXT,
             role TEXT DEFAULT 'reader',
-            is_setup_complete INTEGER DEFAULT 0
+            is_setup_complete INTEGER DEFAULT 0,
+            token_version INTEGER DEFAULT 1
         )`);
 
         db.run(`CREATE TABLE board_store (

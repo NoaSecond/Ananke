@@ -34,6 +34,7 @@ function initDb() {
                 db.run("ALTER TABLE users ADD COLUMN last_name TEXT", () => { });
                 db.run("ALTER TABLE users ADD COLUMN is_setup_complete INTEGER DEFAULT 0", () => { });
                 db.run("ALTER TABLE users ADD COLUMN avatar_url TEXT", () => { });
+                db.run("ALTER TABLE users ADD COLUMN token_version INTEGER DEFAULT 1", () => { });
             }
         });
 
