@@ -329,13 +329,14 @@ select option {
     gap: 0.4rem;
     color: #FFDD00 !important;
     text-decoration: none;
-    font-weight: 600;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    font-weight: 500;
+    transition: opacity 0.2s ease;
 }
 
 .bmc-link:hover {
-    transform: scale(1.05);
-    opacity: 0.9;
+    transform: none;
+    opacity: 0.85;
+    text-decoration: underline;
 }
 
 .bmc-link .material-symbols-outlined {
@@ -346,8 +347,9 @@ select option {
 .search-container {
     flex: 1;
     max-width: 480px;
-    margin: 0 1.5rem;
+    margin: 0 auto;
     position: relative;
+    min-width: 200px;
 }
 
 .search-wrapper {

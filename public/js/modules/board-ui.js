@@ -4,8 +4,7 @@ import { Logger, ErrorHandler } from './utils.js';
 import { openTaskEditModal, openViewTaskModal } from './task-ui.js';
 import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
-import { handleSearch } from './search-ui.js';
-import { getInitials, getContrastYIQ, renderSafeMarkdown, escapeHtml } from './utils.js';
+import { renderAvatarHtml, getContrastYIQ, renderSafeMarkdown, escapeHtml } from './utils.js';
 import * as API from './api.js';
 
 export const trackEvent = (action, category = 'Kanban', label = null, value = null) => {
@@ -66,8 +65,6 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
         elements.addWorkflowBtn.style.display = isReader ? 'none' : 'inline-flex';
     }
     if (elements.projectTitle) {
-        const editIcon = elements.projectTitle.querySelector('.edit-icon');
-        if (editIcon) editIcon.style.display = isReader ? 'none' : 'inline-block';
         elements.projectTitle.style.cursor = isReader ? 'default' : 'pointer';
     }
 
@@ -158,12 +155,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     </div>`);
 
                 const assigneesHtml = (task.assignees || []).map(a => {
-                    const isCurrentUser = state.currentUser && (a.id === state.currentUser.id || a.name === state.currentUser.name);
-                    const currentUserObj = isCurrentUser ? state.currentUser : a;
-                    const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : a.avatar_url;
-                    return avatarUrl
-                        ? `<img src="${getFullUrl(avatarUrl)}" class="task-assignee-avatar" title="${currentUserObj.name}" style="object-fit: cover;">`
-                        : `<div class="task-assignee-avatar" title="${currentUserObj.name}">${getInitials(currentUserObj)}</div>`;
+                    return renderAvatarHtml(a, { className: 'task-assignee-avatar' });
                 }).join('');
 
                 const commentsCount = (task.comments || []).length;

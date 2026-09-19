@@ -95,8 +95,8 @@
             "url": "https://noasecond.com"
         },
         "datePublished": "2025-01-26",
-        "dateModified": "2026-03-12",
-        "version": "2.9.1",
+        "dateModified": "2026-09-19",
+        "version": "3.0.0",
         "downloadUrl": "https://github.com/NoaSecond/Ananke",
         "featureList": [
             "Interactive Kanban Board",
@@ -117,7 +117,7 @@
     </script>
 </head>
 
-<body class="dark-mode auth-mode"> <!-- Default Dark Mode as requested -->
+<body class="dark-mode auth-mode">
 
     <!-- Auth Overlay -->
     <div id="auth-overlay" class="auth-overlay">
@@ -277,97 +277,182 @@
     </div>
 
 
-    <header>
-        <h1 id="project-title" title="Click to rename project">
-            <span id="project-name-display">Ananke</span>
-            <span class="material-symbols-outlined edit-icon">edit</span>
-        </h1>
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- APP SHELL                                                           -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div id="app-wrapper">
 
-        <div class="search-container" id="search-container">
-            <div class="search-wrapper">
-                <span class="material-symbols-outlined search-icon">search</span>
-                <input type="text" id="global-search" placeholder="Search (Tag: Person: )" autocomplete="off">
-                <div class="search-shortcut">
-                    <span class="shortcut-key">Ctrl</span>+<span class="shortcut-key">K</span>
+        <!-- ── SIDEBAR ── -->
+        <nav id="sidebar" role="navigation" aria-label="Main navigation">
+
+            <!-- Brand -->
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-logo">
+                    <span class="material-symbols-outlined">view_kanban</span>
                 </div>
+                <span class="sidebar-brand-text">Ananke</span>
             </div>
-            <div id="search-autocomplete-list" class="autocomplete-list hidden"></div>
-        </div>
 
-        <div class="controls">
-            <div id="online-users-container" class="online-users-container"></div>
-            <button id="add-workflow-btn" class="action-btn">
-                <span class="material-symbols-outlined">add</span>
-                Add Column
-            </button>
-            <div class="settings-container">
-                <button id="settings-toggle-btn" class="secondary-btn circular-btn rotate-hover" title="Settings">
-                    <span class="material-symbols-outlined">settings</span>
+            <!-- Navigation -->
+            <div class="sidebar-nav">
+
+                <!-- Dashboard -->
+                <span class="sidebar-section-label">Overview</span>
+                <button class="sidebar-item active" id="nav-dashboard">
+                    <span class="material-symbols-outlined">home</span>
+                    <span class="sidebar-item-label">Dashboard</span>
                 </button>
-                <div id="settings-menu" class="settings-menu hidden">
-                    <div class="settings-header" style="display: flex; align-items: center; gap: 0.75rem;">
-                        <div id="settings-user-avatar"
-                            style="width: 36px; height: 36px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; overflow: hidden; font-weight: bold; font-size: 0.85rem; letter-spacing: -0.05em; border: 2px solid var(--primary-color);">
-                            ?
-                        </div>
-                        <div style="display: flex; flex-direction: column;">
-                            <strong id="user-display-name">User Name</strong>
-                            <small id="user-display-role">Role</small>
-                        </div>
+
+                <!-- Boards list -->
+                <span class="sidebar-section-label">Boards</span>
+                <div id="sidebar-boards"></div>
+
+            </div>
+
+            <!-- Footer: user info -->
+            <div class="sidebar-footer">
+                <button class="sidebar-item" id="sidebar-settings-btn">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span class="sidebar-item-label">Settings</span>
+                </button>
+                <div class="sidebar-user" id="sidebar-user" title="Edit profile">
+                    <div class="sidebar-user-avatar" id="sidebar-user-avatar">?</div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name" id="user-display-name">User</div>
+                        <div class="sidebar-user-role" id="user-display-role">Role</div>
                     </div>
-                    <div class="settings-divider"></div>
-                    <button id="profile-btn" class="settings-item">
-                        <span class="material-symbols-outlined">person</span>
-                        My Profile
-                    </button>
-                    <button id="manage-users-btn" class="settings-item" style="display: none;">
-                        <span class="material-symbols-outlined">group</span>
-                        Users
-                    </button>
-                    <button id="theme-toggle-btn" class="settings-item">
-                        <span class="material-symbols-outlined theme-icon">dark_mode</span>
-                        <span id="theme-text">Dark Mode</span>
-                    </button>
-                    <button id="bg-customize-btn" class="settings-item">
-                        <span class="material-symbols-outlined">palette</span>
-                        Background
-                    </button>
-                    <div id="language-toggle-btn" class="settings-item"
-                        style="cursor: pointer; justify-content: space-between; padding-right: 1rem;">
-                        <span style="display:flex; align-items:center; gap:10px;"><span
-                                class="material-symbols-outlined">language</span> Language</span>
-                        <div style="display: flex; gap: 5px;">
-                            <button class="lang-btn" data-lang="fr"
-                                style="border:1px solid var(--border-color); background:none; color:var(--text-color); border-radius:4px; padding:2px 6px; cursor:pointer; font-size:0.8rem;">FR</button>
-                            <button class="lang-btn" data-lang="en"
-                                style="border:1px solid var(--border-color); background:var(--primary-color); color:white; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:0.8rem;">EN</button>
-                        </div>
-                    </div>
-                    <div class="settings-divider"></div>
-                    <label for="import-input" id="import-label" class="settings-item"
-                        style="display: none; cursor: pointer;">
-                        <span class="material-symbols-outlined">upload</span>
-                        Import (.kanban)
-                    </label>
-                    <input type="file" id="import-input" accept=".kanban" style="display: none;">
-                    <button id="export-btn" class="settings-item">
-                        <span class="material-symbols-outlined">download</span>
-                        Export (.kanban)
-                    </button>
-                    <div class="settings-divider"></div>
-                    <button id="logout-btn" class="settings-item danger-text">
-                        <span class="material-symbols-outlined">logout</span>
-                        Logout
-                    </button>
                 </div>
             </div>
-            <button id="server-logs-btn" class="secondary-btn circular-btn" title="Server Logs" style="display: none;">
-                <span class="material-symbols-outlined">terminal</span>
+        </nav>
+
+        <!-- Mobile sidebar overlay -->
+        <div id="sidebar-overlay"></div>
+
+        <!-- ── MAIN AREA ── -->
+        <div id="main-area">
+
+            <!-- Board header (hidden on dashboard) -->
+            <header id="board-header" style="display:none;">
+                <!-- Mobile menu toggle -->
+                <button id="sidebar-toggle-mobile" class="secondary-btn circular-btn" title="Menu" style="display:none">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+
+                <h1 id="project-title" title="Click to rename project">
+                    <span id="board-title-display">Board</span>
+                </h1>
+
+                <div class="search-container" id="search-container">
+                    <div class="search-wrapper">
+                        <span class="material-symbols-outlined search-icon">search</span>
+                        <input type="text" id="global-search" placeholder="Search (Tag: Person: )" autocomplete="off">
+                        <div class="search-shortcut">
+                            <span class="shortcut-key">Ctrl</span>+<span class="shortcut-key">K</span>
+                        </div>
+                    </div>
+                    <div id="search-autocomplete-list" class="autocomplete-list hidden"></div>
+                </div>
+
+                <div class="controls">
+                    <div id="online-users-container" class="online-users-container"></div>
+
+                    <button id="add-workflow-btn" class="action-btn">
+                        <span class="material-symbols-outlined">add</span>
+                        Add Column
+                    </button>
+
+                    <!-- Server logs -->
+                    <button id="server-logs-btn" class="secondary-btn circular-btn" title="Server Logs" style="display:none">
+                        <span class="material-symbols-outlined">terminal</span>
+                    </button>
+
+                    <!-- Settings button (header) -->
+                    <div class="settings-container">
+                        <button id="settings-toggle-btn" class="secondary-btn circular-btn rotate-hover" title="Board Settings">
+                            <span class="material-symbols-outlined">settings</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- View container -->
+            <div id="view-container">
+
+                <!-- Dashboard view -->
+                <div id="view-dashboard"></div>
+
+                <!-- Kanban board view -->
+                <main id="kanban-board" class="hidden" role="main" aria-label="Kanban board"></main>
+
+                <!-- Board settings view -->
+                <div id="view-board-settings" class="hidden"></div>
+
+                <!-- User Profile view (full-page, same format as board settings) -->
+                <div id="view-profile" class="hidden"></div>
+
+            </div>
+
+            <!-- Footer -->
+            <footer id="app-footer">
+                <div class="footer-left">
+                    <a href="https://github.com/NoaSecond/Ananke" target="_blank" rel="noopener noreferrer">Project on GitHub</a>
+                    <span>- Created by <a href="https://noasecond.com" target="_blank" rel="noopener noreferrer" class="author-link">Noa Second</a></span>
+                    <span class="footer-divider">|</span>
+                    <a href="https://buymeacoffee.com/noa.second" target="_blank" rel="noopener noreferrer" class="bmc-link">
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem; vertical-align: middle;">coffee</span>
+                        Support the project
+                    </a>
+                </div>
+                <div class="footer-right">
+                    <span class="version-tag" id="app-version-display"></span>
+                </div>
+            </footer>
+
+        </div><!-- #main-area -->
+
+        <!-- Global Settings menu (accessible from header and sidebar) -->
+        <div id="settings-menu" class="settings-menu hidden">
+            <div class="settings-header" style="display:flex;align-items:center;gap:0.75rem;">
+                <div id="settings-user-avatar" style="width:36px;height:36px;border-radius:50%;background:var(--clr-surface-3);display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:bold;font-size:0.85rem;border:2px solid var(--clr-primary);">?</div>
+                <div style="display:flex;flex-direction:column;">
+                    <strong id="user-display-name-menu">User Name</strong>
+                    <small id="user-display-role-menu">Role</small>
+                </div>
+            </div>
+            <div class="settings-divider"></div>
+            <button id="profile-btn" class="settings-item">
+                <span class="material-symbols-outlined">person</span> My Profile
+            </button>
+            <button id="manage-users-btn" class="settings-item" style="display:none">
+                <span class="material-symbols-outlined">group</span> Users
+            </button>
+            <button id="theme-toggle-btn" class="settings-item">
+                <span class="material-symbols-outlined theme-icon">dark_mode</span>
+                <span id="theme-text">Light Mode</span>
+            </button>
+            <div id="language-toggle-btn" class="settings-item" style="cursor:pointer;justify-content:space-between;padding-right:1rem;">
+                <span style="display:flex;align-items:center;gap:10px;">
+                    <span class="material-symbols-outlined">language</span> Language
+                </span>
+                <div style="display:flex;gap:5px;">
+                    <button class="lang-btn" data-lang="fr" style="border:1px solid var(--clr-border);background:none;color:var(--clr-text);border-radius:4px;padding:2px 6px;cursor:pointer;font-size:0.8rem;">FR</button>
+                    <button class="lang-btn" data-lang="en" style="border:1px solid var(--clr-border);background:var(--clr-primary);color:white;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:0.8rem;">EN</button>
+                </div>
+            </div>
+            <div class="settings-divider"></div>
+            <label for="import-input" id="import-label" class="settings-item" style="display:none;cursor:pointer;">
+                <span class="material-symbols-outlined">upload</span> Import (.kanban)
+            </label>
+            <input type="file" id="import-input" accept=".kanban" style="display:none">
+            <button id="export-btn" class="settings-item">
+                <span class="material-symbols-outlined">download</span> Export (.kanban)
+            </button>
+            <div class="settings-divider"></div>
+            <button id="logout-btn" class="settings-item danger-text">
+                <span class="material-symbols-outlined">logout</span> Logout
             </button>
         </div>
-    </header>
-
-    <main id="kanban-board" role="main" aria-label="Main Kanban board for task and project management"></main>
+    </div><!-- #app-wrapper -->
 
     <!-- SEO Content (hidden but accessible) -->
     <section id="seo-content"
@@ -402,22 +487,35 @@
             tablets, and smartphones. No installation required, immediate access from your web browser.</p>
     </section>
 
-    <footer id="app-footer">
-        <div class="footer-left">
-            <a href="https://github.com/NoaSecond/Ananke" target="_blank" rel="noopener noreferrer">Project on
-                GitHub</a>
-            <span>- Created by <a href="https://noasecond.com" target="_blank" rel="noopener noreferrer"
-                    class="author-link">Noa Second</a></span>
-            <span class="footer-divider">|</span>
-            <a href="https://buymeacoffee.com/noa.second" target="_blank" rel="noopener noreferrer" class="bmc-link">
-                <span class="material-symbols-outlined" style="font-size: 1.1rem; vertical-align: middle;">coffee</span>
-                Support the project
-            </a>
+    <!-- Create Board Modal -->
+    <div id="create-board-modal" class="modal-overlay">
+        <div class="modal-content" style="width:min(95vw,480px);">
+            <button class="modal-close-btn" id="create-board-close"><span class="material-symbols-outlined">close</span></button>
+            <h2>Create a new board</h2>
+            <form id="create-board-form" style="display:flex;flex-direction:column;gap:1rem;">
+                <div class="form-group">
+                    <label for="board-name-input">Board Name <span style="color:var(--clr-danger)">*</span></label>
+                    <input type="text" id="board-name-input" maxlength="100" placeholder="My awesome board" required>
+                </div>
+                <div class="form-group">
+                    <label for="board-desc-input">Description</label>
+                    <textarea id="board-desc-input" rows="2" maxlength="500" placeholder="What is this board for?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Color</label>
+                    <div class="color-picker-row" id="board-color-swatches"></div>
+                </div>
+                <div class="form-group">
+                    <label>Icon</label>
+                    <div class="icon-picker-row" id="board-icon-swatches"></div>
+                </div>
+                <div id="create-board-message" style="font-size:0.82rem;color:var(--clr-danger);min-height:1.2em;"></div>
+                <div class="modal-actions">
+                    <button type="submit" class="action-btn">Create Board</button>
+                </div>
+            </form>
         </div>
-        <div class="footer-right">
-            <span class="version-tag" id="app-version-display"></span>
-        </div>
-    </footer>
+    </div>
 
     <div id="add-modal" class="modal-overlay">
         <div class="modal-content">
@@ -635,66 +733,6 @@
         </div>
     </div>
 
-    <!-- Background Customization Modal -->
-    <div id="bg-modal" class="modal-overlay">
-        <div class="modal-content" style="width: min(95vw, 600px);">
-            <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
-            <h2>Customize Background</h2>
-            <p style="opacity: 0.7; font-size: 0.9rem; margin-bottom: 1.5rem;">Choose a custom look for your workspace.
-            </p>
-
-            <div class="bg-preview" id="bg-preview">Preview</div>
-
-            <div class="bg-options">
-                <div class="bg-option-section">
-                    <h4>Solid Color</h4>
-                    <input type="color" id="bg-color-picker">
-                </div>
-
-                <div class="bg-option-section">
-                    <h4>Gradient Presets</h4>
-                    <div class="gradient-presets">
-                        <button class="gradient-btn" data-value="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></button>
-                        <button class="gradient-btn" data-value="linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)"
-                            style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);"></button>
-                        <button class="gradient-btn" data-value="linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)"
-                            style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);"></button>
-                        <button class="gradient-btn" data-value="linear-gradient(135deg, #f6d365 0%, #fda085 100%)"
-                            style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);"></button>
-                        <button class="gradient-btn" data-value="linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)"
-                            style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);"></button>
-                        <button class="gradient-btn" data-value="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
-                            style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"></button>
-                    </div>
-                </div>
-
-                <div class="bg-option-section">
-                    <h4>Image URL</h4>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <input type="text" id="bg-image-url" placeholder="https://images.unsplash.com/..."
-                            style="flex: 1;">
-                        <button id="bg-image-apply-btn" class="secondary-btn small-btn">Apply</button>
-                    </div>
-                </div>
-
-                <div class="bg-option-section">
-                    <h4>Custom Image</h4>
-                    <label for="bg-image-upload" class="media-upload-label" id="bg-upload-dropzone">
-                        <span class="material-symbols-outlined">cloud_upload</span>
-                        <span>Click or drag & drop image</span>
-                        <small style="opacity:0.6;">PNG, JPG, WebP...</small>
-                    </label>
-                    <input type="file" id="bg-image-upload" accept="image/*" style="display: none;">
-                </div>
-            </div>
-
-            <div class="modal-actions" style="margin-top: 2rem;">
-                <button id="reset-bg-btn" class="secondary-btn">Reset to Default</button>
-                <button id="save-bg-btn" class="action-btn">Save Changes</button>
-            </div>
-        </div>
-    </div>
 
     <div id="workflow-modal" class="modal-overlay">
         <div class="modal-content" style="width: min(95vw, 500px);">

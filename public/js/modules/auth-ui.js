@@ -1,13 +1,19 @@
 import { elements } from './dom.js';
 import * as API from './api.js';
 import { state, API_URL, getFullUrl } from './state.js';
-import { Logger, getInitials } from './utils.js';
+import { Logger } from './utils.js';
+import { getInitials, updateAvatarElement } from './avatar.js';
 import { renderBoard } from './board-ui.js';
 import { refreshSearchUsers } from './search-ui.js';
 
 let currentAvatarUrl = null;
 let oldAvatarUrl = null;
 let sessionAvatarUploads = [];
+let _onNavigateToProfile = null;
+
+export function setProfileNavigateHandler(fn) {
+    _onNavigateToProfile = fn;
+}
 
 export function initAuth(initSocketCallback) {
     API.setUnauthorizedHandler(handleUnauthorized);
@@ -214,14 +220,6 @@ export function initAuth(initSocketCallback) {
         });
     }
 
-    // Settings Toggle
-    if (elements.settingsToggleBtn) {
-        elements.settingsToggleBtn.onclick = (e) => {
-            e.stopPropagation();
-            elements.settingsMenu.classList.toggle('hidden');
-        };
-    }
-
     if (elements.settingsMenu) {
         elements.settingsMenu.onclick = (e) => e.stopPropagation();
     }
@@ -230,7 +228,8 @@ export function initAuth(initSocketCallback) {
     document.addEventListener('click', (e) => {
         // Close settings if clicking outside
         if (elements.settingsMenu && !elements.settingsMenu.classList.contains('hidden')) {
-            if (!e.target.closest('.settings-container')) {
+            if (!elements.settingsMenu.contains(e.target) &&
+                !e.target.closest('#sidebar-settings-btn')) {
                 elements.settingsMenu.classList.add('hidden');
             }
         }
@@ -244,7 +243,11 @@ export function initAuth(initSocketCallback) {
     if (elements.profileBtn) {
         elements.profileBtn.onclick = () => {
             elements.settingsMenu.classList.add('hidden');
-            openSetupModal(false);
+            if (_onNavigateToProfile) {
+                _onNavigateToProfile();
+            } else {
+                openSetupModal(false);
+            }
         };
     }
 
@@ -271,7 +274,6 @@ async function checkAuth(initSocketCallback) {
 function showAuth() {
     elements.authOverlay.style.visibility = 'visible';
     elements.authOverlay.style.display = 'flex';
-    elements.kanbanBoard.style.display = 'none';
     document.body.classList.add('auth-mode');
     // Fermer tous les modaux ouverts
     document.querySelectorAll('.modal.visible, .modal-overlay.visible').forEach(m => m.classList.remove('visible'));
@@ -293,7 +295,6 @@ export function handleUnauthorized() {
 
 function hideAuth() {
     elements.authOverlay.style.display = 'none';
-    elements.kanbanBoard.style.display = 'flex';
     document.body.classList.remove('auth-mode');
 }
 
@@ -350,8 +351,16 @@ async function checkVersion(user) {
 export function updateUserUI() {
     if (!state.currentUser) return;
 
-    elements.userDisplayName.textContent = state.currentUser.first_name ? `${state.currentUser.first_name} ${state.currentUser.last_name}` : (state.currentUser.name || state.currentUser.email);
-    elements.userDisplayRole.textContent = state.currentUser.role.charAt(0).toUpperCase() + state.currentUser.role.slice(1);
+    const displayName = state.currentUser.first_name ? `${state.currentUser.first_name} ${state.currentUser.last_name}` : (state.currentUser.name || state.currentUser.email);
+    const displayRole = state.currentUser.role.charAt(0).toUpperCase() + state.currentUser.role.slice(1);
+
+    if (elements.userDisplayName) elements.userDisplayName.textContent = displayName;
+    if (elements.userDisplayRole) elements.userDisplayRole.textContent = displayRole;
+
+    const menuName = document.getElementById('user-display-name-menu');
+    if (menuName) menuName.textContent = displayName;
+    const menuRole = document.getElementById('user-display-role-menu');
+    if (menuRole) menuRole.textContent = displayRole;
 
     if (['admin', 'owner'].includes(state.currentUser.role)) {
         elements.manageUsersBtn.style.display = 'flex';
@@ -367,17 +376,14 @@ export function updateUserUI() {
         elements.importLabel.style.display = 'none';
     }
 
+    const sidebarAvatar = document.getElementById('sidebar-user-avatar');
+    if (sidebarAvatar) {
+        updateAvatarElement(sidebarAvatar, state.currentUser);
+    }
+
     const settingsAvatarContainer = document.getElementById('settings-user-avatar');
     if (settingsAvatarContainer) {
-        if (state.currentUser.avatar_url) {
-            settingsAvatarContainer.innerHTML = `<img src="${getFullUrl(state.currentUser.avatar_url)}" style="width: 100%; height: 100%; object-fit: cover;">`;
-            settingsAvatarContainer.style.background = 'transparent';
-        } else {
-            settingsAvatarContainer.innerHTML = getInitials(state.currentUser);
-            settingsAvatarContainer.style.background = 'var(--primary-color)';
-            settingsAvatarContainer.style.color = 'white';
-            settingsAvatarContainer.style.border = '2px solid var(--card-bg)';
-        }
+        updateAvatarElement(settingsAvatarContainer, state.currentUser);
     }
 }
 
@@ -437,3 +443,30 @@ export function openSetupModal(isFirstTime) {
         }
     }
 }
+
+/**
+ * Toggle the visibility and anchor orientation of the settings menu.
+ * @param {'sidebar' | 'header'} source
+ */
+export function toggleSettingsMenu(source = 'sidebar') {
+    const menu = elements.settingsMenu || document.getElementById('settings-menu');
+    if (!menu) return;
+
+    const isHidden = menu.classList.contains('hidden');
+    if (isHidden) {
+        menu.classList.remove('hidden', 'from-sidebar', 'from-sidebar-collapsed', 'from-header');
+        if (source === 'sidebar') {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar?.classList.contains('collapsed')) {
+                menu.classList.add('from-sidebar-collapsed');
+            } else {
+                menu.classList.add('from-sidebar');
+            }
+        } else {
+            menu.classList.add('from-header');
+        }
+    } else {
+        menu.classList.add('hidden');
+    }
+}
+

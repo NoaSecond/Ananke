@@ -10,7 +10,7 @@ export const elements = {
     addModalType: document.getElementById('add-modal-type'),
     addModalWorkflowId: document.getElementById('add-modal-workflow-id'),
     projectTitle: document.getElementById('project-title'),
-    projectNameDisplay: document.getElementById('project-name-display'),
+    projectNameDisplay: document.getElementById('board-title-display'),
     projectModal: document.getElementById('project-modal'),
     projectNameInput: document.getElementById('project-name-input'),
     saveProjectBtn: document.getElementById('save-project-btn'),
@@ -117,17 +117,6 @@ export const elements = {
     taskAssigneesContainer: document.getElementById('task-assignees-container'),
     viewTaskAssignees: document.getElementById('view-task-assignees'),
 
-    // Background Customization
-    bgCustomizeBtn: document.getElementById('bg-customize-btn'),
-    bgModal: document.getElementById('bg-modal'),
-    bgPreview: document.getElementById('bg-preview'),
-    bgColorPicker: document.getElementById('bg-color-picker'),
-    bgGradientBtns: document.querySelectorAll('.gradient-btn'),
-    bgImageUrlInput: document.getElementById('bg-image-url'),
-    bgImageApplyBtn: document.getElementById('bg-image-apply-btn'),
-    bgImageUpload: document.getElementById('bg-image-upload'),
-    resetBgBtn: document.getElementById('reset-bg-btn'),
-    saveBgBtn: document.getElementById('save-bg-btn'),
     // Search
     searchInput: document.getElementById('global-search'),
     searchAutocomplete: document.getElementById('search-autocomplete-list'),
