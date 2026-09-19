@@ -57,7 +57,7 @@ export async function initI18n() {
         await loadLocale(preferred);
     }
 
-    await setLanguage(preferred, { notify: false });
+    await setLanguage(preferred, { notify: true });
 }
 
 /**
@@ -85,21 +85,20 @@ export function t(key, params = {}) {
     const activeDict = _translationsCache[_currentLang] || {};
     const fallbackDict = _translationsCache.en || {};
 
-    let template = getNested(activeDict, key);
-    if (template === undefined) {
-        template = getNested(fallbackDict, key);
-    }
-    if (template === undefined) {
-        return key;
-    }
+    let template;
 
     // Handle pluralization shorthand if param has `count`
     if (typeof params?.count === 'number') {
         const countKey = params.count === 0 ? `${key}_zero` : (params.count === 1 ? `${key}_one` : `${key}_other`);
-        const pluralTemplate = getNested(activeDict, countKey) || getNested(fallbackDict, countKey);
-        if (pluralTemplate !== undefined) {
-            template = pluralTemplate;
-        }
+        template = getNested(activeDict, countKey) ?? getNested(fallbackDict, countKey);
+    }
+
+    if (template === undefined) {
+        template = getNested(activeDict, key) ?? getNested(fallbackDict, key);
+    }
+
+    if (template === undefined) {
+        return key;
     }
 
     if (typeof template !== 'string') return key;

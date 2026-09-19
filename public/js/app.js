@@ -471,8 +471,6 @@ function initTheme() {
 // --------------------------------------------------------------------------
 
 async function setupLanguageControls() {
-    await initI18n();
-
     // Re-render current view and dynamic elements when language changes
     registerLanguageListener(() => {
         if (state.currentView === 'dashboard') {
@@ -492,6 +490,8 @@ async function setupLanguageControls() {
             text.textContent = t(isDark ? 'settings.theme_light' : 'settings.theme_dark');
         }
     });
+
+    await initI18n();
 
     document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
