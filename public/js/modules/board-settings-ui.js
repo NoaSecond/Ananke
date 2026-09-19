@@ -10,6 +10,7 @@ import { Logger } from './utils.js';
 import { renderAvatarHtml, resolveUser } from './avatar.js';
 import { updatePreview } from './theme-ui.js';
 import { BOARD_COLORS, BOARD_ICONS } from './dashboard-ui.js';
+import { t } from './i18n.js';
 
 let _onBack            = null;
 let _onDeleted         = null;
@@ -61,10 +62,10 @@ export async function renderBoardSettings() {
 
     container.innerHTML = `
         <div class="settings-page-header">
-            <button class="settings-page-back-btn" id="settings-back-btn" title="Back to board">
+            <button class="settings-page-back-btn" id="settings-back-btn" title="${t('board_settings.back_to_board')}">
                 <span class="material-symbols-outlined">arrow_back</span>
             </button>
-            <h1 class="settings-page-title">Board Settings — ${escHtml(board.name)}</h1>
+            <h1 class="settings-page-title">${t('board_settings.title', { name: escHtml(board.name) })}</h1>
         </div>
 
         ${canAdmin ? renderGeneralSection(board) : ''}
@@ -74,7 +75,7 @@ export async function renderBoardSettings() {
         <div class="settings-section">
             <h3 class="settings-section-title">
                 <span class="material-symbols-outlined">group</span>
-                Members
+                ${t('board_settings.tab_members')}
             </h3>
             <div class="member-list" id="member-list">
                 <div style="color: var(--clr-text-muted); font-size:0.85rem;">Loading members...</div>
@@ -118,19 +119,19 @@ function renderGeneralSection(board) {
         <div class="settings-section">
             <h3 class="settings-section-title">
                 <span class="material-symbols-outlined">edit</span>
-                General
+                ${t('board_settings.section_general')}
             </h3>
             <form id="board-general-form" style="display:flex;flex-direction:column;gap:1rem;">
                 <div class="form-group">
-                    <label class="form-label">Board Name</label>
+                    <label class="form-label">${t('board_settings.board_name')}</label>
                     <input class="form-input" id="settings-board-name" type="text" value="${escHtml(board.name)}" maxlength="100" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Description</label>
-                    <textarea class="form-input" id="settings-board-desc" rows="3" maxlength="500" placeholder="Enter board description...">${escHtml(board.description || '')}</textarea>
+                    <label class="form-label">${t('board_settings.description')}</label>
+                    <textarea class="form-input" id="settings-board-desc" rows="3" maxlength="500" placeholder="${t('board_settings.description_placeholder')}">${escHtml(board.description || '')}</textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Color</label>
+                    <label class="form-label">${t('board_settings.icon_and_color')}</label>
                     <div class="color-picker-row" id="settings-board-color-swatches">
                         ${BOARD_COLORS.map(c => `
                             <div class="color-swatch${c === currentColor ? ' selected' : ''}"
@@ -139,7 +140,6 @@ function renderGeneralSection(board) {
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Icon</label>
                     <div class="icon-picker-row" id="settings-board-icon-swatches">
                         ${BOARD_ICONS.map(ic => `
                             <div class="icon-swatch${ic === currentIcon ? ' selected' : ''}" data-icon="${ic}" title="${ic}">
@@ -151,7 +151,7 @@ function renderGeneralSection(board) {
                 <div id="board-general-message" style="font-size:0.82rem;color:var(--clr-danger);min-height:1.2em;"></div>
                 <button type="submit" class="action-btn" style="align-self:flex-start;">
                     <span class="material-symbols-outlined" style="font-size:1.1rem;">save</span>
-                    Save changes
+                    ${t('board_settings.btn_save')}
                 </button>
             </form>
         </div>
@@ -223,11 +223,11 @@ function renderBackgroundSection(board) {
             <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem; align-items: center; flex-wrap: wrap;">
                 <button type="button" id="board-reset-bg-btn" class="secondary-btn">
                     <span class="material-symbols-outlined" style="font-size:1.1rem;">restart_alt</span>
-                    Reset to Default
+                    Reset
                 </button>
                 <button type="button" id="board-save-bg-btn" class="action-btn">
                     <span class="material-symbols-outlined" style="font-size:1.1rem;">save</span>
-                    Save Background
+                    ${t('board_settings.btn_save')}
                 </button>
                 <div id="board-bg-message" style="font-size:0.85rem;min-height:1.2em;font-weight:500;"></div>
             </div>
@@ -239,16 +239,16 @@ function renderAddMemberForm() {
     return `
         <div class="add-member-form" style="margin-top:1rem;">
             <select id="add-member-user-select" class="user-search-select">
-                <option value="">Select a user...</option>
+                <option value="">${t('board_settings.add_member_placeholder')}</option>
             </select>
             <select id="add-member-role-select">
-                <option value="reader">Viewer</option>
-                <option value="editor">Editor</option>
-                <option value="board_admin">Admin</option>
+                <option value="reader">${t('board_settings.role_reader')}</option>
+                <option value="editor">${t('board_settings.role_editor')}</option>
+                <option value="board_admin">${t('board_settings.role_board_admin')}</option>
             </select>
             <button class="btn btn-primary" id="add-member-btn">
                 <span class="material-symbols-outlined">person_add</span>
-                Add
+                ${t('board_settings.btn_add_member')}
             </button>
         </div>
         <div id="add-member-message" style="font-size:0.82rem;min-height:1.2em;margin-top:6px;"></div>
@@ -260,14 +260,14 @@ function renderDangerZone() {
         <div class="settings-section danger-zone">
             <h3 class="settings-section-title">
                 <span class="material-symbols-outlined">warning</span>
-                Danger Zone
+                ${t('board_settings.danger_title')}
             </h3>
             <p style="font-size:0.85rem;color:var(--clr-text-muted);margin:0 0 1rem;">
-                Deleting a board is permanent and cannot be undone. All tasks and columns will be lost.
+                ${t('board_settings.danger_desc')}
             </p>
             <button class="btn btn-danger" id="delete-board-btn">
                 <span class="material-symbols-outlined">delete_forever</span>
-                Delete this board
+                ${t('board_settings.btn_delete_board')}
             </button>
         </div>
     `;
@@ -318,11 +318,11 @@ function renderMemberList(members) {
                 </div>
                 ${canAdmin && !isSelf ? `
                     <select class="member-role-select" data-user-id="${m.id}">
-                        <option value="reader"      ${m.board_role === 'reader'      ? 'selected' : ''}>Viewer</option>
-                        <option value="editor"      ${m.board_role === 'editor'      ? 'selected' : ''}>Editor</option>
-                        <option value="board_admin" ${m.board_role === 'board_admin' ? 'selected' : ''}>Admin</option>
+                        <option value="reader"      ${m.board_role === 'reader'      ? 'selected' : ''}>${t('board_settings.role_reader')}</option>
+                        <option value="editor"      ${m.board_role === 'editor'      ? 'selected' : ''}>${t('board_settings.role_editor')}</option>
+                        <option value="board_admin" ${m.board_role === 'board_admin' ? 'selected' : ''}>${t('board_settings.role_board_admin')}</option>
                     </select>
-                    <button class="member-remove-btn" data-user-id="${m.id}" title="Remove member">
+                    <button class="member-remove-btn" data-user-id="${m.id}" title="${t('board_settings.remove_member')}">
                         <span class="material-symbols-outlined">person_remove</span>
                     </button>
                 ` : `<span style="font-size:0.78rem;color:var(--clr-text-muted);">${formatRole(m.board_role)}</span>`}
@@ -706,10 +706,11 @@ function _bindDangerZone() {
 
 function formatRole(role) {
     switch (role) {
-        case 'board_admin': return 'Admin';
-        case 'editor':      return 'Editor';
-        case 'reader':      return 'Viewer';
-        default:            return role || 'Member';
+        case 'board_admin': return t('board_settings.role_board_admin');
+        case 'editor':      return t('board_settings.role_editor');
+        case 'reader':      return t('board_settings.role_reader');
+        case 'owner':       return t('board_settings.role_owner');
+        default:            return role || t('roles.user');
     }
 }
 

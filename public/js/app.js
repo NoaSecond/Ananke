@@ -19,6 +19,7 @@ import { initSearch } from './modules/search-ui.js';
 import { initDashboard, renderDashboard, openCreateBoardModal, updateDashboardPresence } from './modules/dashboard-ui.js';
 import { initBoardSettings, renderBoardSettings } from './modules/board-settings-ui.js';
 import { renderProfileView } from './modules/profile-ui.js';
+import { initI18n, setLanguage, getLanguage, registerLanguageListener, t, translateDOM } from './modules/i18n.js';
 import * as API from './modules/api.js';
 
 // --------------------------------------------------------------------------
@@ -55,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     initTheme();
-    initLanguage();
+    setupLanguageControls();
     initSidebar();
     initAuth(initSocket);
     setProfileNavigateHandler(navigateToProfile);
@@ -452,7 +453,7 @@ function initTheme() {
         const icon = document.querySelector('.theme-icon');
         const text = document.getElementById('theme-text');
         if (icon) icon.textContent = isDark ? 'light_mode' : 'dark_mode';
-        if (text) text.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+        if (text) text.textContent = t(isDark ? 'settings.theme_light' : 'settings.theme_dark');
     };
     applyTheme(storedTheme !== 'light');
 
@@ -469,40 +470,40 @@ function initTheme() {
 // Language
 // --------------------------------------------------------------------------
 
-function initLanguage() {
-    const storedLang = localStorage.getItem('lang') || 'en';
+async function setupLanguageControls() {
+    await initI18n();
 
-    const translations = {
-        en: {
-            addColumn: '<span class="material-symbols-outlined">add</span> Add Column',
-            searchPlaceholder: 'Search (Tag: Person: )',
-        },
-        fr: {
-            addColumn: '<span class="material-symbols-outlined">add</span> Ajouter Colonne',
-            searchPlaceholder: 'Rechercher (Tag: Person: )',
-        },
-    };
+    // Re-render current view and dynamic elements when language changes
+    registerLanguageListener(() => {
+        if (state.currentView === 'dashboard') {
+            renderDashboard();
+        } else if (state.currentView === 'board') {
+            renderBoard();
+        } else if (state.currentView === 'board-settings') {
+            renderBoardSettings();
+        } else if (state.currentView === 'profile') {
+            renderProfileView();
+        }
 
-    const applyLang = (lang) => {
-        localStorage.setItem('lang', lang);
-        const t = translations[lang] || translations.en;
-        const btnAddCol = document.getElementById('add-workflow-btn');
-        if (btnAddCol) btnAddCol.innerHTML = t.addColumn;
-        const search = document.getElementById('global-search');
-        if (search) search.placeholder = t.searchPlaceholder;
-        document.querySelectorAll('.lang-btn').forEach(btn => {
-            btn.style.background = btn.dataset.lang === lang ? 'var(--clr-primary)' : 'none';
-            btn.style.color      = btn.dataset.lang === lang ? 'white' : 'var(--clr-text)';
-        });
-    };
-
-    applyLang(storedLang);
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => { e.preventDefault(); applyLang(btn.dataset.lang); });
+        // Update theme toggle text in popup
+        const text = document.getElementById('theme-text');
+        if (text) {
+            const isDark = document.body.classList.contains('dark-mode');
+            text.textContent = t(isDark ? 'settings.theme_light' : 'settings.theme_dark');
+        }
     });
-    document.getElementById('language-toggle-btn')?.addEventListener('click', (e) => {
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await setLanguage(btn.dataset.lang);
+        });
+    });
+
+    document.getElementById('language-toggle-btn')?.addEventListener('click', async (e) => {
         e.preventDefault();
-        applyLang(localStorage.getItem('lang') === 'en' ? 'fr' : 'en');
+        await setLanguage(getLanguage() === 'en' ? 'fr' : 'en');
     });
 }
 

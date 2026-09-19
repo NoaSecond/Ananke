@@ -5,6 +5,7 @@ import { openModal, closeModal, showConfirm } from './modals.js';
 import { renderBoard, saveData, saveTaskOnly } from './board-ui.js';
 import { Logger, getInitials, getContrastYIQ, renderSafeMarkdown, escapeHtml, renderAvatarHtml, resolveUser } from './utils.js';
 import { trackEvent } from './board-ui.js';
+import { t } from './i18n.js';
 
 let tempTags = [];
 let tempCustomFields = [];
@@ -128,7 +129,7 @@ export const initTaskListeners = () => {
 
     elements.taskForm.deleteBtn.addEventListener('click', () => {
         const taskId = elements.taskForm.id.value;
-        showConfirm('Delete task?', () => {
+        showConfirm(t('task.confirm_delete'), () => {
             for (const workflow of state.boardData.workflows) {
                 const tIndex = workflow.tasks.findIndex(t => t.id == taskId);
                 if (tIndex !== -1) {

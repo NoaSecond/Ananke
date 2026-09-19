@@ -2,6 +2,7 @@ import { elements } from './dom.js';
 import { state } from './state.js';
 import { openModal, closeModal, showConfirm } from './modals.js';
 import { renderBoard, saveData } from './board-ui.js';
+import { t } from './i18n.js';
 
 export const openWorkflowModal = (workflow) => {
     elements.workflowForm.id.value = workflow.id;
@@ -31,7 +32,7 @@ export const initWorkflowListeners = () => {
 
     elements.workflowForm.deleteBtn.addEventListener('click', () => {
         const id = elements.workflowForm.id.value;
-        showConfirm('Delete column? All tasks in it will be lost.', () => {
+        showConfirm(t('board.confirm_delete_column'), () => {
             state.boardData.workflows = state.boardData.workflows.filter(w => w.id != id);
             saveData();
             renderBoard();

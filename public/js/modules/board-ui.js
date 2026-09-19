@@ -6,6 +6,7 @@ import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
 import { renderAvatarHtml, getContrastYIQ, renderSafeMarkdown, escapeHtml } from './utils.js';
 import * as API from './api.js';
+import { t } from './i18n.js';
 
 export const trackEvent = (action, category = 'Kanban', label = null, value = null) => {
     if (typeof gtag !== 'undefined') {
@@ -99,7 +100,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     </button>
                     <div class="workflow-menu">
                         <button class="edit-workflow-btn" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                            <span class="material-symbols-outlined">edit</span> Edit
+                            <span class="material-symbols-outlined">edit</span> ${t('board.column_menu_rename')}
                         </button>
                         <button class="lock-workflow-btn" data-workflow-id="${workflow.id}">
                             <span class="material-symbols-outlined">${isLocked ? 'lock_open' : 'lock'}</span> ${isLocked ? 'Unlock' : 'Lock'}
@@ -108,10 +109,10 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                             <span class="material-symbols-outlined">content_copy</span> Duplicate
                         </button>
                         <button class="add-task-btn-menu" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                            <span class="material-symbols-outlined">add_task</span> Add Task
+                            <span class="material-symbols-outlined">add_task</span> ${t('board.add_task')}
                         </button>
                         <button class="delete-workflow-btn delete" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                            <span class="material-symbols-outlined">delete</span> Delete
+                            <span class="material-symbols-outlined">delete</span> ${t('board.column_menu_delete')}
                         </button>
                     </div>
                 </div>`;

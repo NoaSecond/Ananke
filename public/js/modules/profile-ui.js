@@ -13,6 +13,7 @@ import { elements } from './dom.js';
 import { updateUserUI } from './auth-ui.js';
 import { renderBoard } from './board-ui.js';
 import { refreshSearchUsers } from './search-ui.js';
+import { t, getLanguage, setLanguage } from './i18n.js';
 
 let _onBack = null;
 let currentAvatarUrl = null;
@@ -47,12 +48,14 @@ export async function renderProfileView({ onBack } = {}) {
     const initials  = getInitials(user);
     const gradient  = getAvatarGradient(user);
 
+    const currentLang = getLanguage();
+
     container.innerHTML = `
         <div class="settings-page-header">
-            <button class="settings-page-back-btn" id="profile-back-btn" title="Back">
+            <button class="settings-page-back-btn" id="profile-back-btn" title="${t('profile.back')}">
                 <span class="material-symbols-outlined">arrow_back</span>
             </button>
-            <h1 class="settings-page-title">User Profile</h1>
+            <h1 class="settings-page-title">${t('profile.title')}</h1>
         </div>
 
         <form id="profile-main-form" style="display:flex;flex-direction:column;gap:1.5rem;">
@@ -61,7 +64,7 @@ export async function renderProfileView({ onBack } = {}) {
             <div class="settings-section">
                 <h3 class="settings-section-title">
                     <span class="material-symbols-outlined">badge</span>
-                    Personal Information
+                    ${t('profile.section_info')}
                 </h3>
 
                 <!-- Avatar Upload Row -->
@@ -69,7 +72,7 @@ export async function renderProfileView({ onBack } = {}) {
                     <div class="profile-avatar-preview" id="profile-avatar-preview" style="${currentAvatarUrl ? '' : `background:${gradient};`}">
                         <img id="profile-avatar-img" src="${currentAvatarUrl ? getFullUrl(currentAvatarUrl) : ''}" style="${currentAvatarUrl ? 'display:block;' : 'display:none;'}">
                         <div id="profile-avatar-initials" style="${currentAvatarUrl ? 'display:none;' : 'display:block;'}">${initials}</div>
-                        <label for="profile-avatar-file-input" class="profile-avatar-overlay" title="Upload new photo">
+                        <label for="profile-avatar-file-input" class="profile-avatar-overlay" title="${t('profile.photo_upload')}">
                             <span class="material-symbols-outlined">photo_camera</span>
                         </label>
                     </div>
@@ -79,7 +82,7 @@ export async function renderProfileView({ onBack } = {}) {
                             <span class="role-badge ${escapeHtml(user.role || 'reader')}">${escapeHtml(role)}</span>
                             <button type="button" id="profile-avatar-remove-btn" class="secondary-btn small-btn danger-text" style="${currentAvatarUrl ? 'display:inline-flex;' : 'display:none;'};align-items:center;gap:4px;padding:4px 8px;font-size:0.75rem;">
                                 <span class="material-symbols-outlined" style="font-size:14px;">delete</span>
-                                Remove photo
+                                ${t('profile.photo_remove')}
                             </button>
                         </div>
                     </div>
@@ -88,17 +91,17 @@ export async function renderProfileView({ onBack } = {}) {
 
                 <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:1rem;">
                     <div class="form-group">
-                        <label class="form-label" for="profile-firstname">First Name</label>
+                        <label class="form-label" for="profile-firstname">${t('profile.first_name')}</label>
                         <input class="form-input" id="profile-firstname" type="text" value="${escapeHtml(firstName)}" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="profile-lastname">Last Name</label>
+                        <label class="form-label" for="profile-lastname">${t('profile.last_name')}</label>
                         <input class="form-input" id="profile-lastname" type="text" value="${escapeHtml(lastName)}" required>
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-top:0.75rem;">
-                    <label class="form-label" for="profile-email">Email Address</label>
+                    <label class="form-label" for="profile-email">${t('profile.email')}</label>
                     <input class="form-input" id="profile-email" type="email" value="${escapeHtml(email)}" required>
                 </div>
             </div>
@@ -107,21 +110,37 @@ export async function renderProfileView({ onBack } = {}) {
             <div class="settings-section">
                 <h3 class="settings-section-title">
                     <span class="material-symbols-outlined">lock</span>
-                    Password & Security
+                    ${t('profile.section_security')}
                 </h3>
 
                 <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:1rem;">
                     <div class="form-group">
-                        <label class="form-label" for="profile-password">New Password</label>
-                        <input class="form-input" id="profile-password" type="password" placeholder="Leave blank to keep current password" minlength="8" autocomplete="new-password">
+                        <label class="form-label" for="profile-password">${t('profile.new_password')}</label>
+                        <input class="form-input" id="profile-password" type="password" placeholder="${t('profile.new_password_placeholder')}" minlength="8" autocomplete="new-password">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="profile-password-confirm">Confirm New Password</label>
-                        <input class="form-input" id="profile-password-confirm" type="password" placeholder="Repeat new password" autocomplete="new-password">
+                        <label class="form-label" for="profile-password-confirm">${t('profile.confirm_password')}</label>
+                        <input class="form-input" id="profile-password-confirm" type="password" placeholder="${t('profile.confirm_password_placeholder')}" autocomplete="new-password">
                     </div>
                 </div>
                 <div style="font-size:0.78rem;color:var(--clr-text-muted);margin-top:0.5rem;">
-                    Password must contain at least 8 characters if you choose to update it.
+                    ${t('profile.password_hint')}
+                </div>
+            </div>
+
+            <!-- Section 3: Preferences & Language -->
+            <div class="settings-section">
+                <h3 class="settings-section-title">
+                    <span class="material-symbols-outlined">tune</span>
+                    ${t('profile.section_preferences')}
+                </h3>
+
+                <div class="form-group" style="max-width:320px;">
+                    <label class="form-label" for="profile-language-select">${t('profile.language_label')}</label>
+                    <select class="form-input" id="profile-language-select">
+                        <option value="en" ${currentLang === 'en' ? 'selected' : ''}>${t('profile.language_en')}</option>
+                        <option value="fr" ${currentLang === 'fr' ? 'selected' : ''}>${t('profile.language_fr')}</option>
+                    </select>
                 </div>
             </div>
 
@@ -131,7 +150,7 @@ export async function renderProfileView({ onBack } = {}) {
             <div style="display:flex;justify-content:flex-start;gap:12px;">
                 <button type="submit" class="action-btn" id="profile-submit-btn" style="padding:10px 24px;font-size:0.9rem;">
                     <span class="material-symbols-outlined">save</span>
-                    Save Profile
+                    ${t('profile.btn_save')}
                 </button>
             </div>
         </form>
@@ -235,6 +254,14 @@ function _bindEvents() {
         });
     }
 
+    // Language selector
+    const langSelect = document.getElementById('profile-language-select');
+    if (langSelect) {
+        langSelect.addEventListener('change', async (e) => {
+            await setLanguage(e.target.value);
+        });
+    }
+
     // Form submission
     const form = document.getElementById('profile-main-form');
     if (form) {
@@ -253,7 +280,7 @@ function _bindEvents() {
 
             if (password && password !== passwordConfirm) {
                 if (messageEl) {
-                    messageEl.textContent = 'Passwords do not match';
+                    messageEl.textContent = t('profile.passwords_mismatch');
                     messageEl.style.color = 'var(--clr-danger)';
                 }
                 return;
@@ -261,7 +288,7 @@ function _bindEvents() {
 
             if (password && password.length < 8) {
                 if (messageEl) {
-                    messageEl.textContent = 'Password must be at least 8 characters';
+                    messageEl.textContent = t('profile.password_hint');
                     messageEl.style.color = 'var(--clr-danger)';
                 }
                 return;
@@ -304,20 +331,20 @@ function _bindEvents() {
                     }
 
                     if (messageEl) {
-                        messageEl.textContent = '✓ Profile updated successfully!';
+                        messageEl.textContent = `✓ ${t('profile.saved_success')}`;
                         messageEl.style.color = 'var(--clr-success)';
                     }
                     Logger.success('Profile updated successfully');
                 } else {
                     if (messageEl) {
-                        messageEl.textContent = res.error || 'Update failed';
+                        messageEl.textContent = res.error || t('profile.save_failed');
                         messageEl.style.color = 'var(--clr-danger)';
                     }
                 }
             } catch (err) {
-                Logger.error('Profile update network error', err);
+                Logger.error('Failed to update profile', err);
                 if (messageEl) {
-                    messageEl.textContent = 'Network error occurred. Please try again.';
+                    messageEl.textContent = t('profile.save_failed');
                     messageEl.style.color = 'var(--clr-danger)';
                 }
             }

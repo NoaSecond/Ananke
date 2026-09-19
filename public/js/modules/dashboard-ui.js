@@ -8,6 +8,7 @@ import { state, getFullUrl } from './state.js';
 import * as API from './api.js';
 import { Logger } from './utils.js';
 import { renderAvatarHtml } from './avatar.js';
+import { t } from './i18n.js';
 
 export const BOARD_COLORS = [
     '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
@@ -47,17 +48,19 @@ export function renderDashboard() {
     const canCreate = currentUser && ['admin', 'owner'].includes(currentUser.role);
 
     const firstName = currentUser?.first_name || currentUser?.name?.split(' ')[0] || 'there';
+    const greeting = t(`dashboard.${getGreetingKey()}`, { name: escHtml(firstName) });
+    const boardsSubtitle = t('dashboard.boards_count', { count: boards.length });
 
     container.innerHTML = `
         <div class="dashboard-greeting">
-            <h2>Good ${getGreeting()}, ${escHtml(firstName)} 👋</h2>
-            <p>${boards.length} board${boards.length !== 1 ? 's' : ''} accessible to you</p>
+            <h2>${greeting}</h2>
+            <p>${boardsSubtitle}</p>
         </div>
 
         <div class="dashboard-section-header">
             <div class="dashboard-section-title">
                 <span class="material-symbols-outlined">view_kanban</span>
-                My Boards
+                ${t('dashboard.my_boards')}
             </div>
         </div>
 
@@ -113,6 +116,8 @@ export function updateDashboardPresence() {
 function renderBoardCard(board) {
     const taskCount = countTasks(board);
     const activeUsers = (state.boardPresence && state.boardPresence[board.id]) || [];
+    const descText = escHtml(board.description || t('dashboard.no_desc'));
+    const tasksText = t('dashboard.tasks_count', { count: taskCount });
 
     return `
         <div class="board-card" data-board-id="${escHtml(board.id)}" style="--board-accent: ${escHtml(board.color || '#6366f1')}">
@@ -121,16 +126,16 @@ function renderBoardCard(board) {
                     <span class="material-symbols-outlined">${escHtml(board.icon || 'dashboard')}</span>
                 </div>
                 <div class="board-card-title">${escHtml(board.name)}</div>
-                <button class="board-card-settings-btn" data-board-id="${escHtml(board.id)}" title="Board Settings" aria-label="Board Settings">
+                <button class="board-card-settings-btn" data-board-id="${escHtml(board.id)}" title="${t('dashboard.settings_tooltip')}" aria-label="${t('dashboard.settings_tooltip')}">
                     <span class="material-symbols-outlined">settings</span>
                 </button>
             </div>
-            <div class="board-card-desc">${escHtml(board.description || 'No description')}</div>
+            <div class="board-card-desc">${descText}</div>
             <div class="board-card-meta">
                 ${renderActiveBoardUsers(activeUsers)}
                 <span class="board-card-tasks-count">
                     <span class="material-symbols-outlined">task_alt</span>
-                    ${taskCount} task${taskCount !== 1 ? 's' : ''}
+                    ${tasksText}
                 </span>
             </div>
         </div>
@@ -145,6 +150,7 @@ export function renderActiveBoardUsers(activeUsers) {
     const MAX_SHOWN = 4;
     const shown = activeUsers.slice(0, MAX_SHOWN);
     const extraCount = activeUsers.length - MAX_SHOWN;
+    const onBoardText = t('dashboard.on_board');
 
     return `
         <div class="board-card-avatars">
@@ -152,20 +158,20 @@ export function renderActiveBoardUsers(activeUsers) {
                 const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.name || u.email || 'User';
                 return renderAvatarHtml(u, {
                     className: 'board-card-avatar',
-                    title: `${fullName} (Sur le board)`,
+                    title: `${fullName} (${onBoardText})`,
                     style: 'width:26px;height:26px;font-size:11px;border-radius:50%;'
                 });
             }).join('')}
-            ${extraCount > 0 ? `<div class="board-card-avatar board-card-avatar-more" title="${extraCount} autre(s) utilisateur(s)">+${extraCount}</div>` : ''}
+            ${extraCount > 0 ? `<div class="board-card-avatar board-card-avatar-more" title="${t('dashboard.more_users', { count: extraCount })}">+${extraCount}</div>` : ''}
         </div>
     `;
 }
 
 function renderAddCard() {
     return `
-        <div class="board-card-add" id="add-board-card" role="button" tabindex="0" aria-label="Create new board">
+        <div class="board-card-add" id="add-board-card" role="button" tabindex="0" aria-label="${t('dashboard.create_board')}">
             <span class="material-symbols-outlined">add_circle</span>
-            <span>Create a new board</span>
+            <span>${t('dashboard.create_board')}</span>
         </div>
     `;
 }
@@ -180,18 +186,19 @@ function countTasks(board) {
 
 function formatRole(role) {
     switch (role) {
-        case 'board_admin': return 'Admin';
-        case 'editor':      return 'Editor';
-        case 'reader':      return 'Viewer';
-        default:            return role || 'Member';
+        case 'board_admin': return t('board_settings.role_board_admin');
+        case 'editor':      return t('board_settings.role_editor');
+        case 'reader':      return t('board_settings.role_reader');
+        case 'owner':       return t('board_settings.role_owner');
+        default:            return role || t('roles.user');
     }
 }
 
-function getGreeting() {
+function getGreetingKey() {
     const h = new Date().getHours();
-    if (h < 12) return 'morning';
-    if (h < 18) return 'afternoon';
-    return 'evening';
+    if (h < 12) return 'greeting_morning';
+    if (h < 18) return 'greeting_afternoon';
+    return 'greeting_evening';
 }
 
 function escHtml(str) {

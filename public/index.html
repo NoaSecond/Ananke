@@ -297,14 +297,14 @@
             <div class="sidebar-nav">
 
                 <!-- Dashboard -->
-                <span class="sidebar-section-label">Overview</span>
+                <span class="sidebar-section-label" data-i18n="nav.overview">Overview</span>
                 <button class="sidebar-item active" id="nav-dashboard">
                     <span class="material-symbols-outlined">home</span>
-                    <span class="sidebar-item-label">Dashboard</span>
+                    <span class="sidebar-item-label" data-i18n="nav.dashboard">Dashboard</span>
                 </button>
 
                 <!-- Boards list -->
-                <span class="sidebar-section-label">Boards</span>
+                <span class="sidebar-section-label" data-i18n="nav.boards">Boards</span>
                 <div id="sidebar-boards"></div>
 
             </div>
@@ -313,9 +313,9 @@
             <div class="sidebar-footer">
                 <button class="sidebar-item" id="sidebar-settings-btn">
                     <span class="material-symbols-outlined">settings</span>
-                    <span class="sidebar-item-label">Settings</span>
+                    <span class="sidebar-item-label" data-i18n="nav.settings">Settings</span>
                 </button>
-                <div class="sidebar-user" id="sidebar-user" title="Edit profile">
+                <div class="sidebar-user" id="sidebar-user" data-i18n-title="nav.edit_profile" title="Edit profile">
                     <div class="sidebar-user-avatar" id="sidebar-user-avatar">?</div>
                     <div class="sidebar-user-info">
                         <div class="sidebar-user-name" id="user-display-name">User</div>
@@ -345,7 +345,7 @@
                 <div class="search-container" id="search-container">
                     <div class="search-wrapper">
                         <span class="material-symbols-outlined search-icon">search</span>
-                        <input type="text" id="global-search" placeholder="Search (Tag: Person: )" autocomplete="off">
+                        <input type="text" id="global-search" data-i18n-placeholder="board.search_placeholder" placeholder="Search (Tag: Person: )" autocomplete="off">
                         <div class="search-shortcut">
                             <span class="shortcut-key">Ctrl</span>+<span class="shortcut-key">K</span>
                         </div>
@@ -358,17 +358,17 @@
 
                     <button id="add-workflow-btn" class="action-btn">
                         <span class="material-symbols-outlined">add</span>
-                        Add Column
+                        <span data-i18n="board.add_column">Add Column</span>
                     </button>
 
                     <!-- Server logs -->
-                    <button id="server-logs-btn" class="secondary-btn circular-btn" title="Server Logs" style="display:none">
+                    <button id="server-logs-btn" class="secondary-btn circular-btn" data-i18n-title="board.server_logs" title="Server Logs" style="display:none">
                         <span class="material-symbols-outlined">terminal</span>
                     </button>
 
                     <!-- Settings button (header) -->
                     <div class="settings-container">
-                        <button id="settings-toggle-btn" class="secondary-btn circular-btn rotate-hover" title="Board Settings">
+                        <button id="settings-toggle-btn" class="secondary-btn circular-btn rotate-hover" data-i18n-title="board.settings_tooltip" title="Board Settings">
                             <span class="material-symbols-outlined">settings</span>
                         </button>
                     </div>
@@ -421,18 +421,18 @@
             </div>
             <div class="settings-divider"></div>
             <button id="profile-btn" class="settings-item">
-                <span class="material-symbols-outlined">person</span> My Profile
+                <span class="material-symbols-outlined">person</span> <span data-i18n="settings.profile">My Profile</span>
             </button>
             <button id="manage-users-btn" class="settings-item" style="display:none">
-                <span class="material-symbols-outlined">group</span> Users
+                <span class="material-symbols-outlined">group</span> <span data-i18n="settings.users">Users</span>
             </button>
             <button id="theme-toggle-btn" class="settings-item">
                 <span class="material-symbols-outlined theme-icon">dark_mode</span>
-                <span id="theme-text">Light Mode</span>
+                <span id="theme-text" data-i18n="settings.theme_light">Light Mode</span>
             </button>
             <div id="language-toggle-btn" class="settings-item" style="cursor:pointer;justify-content:space-between;padding-right:1rem;">
                 <span style="display:flex;align-items:center;gap:10px;">
-                    <span class="material-symbols-outlined">language</span> Language
+                    <span class="material-symbols-outlined">language</span> <span data-i18n="settings.language">Language</span>
                 </span>
                 <div style="display:flex;gap:5px;">
                     <button class="lang-btn" data-lang="fr" style="border:1px solid var(--clr-border);background:none;color:var(--clr-text);border-radius:4px;padding:2px 6px;cursor:pointer;font-size:0.8rem;">FR</button>
@@ -441,15 +441,15 @@
             </div>
             <div class="settings-divider"></div>
             <label for="import-input" id="import-label" class="settings-item" style="display:none;cursor:pointer;">
-                <span class="material-symbols-outlined">upload</span> Import (.kanban)
+                <span class="material-symbols-outlined">upload</span> <span data-i18n="settings.import">Import (.kanban)</span>
             </label>
             <input type="file" id="import-input" accept=".kanban" style="display:none">
             <button id="export-btn" class="settings-item">
-                <span class="material-symbols-outlined">download</span> Export (.kanban)
+                <span class="material-symbols-outlined">download</span> <span data-i18n="settings.export">Export (.kanban)</span>
             </button>
             <div class="settings-divider"></div>
             <button id="logout-btn" class="settings-item danger-text">
-                <span class="material-symbols-outlined">logout</span> Logout
+                <span class="material-symbols-outlined">logout</span> <span data-i18n="settings.sign_out">Logout</span>
             </button>
         </div>
     </div><!-- #app-wrapper -->
@@ -491,27 +491,26 @@
     <div id="create-board-modal" class="modal-overlay">
         <div class="modal-content" style="width:min(95vw,480px);">
             <button class="modal-close-btn" id="create-board-close"><span class="material-symbols-outlined">close</span></button>
-            <h2>Create a new board</h2>
+            <h2 data-i18n="modal.create_board_title">Create a new board</h2>
             <form id="create-board-form" style="display:flex;flex-direction:column;gap:1rem;">
                 <div class="form-group">
-                    <label for="board-name-input">Board Name <span style="color:var(--clr-danger)">*</span></label>
-                    <input type="text" id="board-name-input" maxlength="100" placeholder="My awesome board" required>
+                    <label for="board-name-input"><span data-i18n="board_settings.board_name">Board Name</span> <span style="color:var(--clr-danger)">*</span></label>
+                    <input type="text" id="board-name-input" maxlength="100" data-i18n-placeholder="modal.board_name_placeholder" placeholder="My awesome board" required>
                 </div>
                 <div class="form-group">
-                    <label for="board-desc-input">Description</label>
-                    <textarea id="board-desc-input" rows="2" maxlength="500" placeholder="What is this board for?"></textarea>
+                    <label for="board-desc-input" data-i18n="board_settings.description">Description</label>
+                    <textarea id="board-desc-input" rows="2" maxlength="500" data-i18n-placeholder="board_settings.description_placeholder" placeholder="What is this board for?"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Color</label>
+                    <label data-i18n="board_settings.icon_and_color">Color & Icon</label>
                     <div class="color-picker-row" id="board-color-swatches"></div>
                 </div>
                 <div class="form-group">
-                    <label>Icon</label>
                     <div class="icon-picker-row" id="board-icon-swatches"></div>
                 </div>
                 <div id="create-board-message" style="font-size:0.82rem;color:var(--clr-danger);min-height:1.2em;"></div>
                 <div class="modal-actions">
-                    <button type="submit" class="action-btn">Create Board</button>
+                    <button type="submit" class="action-btn" data-i18n="modal.btn_create">Create Board</button>
                 </div>
             </form>
         </div>
@@ -723,10 +722,10 @@
             </div>
 
             <div class="modal-actions">
-                <button id="delete-task-btn" class="danger-btn">Delete</button>
+                <button id="delete-task-btn" class="danger-btn" data-i18n="task.delete">Delete Task</button>
                 <button id="duplicate-task-btn" class="secondary-btn">Duplicate</button>
                 <button id="save-task-btn" class="action-btn"
-                    style="display: flex; align-items: center; justify-content: center; gap: 4px;">Save <span
+                    style="display: flex; align-items: center; justify-content: center; gap: 4px;"><span data-i18n="task.save">Save Task</span> <span
                         class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
                         title="Raccourci : Entrée">keyboard_return</span></button>
             </div>
@@ -737,9 +736,9 @@
     <div id="workflow-modal" class="modal-overlay">
         <div class="modal-content" style="width: min(95vw, 500px);">
             <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
-            <h2>Edit Column</h2>
+            <h2 data-i18n="board.column_menu_rename">Edit Column</h2>
             <input type="hidden" id="workflow-id-input">
-            <label for="workflow-title-input">Title</label>
+            <label for="workflow-title-input" data-i18n="board.column_new_title">Title</label>
             <input type="text" id="workflow-title-input" placeholder="Column title">
             <label for="workflow-color-input">Color</label>
             <input type="color" id="workflow-color-input">
@@ -750,9 +749,9 @@
             </div>
 
             <div class="modal-actions">
-                <button id="delete-workflow-btn" class="danger-btn">Delete</button>
+                <button id="delete-workflow-btn" class="danger-btn" data-i18n="modal.btn_delete">Delete</button>
                 <button id="save-workflow-btn" class="action-btn"
-                    style="display: flex; align-items: center; justify-content: center; gap: 4px;">Save <span
+                    style="display: flex; align-items: center; justify-content: center; gap: 4px;"><span data-i18n="board_settings.btn_save">Save</span> <span
                         class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
                         title="Raccourci : Entrée">keyboard_return</span></button>
             </div>
@@ -762,11 +761,11 @@
     <div id="confirm-modal" class="modal-overlay">
         <div class="modal-content" style="width: min(95vw, 450px); text-align: center;">
             <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
-            <h2 id="confirm-modal-title">Confirmation</h2>
+            <h2 id="confirm-modal-title" data-i18n="modal.confirm_title">Confirmation</h2>
             <p id="confirm-modal-message">Are you sure?</p>
             <div class="modal-actions" style="justify-content: center;">
-                <button id="confirm-modal-cancel-btn" class="secondary-btn">Cancel</button>
-                <button id="confirm-modal-ok-btn" class="danger-btn">Delete</button>
+                <button id="confirm-modal-cancel-btn" class="secondary-btn" data-i18n="modal.btn_cancel">Cancel</button>
+                <button id="confirm-modal-ok-btn" class="danger-btn" data-i18n="modal.btn_delete">Delete</button>
             </div>
         </div>
     </div>
