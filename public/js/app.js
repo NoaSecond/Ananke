@@ -16,7 +16,7 @@ import { initWorkflowListeners } from './modules/workflow-ui.js';
 import { initUserManagement } from './modules/user-ui.js';
 import { initThemeListeners, applyBackground } from './modules/theme-ui.js';
 import { initSearch } from './modules/search-ui.js';
-import { initDashboard, renderDashboard, openCreateBoardModal } from './modules/dashboard-ui.js';
+import { initDashboard, renderDashboard, openCreateBoardModal, updateDashboardPresence } from './modules/dashboard-ui.js';
 import { initBoardSettings, renderBoardSettings } from './modules/board-settings-ui.js';
 import { renderProfileView } from './modules/profile-ui.js';
 import * as API from './modules/api.js';
@@ -142,6 +142,7 @@ export async function navigateToBoard(boardId) {
     // Update board header visibility
     const boardHeader = document.getElementById('board-header');
     if (boardHeader) boardHeader.style.display = 'flex';
+    updateBoardHeaderPresence();
 }
 
 /**
@@ -149,6 +150,11 @@ export async function navigateToBoard(boardId) {
  */
 export async function navigateToDashboard() {
     state.currentView    = 'dashboard';
+
+    // Leave any active board on socket
+    if (state.socket && state.currentBoardId) {
+        state.socket.emit('leaveBoard');
+    }
     state.currentBoardId = null;
 
     showView('dashboard');
@@ -216,6 +222,10 @@ let previousView = 'dashboard';
 export async function navigateToProfile() {
     previousView = state.currentView || 'dashboard';
     state.currentView = 'profile';
+
+    if (state.socket && state.currentBoardId && previousView === 'board') {
+        state.socket.emit('leaveBoard');
+    }
 
     showView('profile');
     applyBackground(null);
@@ -370,19 +380,19 @@ async function initSocket() {
 
     state.socket.on('serverLog', appendLog);
 
+    state.socket.on('boardPresence', (presenceMap) => {
+        state.boardPresence = presenceMap || {};
+        if (state.currentView === 'dashboard') {
+            updateDashboardPresence();
+        } else if (state.currentView === 'board' && state.currentBoardId) {
+            updateBoardHeaderPresence();
+        }
+    });
+
     state.socket.on('onlineUsers', (users) => {
-        const container = document.getElementById('online-users-container');
-        if (!container) return;
-        container.innerHTML = '';
-        const unique = new Map();
-        users.forEach(u => unique.set(u.id, u));
-        unique.forEach(user => {
-            const el = createAvatarElement(user, {
-                className: 'online-user-avatar',
-                title: `${user.name || 'User'}${user.role ? ` (${user.role})` : ''}`
-            });
-            container.appendChild(el);
-        });
+        if (state.currentView === 'board' && state.currentBoardId) {
+            updateBoardHeaderPresence();
+        }
     });
 
     // Load boards and navigate to dashboard on first connect
@@ -395,6 +405,20 @@ async function initSocket() {
         Logger.error('Failed to load initial boards', err);
         navigateToDashboard();
     }
+}
+
+function updateBoardHeaderPresence() {
+    const container = document.getElementById('online-users-container');
+    if (!container) return;
+    container.innerHTML = '';
+    const activeUsers = (state.boardPresence && state.currentBoardId && state.boardPresence[state.currentBoardId]) || [];
+    activeUsers.forEach(user => {
+        const el = createAvatarElement(user, {
+            className: 'online-user-avatar',
+            title: `${user.name || 'User'}${user.role ? ` (${user.role})` : ''}`
+        });
+        container.appendChild(el);
+    });
 }
 
 // --------------------------------------------------------------------------

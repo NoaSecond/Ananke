@@ -22,6 +22,7 @@ export const state = {
     boards:         [],      // list of boards returned by /api/boards
     currentBoardId: null,    // UUID of the currently active board
     boardMembers:   [],      // members of the current board
+    boardPresence:  {},      // boardId -> array of active users currently viewing the board
 
     // Kanban (per board)
     boardData: {

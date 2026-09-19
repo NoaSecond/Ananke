@@ -91,12 +91,28 @@ export function renderDashboard() {
     }
 }
 
+export function updateDashboardPresence() {
+    const container = document.getElementById('view-dashboard');
+    if (!container || state.currentView !== 'dashboard') return;
+
+    const cards = container.querySelectorAll('.board-card[data-board-id]');
+    cards.forEach(card => {
+        const boardId = card.dataset.boardId;
+        const avatarsContainer = card.querySelector('.board-card-avatars');
+        if (avatarsContainer) {
+            const activeUsers = (state.boardPresence && state.boardPresence[boardId]) || [];
+            avatarsContainer.outerHTML = renderActiveBoardUsers(activeUsers);
+        }
+    });
+}
+
 // --------------------------------------------------------------------------
 // Private helpers
 // --------------------------------------------------------------------------
 
 function renderBoardCard(board) {
     const taskCount = countTasks(board);
+    const activeUsers = (state.boardPresence && state.boardPresence[board.id]) || [];
 
     return `
         <div class="board-card" data-board-id="${escHtml(board.id)}" style="--board-accent: ${escHtml(board.color || '#6366f1')}">
@@ -111,7 +127,7 @@ function renderBoardCard(board) {
             </div>
             <div class="board-card-desc">${escHtml(board.description || 'No description')}</div>
             <div class="board-card-meta">
-                ${renderBoardMembers(board.members)}
+                ${renderActiveBoardUsers(activeUsers)}
                 <span class="board-card-tasks-count">
                     <span class="material-symbols-outlined">task_alt</span>
                     ${taskCount} task${taskCount !== 1 ? 's' : ''}
@@ -121,31 +137,26 @@ function renderBoardCard(board) {
     `;
 }
 
-function renderBoardMembers(members) {
-    const list = (members && members.length > 0)
-        ? members
-        : (state.currentUser ? [state.currentUser] : []);
-
-    if (list.length === 0) {
-        return `<span class="board-card-no-members" style="font-size:0.75rem;color:var(--clr-text-subtle);">No members</span>`;
+export function renderActiveBoardUsers(activeUsers) {
+    if (!activeUsers || activeUsers.length === 0) {
+        return `<div class="board-card-avatars"></div>`;
     }
 
     const MAX_SHOWN = 4;
-    const shown = list.slice(0, MAX_SHOWN);
-    const extraCount = list.length - MAX_SHOWN;
+    const shown = activeUsers.slice(0, MAX_SHOWN);
+    const extraCount = activeUsers.length - MAX_SHOWN;
 
     return `
         <div class="board-card-avatars">
-            ${shown.map(m => {
-                const roleName = formatRole(m.board_role || m.role);
-                const fullName = `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.name || m.email || 'Member';
-                return renderAvatarHtml(m, {
+            ${shown.map(u => {
+                const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.name || u.email || 'User';
+                return renderAvatarHtml(u, {
                     className: 'board-card-avatar',
-                    title: `${fullName} (${roleName})`,
+                    title: `${fullName} (Sur le board)`,
                     style: 'width:26px;height:26px;font-size:11px;border-radius:50%;'
                 });
             }).join('')}
-            ${extraCount > 0 ? `<div class="board-card-avatar board-card-avatar-more" title="${extraCount} more members">+${extraCount}</div>` : ''}
+            ${extraCount > 0 ? `<div class="board-card-avatar board-card-avatar-more" title="${extraCount} autre(s) utilisateur(s)">+${extraCount}</div>` : ''}
         </div>
     `;
 }

@@ -204,9 +204,12 @@ io.use((socket, next) => {
                     if (dbErr || !row) return next(new Error('Authentication error'));
                     const expectedVersion = row.token_version || 1;
                     if ((decoded.tv || 1) !== expectedVersion) return next(new Error('Authentication error'));
-                    decoded.role      = row.role;
-                    decoded.email     = row.email;
+                    decoded.role       = row.role;
+                    decoded.email      = row.email;
                     decoded.avatar_url = row.avatar_url;
+                    decoded.first_name = row.first_name;
+                    decoded.last_name  = row.last_name;
+                    decoded.name       = row.first_name ? `${row.first_name} ${row.last_name}`.trim() : (decoded.name || row.email);
                     socket.user = decoded;
                     next();
                 });
@@ -216,7 +219,36 @@ io.use((socket, next) => {
 
 const onlineUsers = new Map(); // socket.id → user info
 
+function getBoardPresenceMap() {
+    const presence = {};
+    if (!io || !io.sockets) return presence;
+    for (const [_, s] of io.sockets.sockets) {
+        if (s.currentBoardId && s.user) {
+            if (!presence[s.currentBoardId]) {
+                presence[s.currentBoardId] = [];
+            }
+            if (!presence[s.currentBoardId].some(u => u.id === s.user.id)) {
+                presence[s.currentBoardId].push({
+                    id:         s.user.id,
+                    name:       s.user.name,
+                    first_name: s.user.first_name,
+                    last_name:  s.user.last_name,
+                    avatar_url: s.user.avatar_url,
+                    role:       s.user.role,
+                    email:      s.user.email,
+                });
+            }
+        }
+    }
+    return presence;
+}
+
+function broadcastBoardPresence() {
+    io.emit('boardPresence', getBoardPresenceMap());
+}
+
 io.on('connection', (socket) => {
+    socket.currentBoardId = null;
     logger.socket(`User connected: ${socket.user.name} (${socket.user.role}) [${socket.id}]`);
 
     onlineUsers.set(socket.id, {
@@ -228,6 +260,7 @@ io.on('connection', (socket) => {
     });
 
     broadcastOnlineUsers();
+    socket.emit('boardPresence', getBoardPresenceMap());
 
     // ── joinBoard — subscribe to a board room ──────────────────────────────
     socket.on('joinBoard', async (boardId) => {
@@ -256,9 +289,21 @@ io.on('connection', (socket) => {
             if (board) socket.emit('boardUpdate', board);
 
             logger.socket(`User ${socket.user.name} joined board ${boardId}`);
+            broadcastBoardPresence();
         } catch (err) {
             logger.error(`joinBoard error: ${err.message}`);
         }
+    });
+
+    // ── leaveBoard — leave currently joined board room ─────────────────────
+    socket.on('leaveBoard', () => {
+        if (!socket.currentBoardId) return;
+        const currentRooms = [...socket.rooms].filter(r => r.startsWith('board:'));
+        for (const room of currentRooms) socket.leave(room);
+        const prevBoard = socket.currentBoardId;
+        socket.currentBoardId = null;
+        logger.socket(`User ${socket.user.name} left board ${prevBoard}`);
+        broadcastBoardPresence();
     });
 
     // ── updateBoard — save board and broadcast to room ─────────────────────
@@ -358,6 +403,7 @@ io.on('connection', (socket) => {
                     email:      socket.user.email,
                 });
                 broadcastOnlineUsers();
+                broadcastBoardPresence();
             });
     });
 
@@ -365,6 +411,7 @@ io.on('connection', (socket) => {
     socket.on('disconnect', (reason) => {
         onlineUsers.delete(socket.id);
         broadcastOnlineUsers();
+        broadcastBoardPresence();
         logger.socket(`User disconnected: ${socket.user.name} (${reason})`);
     });
 
