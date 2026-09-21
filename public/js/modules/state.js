@@ -26,7 +26,6 @@ export const state = {
 
     // Kanban (per board)
     boardData: {
-        projectName: 'Nouveau Projet',
         workflows:   [],
         tags:        [],
         background:  { type: 'gradient', value: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },

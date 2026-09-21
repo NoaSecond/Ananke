@@ -122,6 +122,13 @@ export async function navigateToBoard(boardId) {
         sidebar.classList.remove('mobile-open');
     }
 
+    // Set header title immediately from state.boards to prevent lag/flicker
+    const existingBoard = state.boards.find(b => b.id === boardId);
+    const initialTitle = existingBoard?.name || 'Board';
+    const headerTitle = document.getElementById('board-title-display');
+    if (headerTitle) headerTitle.textContent = initialTitle;
+    document.title = `${initialTitle} - Ananke`;
+
     // Ask socket to join this board's room
     if (state.socket) {
         state.socket.emit('joinBoard', boardId);
@@ -129,14 +136,22 @@ export async function navigateToBoard(boardId) {
 
     try {
         const { board } = await API.getBoard(boardId);
-        if (board?.data) {
-            state.boardData = board.data;
-            applyBackground(state.boardData.background);
-            renderBoard();
+        if (board) {
+            if (existingBoard) {
+                existingBoard.name = board.name;
+                existingBoard.description = board.description;
+                existingBoard.color = board.color;
+                existingBoard.icon = board.icon;
+            }
+            if (board.data) {
+                state.boardData = board.data;
+                applyBackground(state.boardData.background);
+                renderBoard();
+            }
 
-            // Update header title
-            const headerTitle = document.getElementById('board-title-display');
-            if (headerTitle) headerTitle.textContent = board.name || 'Board';
+            const finalTitle = board.name || initialTitle;
+            if (headerTitle) headerTitle.textContent = finalTitle;
+            document.title = `${finalTitle} - Ananke`;
         }
     } catch (err) {
         Logger.error('Failed to load board', err);
@@ -378,7 +393,8 @@ async function initSocket() {
     // Board update — only received for the room we joined
     state.socket.on('boardUpdate', (data) => {
         if (!state.isDraggingInternal && state.currentView === 'board') {
-            state.boardData = data;
+            const boardData = (data && data.data) ? data.data : data;
+            state.boardData = boardData;
             applyBackground(state.boardData.background);
             renderBoard();
             refreshTaskView();

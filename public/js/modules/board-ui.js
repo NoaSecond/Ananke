@@ -28,15 +28,17 @@ export const saveTaskOnly = ErrorHandler.wrapSync((task, workflowId) => {
 }, 'Task saving');
 
 const updateProjectTitle = ErrorHandler.wrapSync(() => {
-    if (state.boardData.projectName) {
-        elements.projectNameDisplay.textContent = state.boardData.projectName;
-        document.title = `${state.boardData.projectName} - Ananke`;
-
-        // Dynamic Meta Tags
-        const description = `Manage your project "${state.boardData.projectName}" with our free Kanban tool.`;
-        const metaDescription = document.querySelector('meta[name="description"]');
-        if (metaDescription) metaDescription.setAttribute('content', description);
+    const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+    const boardName = currentBoard?.name || state.boardData?.projectName || 'Board';
+    if (elements.projectNameDisplay) {
+        elements.projectNameDisplay.textContent = boardName;
     }
+    document.title = `${boardName} - Ananke`;
+
+    // Dynamic Meta Tags
+    const description = `Manage your project "${boardName}" with our free Kanban tool.`;
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) metaDescription.setAttribute('content', description);
 }, 'Project title update');
 
 const generateDynamicKeywords = () => {
@@ -48,8 +50,10 @@ const generateDynamicKeywords = () => {
             }
         });
     }
-    if (state.boardData.projectName) {
-        keywords.push(state.boardData.projectName.toLowerCase());
+    const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+    const boardName = currentBoard?.name || state.boardData?.projectName;
+    if (boardName) {
+        keywords.push(boardName.toLowerCase());
     }
     const metaKeywords = document.querySelector('meta[name="keywords"]');
     if (metaKeywords) {
@@ -470,7 +474,9 @@ export const initBoardListeners = () => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${exportData.projectName || 'ananke-project'}-${new Date().toISOString().slice(0, 10)}.kanban`;
+                const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+                const boardName = currentBoard?.name || exportData.projectName || 'ananke-project';
+                a.download = `${boardName}-${new Date().toISOString().slice(0, 10)}.kanban`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -513,17 +519,38 @@ export const initBoardListeners = () => {
     // Project Title Edit
     elements.projectTitle.addEventListener('click', () => {
         if (state.currentUser?.role === 'reader') return;
-        elements.projectNameInput.value = state.boardData.projectName || 'Ananke';
+        const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+        elements.projectNameInput.value = currentBoard?.name || state.boardData?.projectName || '';
         openModal(elements.projectModal);
     });
 
-    elements.saveProjectBtn.addEventListener('click', () => {
+    elements.saveProjectBtn.addEventListener('click', async () => {
         const newName = elements.projectNameInput.value.trim();
-        if (newName) {
+        if (newName && state.currentBoardId) {
+            const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+            if (currentBoard) currentBoard.name = newName;
             state.boardData.projectName = newName;
-            saveData();
-            renderBoard();
+
+            if (elements.projectNameDisplay) {
+                elements.projectNameDisplay.textContent = newName;
+            }
+            document.title = `${newName} - Ananke`;
             closeModal(elements.projectModal);
+
+            try {
+                await API.updateBoardMeta(state.currentBoardId, {
+                    name: newName,
+                    description: currentBoard?.description || '',
+                    color: currentBoard?.color || '#6366f1',
+                    icon: currentBoard?.icon || 'dashboard',
+                });
+                const sidebarItemLabel = document.querySelector(`#sidebar-boards .sidebar-item[data-board-id="${state.currentBoardId}"] .sidebar-item-label`);
+                if (sidebarItemLabel) sidebarItemLabel.textContent = newName;
+            } catch (err) {
+                Logger.error('Failed to update board name', err);
+            }
+
+            saveData();
         }
     });
 

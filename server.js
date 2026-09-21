@@ -286,7 +286,7 @@ io.on('connection', (socket) => {
 
             // Send current board data only to this socket
             const board = await boardRepository.findById(boardId);
-            if (board) socket.emit('boardUpdate', board);
+            if (board) socket.emit('boardUpdate', board.data || {});
 
             logger.socket(`User ${socket.user.name} joined board ${boardId}`);
             broadcastBoardPresence();
