@@ -148,6 +148,7 @@
   },
   "footer": {
     "support": "Support",
-    "github": "Projet sur GitHub"
+    "github": "Projet sur GitHub",
+    "update_available": "Mise à jour disponible"
   }
 }

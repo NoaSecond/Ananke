@@ -5,6 +5,7 @@ import { Logger } from './utils.js';
 import { getInitials, updateAvatarElement } from './avatar.js';
 import { renderBoard } from './board-ui.js';
 import { refreshSearchUsers } from './search-ui.js';
+import { t } from './i18n.js';
 
 let currentAvatarUrl = null;
 let oldAvatarUrl = null;
@@ -328,19 +329,22 @@ async function checkVersion(user) {
         const remoteVersion = remoteData.version;
 
         if (localVersion !== remoteVersion && !document.getElementById('version-warning')) {
-            const headerControls = document.querySelector('.controls');
-            if (headerControls) {
-                const warningBtn = document.createElement('div');
+            const versionDisplay = document.getElementById('app-version-display');
+            const footerRight = versionDisplay?.parentElement || document.querySelector('.footer-right');
+            if (footerRight) {
+                const warningBtn = document.createElement('a');
                 warningBtn.id = 'version-warning';
-                warningBtn.style.color = 'var(--danger-color)';
-                warningBtn.style.display = 'flex';
-                warningBtn.style.alignItems = 'center';
-                warningBtn.style.gap = '0.5rem';
-                warningBtn.style.fontWeight = 'bold';
-                warningBtn.style.marginRight = '1rem';
-                warningBtn.title = `Update available: ${remoteVersion}`;
-                warningBtn.innerHTML = '<span class="material-symbols-outlined">update</span> Update available';
-                headerControls.insertBefore(warningBtn, headerControls.firstChild);
+                warningBtn.href = 'https://github.com/NoaSecond/Ananke/releases';
+                warningBtn.target = '_blank';
+                warningBtn.rel = 'noopener noreferrer';
+                const label = t('footer.update_available') || 'Update available';
+                warningBtn.title = `${label}: v${remoteVersion}`;
+                warningBtn.innerHTML = `<span class="material-symbols-outlined">update</span><span data-i18n="footer.update_available">${label}</span>`;
+                if (versionDisplay) {
+                    footerRight.insertBefore(warningBtn, versionDisplay);
+                } else {
+                    footerRight.appendChild(warningBtn);
+                }
             }
         }
     } catch (e) {

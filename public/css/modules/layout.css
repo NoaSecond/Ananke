@@ -506,6 +506,37 @@ body.light-mode .sidebar-brand-icon {
 }
 .version-tag:hover { opacity: 1; }
 
+#app-footer #version-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--clr-danger);
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.4;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+#app-footer #version-warning:hover {
+    background: rgba(239, 68, 68, 0.22);
+    border-color: var(--clr-danger);
+    color: var(--clr-danger);
+    text-decoration: none;
+    opacity: 1;
+}
+
+#app-footer #version-warning .material-symbols-outlined {
+    font-size: 14px;
+    line-height: 1;
+    color: var(--clr-danger);
+}
+
 /* ── Responsive — mobile sidebar overlay ── */
 
 @media (max-width: 768px) {
