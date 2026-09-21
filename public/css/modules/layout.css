@@ -56,15 +56,23 @@ html, body {
 .sidebar-brand-logo {
     width: 32px;
     height: 32px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, var(--clr-primary), var(--clr-accent));
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 16px;
-    color: white;
-    box-shadow: var(--shadow-glow);
+}
+
+.sidebar-brand-logo img,
+.sidebar-brand-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+}
+
+body.light-mode .sidebar-brand-icon {
+    filter: brightness(0) opacity(0.85);
 }
 
 .sidebar-brand-text {
