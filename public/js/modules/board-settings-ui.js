@@ -9,7 +9,8 @@ import * as API from './api.js';
 import { Logger } from './utils.js';
 import { renderAvatarHtml, resolveUser } from './avatar.js';
 import { updatePreview } from './theme-ui.js';
-import { BOARD_COLORS, BOARD_ICONS } from './dashboard-ui.js';
+import { BOARD_COLORS } from './dashboard-ui.js';
+import { BOARD_ICONS, loadBoardIcons, renderIconSwatchesHtml, renderBoardIconHtml, getDefaultIconId } from './board-icons.js';
 import { t } from './i18n.js';
 
 let _onBack            = null;
@@ -34,6 +35,8 @@ export function initBoardSettings({ onBack, onDeleted, onUpdated }) {
 export async function renderBoardSettings() {
     const container = document.getElementById('view-board-settings');
     if (!container) return;
+
+    await loadBoardIcons();
 
     const board = state.boards.find(b => b.id === state.currentBoardId);
     if (!board) return;
@@ -113,7 +116,7 @@ export async function renderBoardSettings() {
 
 function renderGeneralSection(board) {
     const currentColor = board.color || BOARD_COLORS[0];
-    const currentIcon  = board.icon  || BOARD_ICONS[0];
+    const currentIcon  = board.icon  || getDefaultIconId();
 
     return `
         <div class="settings-section">
@@ -141,11 +144,7 @@ function renderGeneralSection(board) {
                 </div>
                 <div class="form-group">
                     <div class="icon-picker-row" id="settings-board-icon-swatches">
-                        ${BOARD_ICONS.map(ic => `
-                            <div class="icon-swatch${ic === currentIcon ? ' selected' : ''}" data-icon="${ic}" title="${ic}">
-                                <span class="material-symbols-outlined">${ic}</span>
-                            </div>
-                        `).join('')}
+                        ${renderIconSwatchesHtml(currentIcon)}
                     </div>
                 </div>
                 <div id="board-general-message" style="font-size:0.82rem;color:var(--clr-danger);min-height:1.2em;"></div>
@@ -417,7 +416,7 @@ function _bindGeneralForm() {
 
     const board = state.boards.find(b => b.id === state.currentBoardId);
     let selectedColor = board?.color || BOARD_COLORS[0];
-    let selectedIcon  = board?.icon  || BOARD_ICONS[0];
+    let selectedIcon  = board?.icon  || getDefaultIconId();
 
     const colorRow = document.getElementById('settings-board-color-swatches');
     if (colorRow) {

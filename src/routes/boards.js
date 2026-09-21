@@ -13,6 +13,8 @@
 
 const express    = require('express');
 const rateLimit  = require('express-rate-limit');
+const fs         = require('fs');
+const path       = require('path');
 
 const authenticate              = require('../middleware/authenticate');
 const { requireRole }           = require('../middleware/requireRole');
@@ -28,7 +30,43 @@ const logger                    = require('../utils/logger');
 
 const router = express.Router();
 
-// All board routes require authentication
+// --------------------------------------------------------------------------
+// GET /api/boards/icons  — List available SVG icons from public/assets/board-icons
+// (Publicly accessible so modals and UI can load icons freely)
+// --------------------------------------------------------------------------
+
+router.get('/icons', async (req, res) => {
+    try {
+        const iconsDir = path.join(__dirname, '..', '..', 'public', 'assets', 'board-icons');
+        if (!fs.existsSync(iconsDir)) {
+            await fs.promises.mkdir(iconsDir, { recursive: true });
+        }
+        const files = await fs.promises.readdir(iconsDir);
+        const svgFiles = files
+            .filter(f => f.toLowerCase().endsWith('.svg'))
+            .sort((a, b) => a.localeCompare(b));
+
+        const icons = svgFiles.map(file => {
+            const id = file.replace(/\.svg$/i, '');
+            const name = id
+                .replace(/[_-]+/g, ' ')
+                .replace(/\b\w/g, c => c.toUpperCase());
+            return {
+                id,
+                filename: file,
+                name,
+                url: `/assets/board-icons/${file}`,
+            };
+        });
+
+        res.json({ icons });
+    } catch (err) {
+        logger.error(`List board icons error: ${err.message}`);
+        res.status(500).json({ error: 'Erreur lors de la lecture des icônes de board' });
+    }
+});
+
+// All other board routes require authentication
 router.use(authenticate);
 
 // --------------------------------------------------------------------------

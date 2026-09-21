@@ -176,6 +176,13 @@ body.light-mode .sidebar-brand-icon {
 
 .sidebar-item.active .material-symbols-outlined { color: var(--clr-primary); }
 
+.sidebar-item .board-icon-mask {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    transition: color var(--transition-fast);
+}
+
 .sidebar-item-label {
     flex: 1;
     overflow: hidden;

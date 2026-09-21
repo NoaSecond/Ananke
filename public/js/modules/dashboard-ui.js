@@ -9,17 +9,14 @@ import * as API from './api.js';
 import { Logger } from './utils.js';
 import { renderAvatarHtml } from './avatar.js';
 import { t } from './i18n.js';
+import { BOARD_ICONS, loadBoardIcons, renderBoardIconHtml, renderIconSwatchesHtml, getDefaultIconId } from './board-icons.js';
+
+export { BOARD_ICONS, loadBoardIcons, renderBoardIconHtml, renderIconSwatchesHtml, getDefaultIconId };
 
 export const BOARD_COLORS = [
     '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
     '#f97316', '#f59e0b', '#22c55e', '#14b8a6',
     '#3b82f6', '#06b6d4',
-];
-
-export const BOARD_ICONS = [
-    'dashboard', 'view_kanban', 'task', 'rocket_launch',
-    'engineering', 'design_services', 'bug_report', 'code',
-    'campaign', 'support', 'inventory', 'science',
 ];
 
 let _onBoardSelect   = null;
@@ -123,7 +120,7 @@ function renderBoardCard(board) {
         <div class="board-card" data-board-id="${escHtml(board.id)}" style="--board-accent: ${escHtml(board.color || '#6366f1')}">
             <div class="board-card-header">
                 <div class="board-card-icon" style="background:${escHtml(board.color || '#6366f1')}">
-                    <span class="material-symbols-outlined">${escHtml(board.icon || 'dashboard')}</span>
+                    ${renderBoardIconHtml(board.icon || 'dashboard')}
                 </div>
                 <div class="board-card-title">${escHtml(board.name)}</div>
                 <button class="board-card-settings-btn" data-board-id="${escHtml(board.id)}" title="${t('dashboard.settings_tooltip')}" aria-label="${t('dashboard.settings_tooltip')}">
@@ -212,7 +209,7 @@ function escHtml(str) {
 // --------------------------------------------------------------------------
 
 let selectedColor = BOARD_COLORS[0];
-let selectedIcon  = BOARD_ICONS[0];
+let selectedIcon  = getDefaultIconId();
 
 function _bindCreateModal() {
     const modal   = document.getElementById('create-board-modal');
@@ -257,11 +254,12 @@ function _bindCreateModal() {
     });
 }
 
-export function openCreateBoardModal() {
+export async function openCreateBoardModal() {
     const modal = document.getElementById('create-board-modal');
     if (!modal) return;
+    await loadBoardIcons();
     selectedColor = BOARD_COLORS[0];
-    selectedIcon  = BOARD_ICONS[0];
+    selectedIcon  = getDefaultIconId();
 
     // Render color swatches
     const colorRow = document.getElementById('board-color-swatches');
@@ -282,11 +280,7 @@ export function openCreateBoardModal() {
     // Render icon swatches
     const iconRow = document.getElementById('board-icon-swatches');
     if (iconRow) {
-        iconRow.innerHTML = BOARD_ICONS.map(ic => `
-            <div class="icon-swatch${ic === selectedIcon ? ' selected' : ''}" data-icon="${ic}" title="${ic}">
-                <span class="material-symbols-outlined">${ic}</span>
-            </div>
-        `).join('');
+        iconRow.innerHTML = renderIconSwatchesHtml(selectedIcon);
         iconRow.querySelectorAll('.icon-swatch').forEach(swatch => {
             swatch.addEventListener('click', () => {
                 iconRow.querySelectorAll('.icon-swatch').forEach(s => s.classList.remove('selected'));

@@ -302,6 +302,36 @@
 .icon-swatch.selected { border-color: var(--clr-primary); background: var(--clr-primary-glow); color: var(--clr-primary); }
 .icon-swatch .material-symbols-outlined { font-size: 18px; }
 
+/* ── Dynamic Board SVG Icons (Mask) ── */
+.board-icon-mask {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-color: currentColor;
+    -webkit-mask-image: var(--icon-url);
+    mask-image: var(--icon-url);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    vertical-align: middle;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.board-card-icon .board-icon-mask {
+    width: 22px;
+    height: 22px;
+    color: #ffffff;
+}
+
+.icon-swatch .board-icon-mask {
+    width: 20px;
+    height: 20px;
+}
+
 /* ── Section header ── */
 
 .dashboard-section-header {

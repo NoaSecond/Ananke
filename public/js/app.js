@@ -20,6 +20,7 @@ import { initDashboard, renderDashboard, openCreateBoardModal, updateDashboardPr
 import { initBoardSettings, renderBoardSettings } from './modules/board-settings-ui.js';
 import { renderProfileView } from './modules/profile-ui.js';
 import { initI18n, setLanguage, getLanguage, registerLanguageListener, t, translateDOM } from './modules/i18n.js';
+import { renderBoardIconHtml, loadBoardIcons } from './modules/board-icons.js';
 import * as API from './modules/api.js';
 
 // --------------------------------------------------------------------------
@@ -56,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     initTheme();
+    loadBoardIcons();
     setupLanguageControls();
     initSidebar();
     initAuth(initSocket);
@@ -312,7 +314,7 @@ export function renderSidebarBoards() {
         if (board.id === state.currentBoardId) item.classList.add('active');
 
         item.innerHTML = `
-            <span class="material-symbols-outlined">${escHtml(board.icon || 'dashboard')}</span>
+            ${renderBoardIconHtml(board.icon || 'dashboard')}
             <span class="sidebar-item-label">${escHtml(board.name)}</span>
         `;
         item.style.setProperty('--board-accent', board.color || 'var(--clr-primary)');
