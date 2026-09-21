@@ -196,6 +196,7 @@ export async function navigateToBoardSettings(boardId) {
     state.currentView    = 'board-settings';
 
     showView('board-settings');
+    updateSidebarActiveBoard(boardId);
     applyBackground(null);
 
     // Auto-collapse sidebar in board settings
@@ -231,6 +232,7 @@ export async function navigateToProfile() {
     }
 
     showView('profile');
+    updateSidebarActiveBoard(null);
     applyBackground(null);
 
     // Auto-collapse sidebar in profile view
@@ -266,6 +268,7 @@ function showView(view) {
     document.getElementById('kanban-board')?.classList.toggle('hidden', view !== 'board');
     document.getElementById('view-board-settings')?.classList.toggle('hidden', view !== 'board-settings');
     document.getElementById('view-profile')?.classList.toggle('hidden', view !== 'profile');
+    document.getElementById('nav-dashboard')?.classList.toggle('active', view === 'dashboard');
 }
 
 // --------------------------------------------------------------------------
@@ -333,8 +336,9 @@ export function renderSidebarBoards() {
 }
 
 function updateSidebarActiveBoard(boardId) {
+    document.getElementById('nav-dashboard')?.classList.toggle('active', state.currentView === 'dashboard');
     document.querySelectorAll('#sidebar-boards .sidebar-item[data-board-id]').forEach(el => {
-        el.classList.toggle('active', el.dataset.boardId === boardId);
+        el.classList.toggle('active', Boolean(boardId) && el.dataset.boardId === boardId);
     });
 }
 
