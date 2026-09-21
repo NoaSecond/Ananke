@@ -37,7 +37,7 @@ const createLimiter = rateLimit({
 
 router.post('/', requireRole('admin'), createLimiter, validateCreateAccount, async (req, res) => {
     const { email, password, role } = req.body;
-    const userRole = role || 'reader';
+    const userRole = role || 'user';
 
     // Only owner can assign owner role
     if (userRole === 'owner' && req.user.role !== 'owner') {

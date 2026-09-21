@@ -41,10 +41,10 @@ function findAllForUser(userId, globalRole) {
     return new Promise((resolve, reject) => {
         const isGlobalAdmin = ['admin', 'owner'].includes(globalRole);
         const query = isGlobalAdmin
-            ? `SELECT b.id, b.name, b.description, b.icon, b.color, b.created_by, b.created_at,
+            ? `SELECT b.id, b.name, b.description, b.icon, b.color, b.data, b.created_by, b.created_at,
                       'board_admin' AS board_role
                FROM boards b ORDER BY b.created_at ASC`
-            : `SELECT b.id, b.name, b.description, b.icon, b.color, b.created_by, b.created_at,
+            : `SELECT b.id, b.name, b.description, b.icon, b.color, b.data, b.created_by, b.created_at,
                       bm.role AS board_role
                FROM boards b
                INNER JOIN board_members bm ON bm.board_id = b.id AND bm.user_id = ?
@@ -52,7 +52,18 @@ function findAllForUser(userId, globalRole) {
 
         const params = isGlobalAdmin ? [] : [userId];
 
-        db.all(query, params, (err, rows) => err ? reject(err) : resolve(rows || []));
+        db.all(query, params, (err, rows) => {
+            if (err) return reject(err);
+            const parsed = (rows || []).map(row => {
+                try {
+                    row.data = row.data ? JSON.parse(row.data) : {};
+                } catch {
+                    row.data = {};
+                }
+                return row;
+            });
+            resolve(parsed);
+        });
     });
 }
 

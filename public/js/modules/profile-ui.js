@@ -44,7 +44,7 @@ export async function renderProfileView({ onBack } = {}) {
     const firstName = user.first_name || '';
     const lastName  = user.last_name  || '';
     const email     = user.email      || '';
-    const role      = user.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Member';
+    const role      = t(`roles.${user.role || 'user'}`) || (user.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Utilisateur');
     const initials  = getInitials(user);
     const gradient  = getAvatarGradient(user);
 
@@ -57,7 +57,7 @@ export async function renderProfileView({ onBack } = {}) {
             <h1 class="settings-page-title">${t('profile.title')}</h1>
         </div>
 
-        <form id="profile-main-form" style="display:flex;flex-direction:column;gap:1.5rem;">
+        <form id="profile-main-form">
             
             <!-- Section 1: Identity & Avatar -->
             <div class="settings-section">
@@ -78,7 +78,7 @@ export async function renderProfileView({ onBack } = {}) {
                     <div class="profile-avatar-actions">
                         <div style="font-size:1rem;font-weight:600;color:var(--clr-text);">${escapeHtml(user.name || `${firstName} ${lastName}`.trim() || 'User')}</div>
                         <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
-                            <span class="role-badge ${escapeHtml(user.role || 'reader')}">${escapeHtml(role)}</span>
+                            <span class="role-badge ${escapeHtml(user.role || 'user')}">${escapeHtml(role)}</span>
                             <button type="button" id="profile-avatar-remove-btn" class="secondary-btn small-btn danger-text" style="${currentAvatarUrl ? 'display:inline-flex;' : 'display:none;'};align-items:center;gap:4px;padding:4px 8px;font-size:0.75rem;">
                                 <span class="material-symbols-outlined" style="font-size:14px;">delete</span>
                                 ${t('profile.photo_remove')}
@@ -106,7 +106,7 @@ export async function renderProfileView({ onBack } = {}) {
             </div>
 
             <!-- Section 2: Security & Password -->
-            <div class="settings-section">
+            <div class="settings-section" style="margin-bottom:1.25rem;">
                 <h3 class="settings-section-title">
                     <span class="material-symbols-outlined">lock</span>
                     ${t('profile.section_security')}
@@ -127,19 +127,18 @@ export async function renderProfileView({ onBack } = {}) {
                 </div>
             </div>
 
-            <!-- Feedback message & Save action -->
-            <div id="profile-form-message" style="font-size:0.88rem;min-height:1.2em;font-weight:500;"></div>
-            
-            <div style="display:flex;justify-content:flex-start;gap:12px;">
+            <!-- Save action & Feedback message -->
+            <div style="display:flex;align-items:center;gap:16px;">
                 <button type="submit" class="action-btn" id="profile-submit-btn" style="padding:10px 24px;font-size:0.9rem;">
                     <span class="material-symbols-outlined">save</span>
                     ${t('profile.btn_save')}
                 </button>
+                <div id="profile-form-message" style="font-size:0.88rem;font-weight:500;"></div>
             </div>
         </form>
 
         <!-- Section: Session / Déconnexion -->
-        <div class="settings-section danger-zone" style="margin-top:1.5rem;">
+        <div class="settings-section danger-zone" style="margin-top:2rem;">
             <h3 class="settings-section-title">
                 <span class="material-symbols-outlined">logout</span>
                 ${t('profile.section_session') || 'Session'}

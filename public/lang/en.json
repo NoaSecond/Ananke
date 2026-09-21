@@ -159,7 +159,7 @@
     "owner": "Owner",
     "admin": "Admin",
     "editor": "Editor",
-    "user": "Member",
+    "user": "User",
     "reader": "Viewer"
   },
   "footer": {

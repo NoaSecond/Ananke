@@ -7,6 +7,7 @@ import { showConfirm, openModal, closeModal } from './modals.js';
 import { renderAvatarHtml, getContrastYIQ, renderSafeMarkdown, escapeHtml } from './utils.js';
 import * as API from './api.js';
 import { t } from './i18n.js';
+import { handleSearch } from './search-ui.js';
 
 export const trackEvent = (action, category = 'Kanban', label = null, value = null) => {
     if (typeof gtag !== 'undefined') {
@@ -19,6 +20,10 @@ export const saveData = ErrorHandler.wrapSync(() => {
     if (state.socket) {
         state.socket.emit('updateBoard', state.boardData);
     }
+    if (state.currentBoardId && state.boards) {
+        const b = state.boards.find(item => item.id === state.currentBoardId);
+        if (b) b.data = state.boardData;
+    }
 }, 'Data saving');
 
 export const saveTaskOnly = ErrorHandler.wrapSync((task, workflowId) => {
@@ -26,6 +31,13 @@ export const saveTaskOnly = ErrorHandler.wrapSync((task, workflowId) => {
         state.socket.emit('updateTask', { task, workflowId });
     }
 }, 'Task saving');
+
+export function isCurrentBoardReader() {
+    if (!state.currentUser) return true;
+    if (['admin', 'owner'].includes(state.currentUser.role)) return false;
+    const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+    return currentBoard?.board_role === 'reader';
+}
 
 const updateProjectTitle = ErrorHandler.wrapSync(() => {
     const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
@@ -63,7 +75,7 @@ const generateDynamicKeywords = () => {
 
 export const renderBoard = ErrorHandler.wrapSync(() => {
     Logger.debug('🎨 Rendering Kanban board');
-    const isReader = state.currentUser?.role === 'reader';
+    const isReader = isCurrentBoardReader();
 
     // Toggle global controls based on role
     if (elements.addWorkflowBtn) {
@@ -230,7 +242,7 @@ export const initDragAndDrop = () => {
     state.taskSortables.forEach(s => s.destroy());
     state.taskSortables = [];
 
-    const isReader = state.currentUser?.role === 'reader';
+    const isReader = isCurrentBoardReader();
 
     state.columnSortable = new Sortable(elements.kanbanBoard, {
         group: 'columns',
@@ -441,9 +453,9 @@ export const initBoardListeners = () => {
                     trackEvent('create_task', 'Task', title);
                 }
             }
+            closeModal(elements.addModal);
             saveData();
             renderBoard();
-            closeModal(elements.addModal);
         }
     }, 'Adding item'));
 
@@ -518,7 +530,7 @@ export const initBoardListeners = () => {
 
     // Project Title Edit
     elements.projectTitle.addEventListener('click', () => {
-        if (state.currentUser?.role === 'reader') return;
+        if (isCurrentBoardReader()) return;
         const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
         elements.projectNameInput.value = currentBoard?.name || state.boardData?.projectName || '';
         openModal(elements.projectModal);

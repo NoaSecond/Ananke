@@ -72,9 +72,8 @@ export async function renderAppSettingsView({ onBack } = {}) {
                             </div>
                             <div style="flex:1;min-width:120px;">
                                 <label class="form-label" style="font-size:0.8rem;" for="app-settings-role">${t('settings.role_label') || 'Role'}</label>
-                                <select class="form-input role-select" id="app-settings-role" data-role="reader" style="margin:0;">
-                                    <option value="reader">${t('roles.reader') || 'Reader'}</option>
-                                    <option value="editor">${t('roles.editor') || 'Editor'}</option>
+                                <select class="form-input role-select" id="app-settings-role" data-role="user" style="margin:0;">
+                                    <option value="user">${t('roles.user') || 'Utilisateur'}</option>
                                     <option value="admin">${t('roles.admin') || 'Admin'}</option>
                                 </select>
                             </div>
@@ -226,7 +225,7 @@ function _bindEvents(isAdmin) {
             e.preventDefault();
             const email = document.getElementById('app-settings-email')?.value?.trim();
             const password = document.getElementById('app-settings-password')?.value;
-            const role = document.getElementById('app-settings-role')?.value || 'reader';
+            const role = document.getElementById('app-settings-role')?.value || 'user';
 
             if (!email || !password) return;
 
@@ -302,8 +301,7 @@ function _renderUserRows(users) {
             <div style="display:flex;align-items:center;gap:8px;">
                 ${!isOwner ? `
                     <select class="small-select role-select app-settings-role-select" data-user-id="${u.id}" data-role="${u.role}" style="font-size:0.8rem;padding:4px 8px;">
-                        <option value="reader" ${u.role === 'reader' ? 'selected' : ''}>${t('roles.reader') || 'Reader'}</option>
-                        <option value="editor" ${u.role === 'editor' ? 'selected' : ''}>${t('roles.editor') || 'Editor'}</option>
+                        <option value="user" ${u.role === 'user' || u.role === 'reader' || u.role === 'editor' ? 'selected' : ''}>${t('roles.user') || 'Utilisateur'}</option>
                         <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>${t('roles.admin') || 'Admin'}</option>
                     </select>
                     ${!isSelf ? `

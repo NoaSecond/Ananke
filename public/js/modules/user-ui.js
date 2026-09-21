@@ -90,8 +90,7 @@ function renderUserList(users) {
             <div style="display:flex; align-items:center; gap:0.5rem;">
                 ${!isOwner ? `
                     <select onchange="window.changeUserRole('${u.id}', this.value)" class="small-select role-select" data-role="${u.role}">
-                        <option value="reader" ${u.role === 'reader' ? 'selected' : ''}>Reader</option>
-                        <option value="editor" ${u.role === 'editor' ? 'selected' : ''}>Editor</option>
+                        <option value="user" ${u.role === 'user' || u.role === 'reader' || u.role === 'editor' ? 'selected' : ''}>User</option>
                         <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>
                     ${!isSelf ? `<button onclick="window.deleteUser('${u.id}')" class="delete-user-btn">Delete</button>` : ''}

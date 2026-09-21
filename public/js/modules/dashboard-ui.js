@@ -43,6 +43,7 @@ export function renderDashboard() {
 
     const { currentUser, boards } = state;
     const canCreate = currentUser && ['admin', 'owner'].includes(currentUser.role);
+    const canManage = currentUser && ['admin', 'owner'].includes(currentUser.role);
 
     const firstName = currentUser?.first_name || currentUser?.name?.split(' ')[0] || 'there';
     const greeting = t(`dashboard.${getGreetingKey()}`, { name: escHtml(firstName) });
@@ -62,7 +63,7 @@ export function renderDashboard() {
         </div>
 
         <div class="boards-grid" id="boards-grid">
-            ${boards.map(b => renderBoardCard(b)).join('')}
+            ${boards.map(b => renderBoardCard(b, canManage)).join('')}
             ${canCreate ? renderAddCard() : ''}
         </div>
     `;
@@ -110,7 +111,7 @@ export function updateDashboardPresence() {
 // Private helpers
 // --------------------------------------------------------------------------
 
-function renderBoardCard(board) {
+function renderBoardCard(board, canManage = false) {
     const taskCount = countTasks(board);
     const activeUsers = (state.boardPresence && state.boardPresence[board.id]) || [];
     const descText = escHtml(board.description || t('dashboard.no_desc'));
@@ -123,9 +124,11 @@ function renderBoardCard(board) {
                     ${renderBoardIconHtml(board.icon || 'dashboard')}
                 </div>
                 <div class="board-card-title">${escHtml(board.name)}</div>
+                ${canManage ? `
                 <button class="board-card-settings-btn" data-board-id="${escHtml(board.id)}" title="${t('dashboard.settings_tooltip')}" aria-label="${t('dashboard.settings_tooltip')}">
                     <span class="material-symbols-outlined">settings</span>
                 </button>
+                ` : ''}
             </div>
             <div class="board-card-desc">${descText}</div>
             <div class="board-card-meta">
@@ -175,7 +178,10 @@ function renderAddCard() {
 
 function countTasks(board) {
     try {
-        const data = board.data || board._data;
+        let data = board.data || board._data;
+        if (typeof data === 'string') {
+            try { data = JSON.parse(data); } catch { data = null; }
+        }
         if (!data?.workflows) return 0;
         return data.workflows.reduce((acc, wf) => acc + (wf.tasks?.length || 0), 0);
     } catch { return 0; }

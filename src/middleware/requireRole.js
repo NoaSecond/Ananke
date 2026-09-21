@@ -7,7 +7,7 @@
  */
 
 // Hierarchy — index = privilege level (higher = more privileged)
-const GLOBAL_ROLES = ['reader', 'editor', 'admin', 'owner'];
+const GLOBAL_ROLES = ['reader', 'editor', 'user', 'admin', 'owner'];
 
 /**
  * Returns an Express middleware that enforces a minimum global role.

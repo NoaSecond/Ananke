@@ -356,7 +356,8 @@ export function updateUserUI() {
     if (!state.currentUser) return;
 
     const displayName = state.currentUser.first_name ? `${state.currentUser.first_name} ${state.currentUser.last_name}` : (state.currentUser.name || state.currentUser.email);
-    const displayRole = state.currentUser.role.charAt(0).toUpperCase() + state.currentUser.role.slice(1);
+    const rawRole = state.currentUser.role || 'user';
+    const displayRole = t(`roles.${rawRole}`) || (rawRole.charAt(0).toUpperCase() + rawRole.slice(1));
 
     if (elements.userDisplayName) elements.userDisplayName.textContent = displayName;
     if (elements.userDisplayRole) elements.userDisplayRole.textContent = displayRole;

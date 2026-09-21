@@ -47,7 +47,7 @@ function isValidEmail(email) {
 // Allowed value sets
 // --------------------------------------------------------------------------
 
-const ALLOWED_GLOBAL_ROLES  = ['reader', 'editor', 'admin'];          // owner not settable via API
+const ALLOWED_GLOBAL_ROLES  = ['user', 'admin', 'reader', 'editor'];          // owner not settable via API
 const ALLOWED_BOARD_ROLES   = ['reader', 'editor', 'board_admin'];
 
 // --------------------------------------------------------------------------
@@ -100,12 +100,12 @@ function validateCreateAccount(req, res, next) {
         return res.status(400).json({ error: 'Mot de passe trop long.' });
     }
 
-    const userRole = role || 'reader';
+    const userRole = role || 'user';
     if (!ALLOWED_GLOBAL_ROLES.includes(userRole) && req.user?.role !== 'owner') {
         return res.status(400).json({ error: 'Rôle invalide.' });
     }
     // Owner can also set 'owner' role
-    if (!['reader', 'editor', 'admin', 'owner'].includes(userRole)) {
+    if (!['user', 'reader', 'editor', 'admin', 'owner'].includes(userRole)) {
         return res.status(400).json({ error: 'Rôle invalide.' });
     }
 
@@ -119,7 +119,7 @@ function validateCreateAccount(req, res, next) {
 function validateUserRole(req, res, next) {
     const { role } = req.body;
     if (!ALLOWED_GLOBAL_ROLES.includes(role)) {
-        return res.status(400).json({ error: 'Rôle invalide. Valeurs acceptées : reader, editor, admin.' });
+        return res.status(400).json({ error: 'Rôle invalide. Valeurs acceptées : user, admin.' });
     }
     next();
 }

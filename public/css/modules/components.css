@@ -239,6 +239,7 @@ select option {
     color: var(--primary-color) !important;
 }
 
+.role-select[data-role="user"],
 .role-select[data-role="reader"] {
     border-color: rgba(148, 163, 184, 0.4);
     background-color: rgba(148, 163, 184, 0.1);
@@ -259,6 +260,19 @@ select option {
     height: 32px;
     box-sizing: border-box;
     border: 1px solid transparent;
+}
+
+.role-badge.user,
+.role-badge.reader {
+    background-color: rgba(148, 163, 184, 0.1);
+    color: #94a3b8;
+    border-color: rgba(148, 163, 184, 0.4);
+}
+
+.role-badge.admin {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.4);
 }
 
 .role-badge.owner {

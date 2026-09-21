@@ -64,7 +64,7 @@ app.use(helmet({
             styleSrc:      ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
             fontSrc:       ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com', 'data:'],
             imgSrc:        ["'self'", 'data:', 'blob:', 'https:'],
-            connectSrc:    ["'self'", 'ws:', 'wss:', 'https://raw.githubusercontent.com'],
+            connectSrc:    ["'self'", 'ws:', 'wss:', 'https://raw.githubusercontent.com', 'https://cdn.jsdelivr.net'],
             objectSrc:     ["'none'"],
             baseUri:       ["'self'"],
             upgradeInsecureRequests: null,
@@ -311,16 +311,19 @@ io.on('connection', (socket) => {
         const boardId = socket.currentBoardId;
         if (!boardId) return;
 
-        const canEdit = ['editor', 'admin', 'owner'].includes(socket.user.role);
+        let canEdit = ['admin', 'owner'].includes(socket.user.role);
         if (!canEdit) {
-            // Also check board-level role
+            // Check board-level role (editor or board_admin)
             try {
                 const member = await memberRepository.findByBoardAndUser(boardId, socket.user.id);
-                if (!member || member.role === 'reader') {
-                    logger.warn(`Unauthorized board edit: user=${socket.user.id} board=${boardId}`);
-                    return;
+                if (member && member.role !== 'reader') {
+                    canEdit = true;
                 }
             } catch { return; }
+        }
+        if (!canEdit) {
+            logger.warn(`Unauthorized board edit: user=${socket.user.id} board=${boardId}`);
+            return;
         }
 
         try {
@@ -348,8 +351,20 @@ io.on('connection', (socket) => {
         const boardId = socket.currentBoardId;
         if (!boardId || !task || !workflowId) return;
 
-        const canEdit = ['editor', 'admin', 'owner'].includes(socket.user.role);
-        if (!canEdit) return;
+        let canEdit = ['admin', 'owner'].includes(socket.user.role);
+        if (!canEdit) {
+            // Check board-level role (editor or board_admin)
+            try {
+                const member = await memberRepository.findByBoardAndUser(boardId, socket.user.id);
+                if (member && member.role !== 'reader') {
+                    canEdit = true;
+                }
+            } catch { return; }
+        }
+        if (!canEdit) {
+            logger.warn(`Unauthorized task edit: user=${socket.user.id} board=${boardId}`);
+            return;
+        }
 
         try {
             const board = await boardRepository.findById(boardId);

@@ -2,7 +2,7 @@ import { elements } from './dom.js';
 import * as API from './api.js';
 import { state, getFullUrl } from './state.js';
 import { openModal, closeModal, showConfirm } from './modals.js';
-import { renderBoard, saveData, saveTaskOnly } from './board-ui.js';
+import { renderBoard, saveData, saveTaskOnly, isCurrentBoardReader } from './board-ui.js';
 import { Logger, getInitials, getContrastYIQ, renderSafeMarkdown, escapeHtml, renderAvatarHtml, resolveUser } from './utils.js';
 import { trackEvent } from './board-ui.js';
 import { t } from './i18n.js';
@@ -123,13 +123,15 @@ export const initTaskListeners = () => {
                 break;
             }
         }
-        renderBoard();
         closeModal(elements.taskModal);
+        renderBoard();
     });
 
     elements.taskForm.deleteBtn.addEventListener('click', () => {
         const taskId = elements.taskForm.id.value;
-        showConfirm(t('task.confirm_delete'), () => {
+        showConfirm(t('task.confirm_delete') || 'Delete task?', () => {
+            closeModal(elements.taskModal);
+            closeModal(elements.viewTaskModal);
             for (const workflow of state.boardData.workflows) {
                 const tIndex = workflow.tasks.findIndex(t => t.id == taskId);
                 if (tIndex !== -1) {
@@ -145,7 +147,6 @@ export const initTaskListeners = () => {
             }
             saveData();
             renderBoard();
-            closeModal(elements.taskModal);
         });
     });
 
@@ -159,9 +160,9 @@ export const initTaskListeners = () => {
                 newTask.title = `${task.title} (Copy)`;
                 const taskIndex = workflow.tasks.findIndex(t => t.id == taskId);
                 workflow.tasks.splice(taskIndex + 1, 0, newTask);
+                closeModal(elements.taskModal);
                 saveData();
                 renderBoard();
-                closeModal(elements.taskModal);
                 break;
             }
         }
@@ -662,7 +663,7 @@ export const openViewTaskModal = (task, workflow) => {
 
     // Hide edit button for readers
     if (elements.viewTaskDisplay.editBtn) {
-        elements.viewTaskDisplay.editBtn.style.display = state.currentUser?.role === 'reader' ? 'none' : 'flex';
+        elements.viewTaskDisplay.editBtn.style.display = isCurrentBoardReader() ? 'none' : 'flex';
     }
 
     elements.viewTaskDisplay.title.textContent = task.title;
@@ -713,7 +714,7 @@ export const openViewTaskModal = (task, workflow) => {
                     </div>
                     ${items.map((item, i) => `
                         <div style="display:flex; align-items:flex-start; gap:6px; margin-bottom: 4px;">
-                            <input type="checkbox" class="checklist-view-toggle cursor-pointer" style="margin-top:2px; width:16px; height:16px; flex-shrink:0;" data-field="${f.name.replace(/"/g, '&quot;')}" data-idx="${i}" ${item.checked ? 'checked' : ''} ${state.currentUser?.role === 'reader' ? 'disabled' : ''}>
+                            <input type="checkbox" class="checklist-view-toggle cursor-pointer" style="margin-top:2px; width:16px; height:16px; flex-shrink:0;" data-field="${f.name.replace(/"/g, '&quot;')}" data-idx="${i}" ${item.checked ? 'checked' : ''} ${isCurrentBoardReader() ? 'disabled' : ''}>
                             <span style="font-size: 0.9rem; line-height: 1.2; padding-top:2px; ${item.checked ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${item.text}</span>
                         </div>
                     `).join('')}

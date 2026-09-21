@@ -39,7 +39,7 @@ function initDb() {
             password_hash  TEXT NOT NULL,
             first_name     TEXT,
             last_name      TEXT,
-            role           TEXT NOT NULL DEFAULT 'reader',
+            role           TEXT NOT NULL DEFAULT 'user',
             is_setup_complete INTEGER NOT NULL DEFAULT 0,
             avatar_url     TEXT,
             token_version  INTEGER NOT NULL DEFAULT 1,
@@ -100,6 +100,9 @@ function runUserMigrations() {
     columns.forEach(col => {
         db.run(`ALTER TABLE users ADD COLUMN ${col}`, () => { /* ignore if exists */ });
     });
+
+    // Migrate legacy 'reader' and 'editor' global roles to 'user'
+    db.run(`UPDATE users SET role = 'user' WHERE role IN ('reader', 'editor')`);
 
     // Migrate integer IDs to UUIDs if needed
     db.all('PRAGMA table_info(users)', (err, cols) => {

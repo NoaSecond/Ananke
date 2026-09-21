@@ -42,12 +42,17 @@ export const showConfirm = (message, onConfirm) => {
     // Better strategy: Use a one-time listener or a persistent variable for the callback.
 
     newOkBtn.addEventListener('click', () => {
-        onConfirm();
         closeModal(elements.confirmModal);
+        try {
+            onConfirm();
+        } catch (err) {
+            console.error('Confirm action error:', err);
+        }
     });
 
     const newCancelBtn = elements.confirmCancelBtn.cloneNode(true);
     elements.confirmCancelBtn.parentNode.replaceChild(newCancelBtn, elements.confirmCancelBtn);
+    elements.confirmCancelBtn = newCancelBtn;
 
     newCancelBtn.addEventListener('click', () => {
         closeModal(elements.confirmModal);
