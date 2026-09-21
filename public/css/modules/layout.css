@@ -483,14 +483,14 @@ body.light-mode .sidebar-brand-icon {
 
 .footer-left { display: flex; align-items: center; gap: 0.5rem; }
 .footer-left a, #app-footer a {
-    color: #ffffff;
+    color: var(--clr-text);
     text-decoration: none;
     font-weight: 500;
-    transition: opacity var(--transition-fast);
+    transition: color var(--transition-fast), opacity var(--transition-fast);
 }
 .footer-left a:hover, #app-footer a:hover {
-    color: #ffffff;
-    opacity: 0.85;
+    color: var(--clr-primary);
+    opacity: 0.9;
     text-decoration: underline;
 }
 .footer-right { display: flex; gap: 1rem; align-items: center; }

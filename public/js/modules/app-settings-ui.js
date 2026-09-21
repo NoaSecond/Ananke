@@ -142,8 +142,8 @@ export async function renderAppSettingsView({ onBack } = {}) {
                 </p>
                 <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;max-width:520px;">
                     <button type="button" class="theme-option-card ${isDark ? 'selected' : ''}" data-theme="dark" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--border-radius-md);border:1.5px solid ${isDark ? 'var(--clr-primary)' : 'var(--clr-border)'};background:${isDark ? 'rgba(99,102,241,0.08)' : 'var(--clr-surface)'};cursor:pointer;text-align:left;transition:all var(--transition-fast);">
-                        <div style="width:36px;height:36px;border-radius:50%;background:#1e1e2e;display:flex;align-items:center;justify-content:center;color:#6366f1;">
-                            <span class="material-symbols-outlined" style="font-size:20px;">dark_mode</span>
+                        <div style="width:36px;height:36px;border-radius:50%;background:#1e1b4b;border:1px solid rgba(99,102,241,0.3);display:flex;align-items:center;justify-content:center;color:#818cf8;flex-shrink:0;">
+                            <span class="material-symbols-outlined" style="font-size:20px;color:#818cf8;">dark_mode</span>
                         </div>
                         <div style="flex:1;">
                             <div style="font-weight:600;font-size:0.9rem;color:var(--clr-text);">${t('settings.theme_dark')}</div>
@@ -152,8 +152,8 @@ export async function renderAppSettingsView({ onBack } = {}) {
                         ${isDark ? '<span class="material-symbols-outlined" style="color:var(--clr-primary);font-size:20px;">check_circle</span>' : ''}
                     </button>
                     <button type="button" class="theme-option-card ${!isDark ? 'selected' : ''}" data-theme="light" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--border-radius-md);border:1.5px solid ${!isDark ? 'var(--clr-primary)' : 'var(--clr-border)'};background:${!isDark ? 'rgba(99,102,241,0.08)' : 'var(--clr-surface)'};cursor:pointer;text-align:left;transition:all var(--transition-fast);">
-                        <div style="width:36px;height:36px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#f59e0b;">
-                            <span class="material-symbols-outlined" style="font-size:20px;">light_mode</span>
+                        <div style="width:36px;height:36px;border-radius:50%;background:#fef3c7;border:1px solid rgba(245,158,11,0.3);display:flex;align-items:center;justify-content:center;color:#d97706;flex-shrink:0;">
+                            <span class="material-symbols-outlined" style="font-size:20px;color:#d97706;">light_mode</span>
                         </div>
                         <div style="flex:1;">
                             <div style="font-weight:600;font-size:0.9rem;color:var(--clr-text);">${t('settings.theme_light')}</div>
@@ -198,6 +198,10 @@ function _bindEvents(isAdmin) {
             document.body.classList.toggle('dark-mode', isDark);
             document.body.classList.toggle('light-mode', !isDark);
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            const icon = document.querySelector('.theme-icon');
+            const text = document.getElementById('theme-text');
+            if (icon) icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+            if (text) text.textContent = t(isDark ? 'settings.theme_light' : 'settings.theme_dark');
             renderAppSettingsView();
         });
     });

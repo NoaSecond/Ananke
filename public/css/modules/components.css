@@ -47,7 +47,7 @@ button,
 .io-btn {
     padding: 0.5rem 1rem;
     border: 1px solid var(--border-color);
-    background-color: var(--card-bg);
+    background-color: var(--clr-surface);
     color: var(--text-color);
     border-radius: 8px;
     cursor: pointer;
@@ -67,7 +67,8 @@ button,
 
 button:hover,
 .io-btn:hover {
-    background-color: var(--border-color);
+    background-color: var(--clr-surface-2);
+    border-color: var(--clr-border-focus);
 }
 
 .icon-only-btn {
@@ -84,7 +85,7 @@ button:hover,
 }
 
 .icon-only-btn:hover {
-    background-color: var(--border-color);
+    background-color: var(--clr-surface-2);
 }
 
 .icon-only-btn .material-symbols-outlined {
@@ -94,34 +95,38 @@ button:hover,
 
 .io-btn,
 .action-btn {
-    background-color: var(--primary-color);
+    background-color: var(--clr-primary);
     color: white;
-    border-color: var(--primary-color);
+    border-color: var(--clr-primary);
+    box-shadow: var(--shadow-sm);
 }
 
 .io-btn:hover,
 .action-btn:hover {
-    background-color: #155ab0;
-    border-color: #155ab0;
+    background-color: var(--clr-primary-dark);
+    border-color: var(--clr-primary-dark);
 }
 
 .danger-btn {
     background-color: var(--danger-color);
+    color: white;
+    border-color: var(--danger-color);
 }
 
 .danger-btn:hover {
-    background-color: #c0392b;
+    background-color: #dc2626;
+    border-color: #dc2626;
 }
 
 .secondary-btn {
-    background-color: #6b7280;
-    color: white;
-    border-color: #6b7280;
+    background-color: var(--clr-surface-2);
+    color: var(--clr-text);
+    border: 1px solid var(--clr-border);
 }
 
 .secondary-btn:hover {
-    background-color: #4b5563;
-    border-color: #4b5563;
+    background-color: var(--clr-surface-3);
+    border-color: var(--clr-border-focus);
 }
 
 .circular-btn {
@@ -347,6 +352,10 @@ select option {
     transition: opacity 0.2s ease;
 }
 
+body.light-mode .bmc-link {
+    color: #b45309 !important;
+}
+
 .bmc-link:hover {
     transform: none;
     opacity: 0.85;
@@ -369,7 +378,7 @@ select option {
 .search-wrapper {
     display: flex;
     align-items: center;
-    background: var(--bg-color);
+    background: var(--clr-surface-2);
     border: 1px solid var(--border-color);
     border-radius: 10px;
     padding: 0 0.8rem;
@@ -379,7 +388,8 @@ select option {
 
 .search-wrapper:focus-within {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
+    background: var(--clr-surface);
+    box-shadow: 0 0 0 3px var(--clr-primary-glow);
 }
 
 .search-icon {
@@ -401,13 +411,12 @@ select option {
     display: flex;
     align-items: center;
     gap: 2px;
-    background: var(--card-bg);
+    background: var(--clr-surface-3);
     border: 1px solid var(--border-color);
     border-radius: 5px;
     padding: 2px 5px;
     font-size: 0.7rem;
-    color: var(--text-color);
-    opacity: 0.6;
+    color: var(--clr-text-muted);
     margin-left: 0.5rem;
     pointer-events: none;
     user-select: none;
@@ -419,10 +428,10 @@ select option {
     top: calc(100% + 8px);
     left: 0;
     right: 0;
-    background: var(--card-bg);
+    background: var(--clr-surface);
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-lg);
     max-height: 300px;
     overflow-y: auto;
     z-index: 1000;
@@ -443,7 +452,7 @@ select option {
 
 .autocomplete-item:hover,
 .autocomplete-item.selected {
-    background: var(--border-color);
+    background: var(--clr-surface-2);
 }
 
 .autocomplete-item .item-type {

@@ -99,8 +99,8 @@
     box-sizing: border-box;
     padding: 10px 14px;
     border-radius: var(--border-radius-md, 8px);
-    border: 1px solid var(--clr-border);
-    background: var(--clr-surface-3);
+    border: 1px solid var(--input-border, var(--clr-border));
+    background: var(--input-bg, var(--clr-surface-3));
     color: var(--clr-text);
     font-family: inherit;
     font-size: 0.9rem;
@@ -120,7 +120,7 @@
     border-color: var(--clr-primary);
     background: var(--clr-surface);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 0 3px var(--clr-primary-glow);
 }
 
 .settings-section .form-input::placeholder,
@@ -161,9 +161,10 @@
 /* ── Settings sections ── */
 
 .settings-section {
-    background: var(--clr-surface-2);
+    background: var(--task-card-bg, var(--clr-surface));
     border: 1px solid var(--clr-border);
     border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
     padding: 1.5rem;
     margin-bottom: 1.5rem;
 }
