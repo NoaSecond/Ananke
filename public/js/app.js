@@ -19,6 +19,7 @@ import { initSearch } from './modules/search-ui.js';
 import { initDashboard, renderDashboard, openCreateBoardModal, updateDashboardPresence } from './modules/dashboard-ui.js';
 import { initBoardSettings, renderBoardSettings } from './modules/board-settings-ui.js';
 import { renderProfileView } from './modules/profile-ui.js';
+import { renderAppSettingsView } from './modules/app-settings-ui.js';
 import { initI18n, setLanguage, getLanguage, registerLanguageListener, t, translateDOM } from './modules/i18n.js';
 import { renderBoardIconHtml, loadBoardIcons } from './modules/board-icons.js';
 import * as API from './modules/api.js';
@@ -275,15 +276,60 @@ export async function navigateToProfile() {
 }
 
 /**
+ * Navigate to Application settings (full-page view: users, language, theme).
+ */
+let previousAppSettingsView = 'dashboard';
+
+export async function navigateToAppSettings() {
+    previousAppSettingsView = state.currentView || 'dashboard';
+    state.currentView = 'app-settings';
+
+    if (state.socket && state.currentBoardId && previousAppSettingsView === 'board') {
+        state.socket.emit('leaveBoard');
+    }
+
+    showView('app-settings');
+    updateSidebarActiveBoard(null);
+    applyBackground(null);
+
+    // Auto-collapse sidebar in app settings view
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.classList.add('collapsed');
+        sidebar.classList.remove('mobile-open');
+    }
+
+    // Hide board header on settings
+    const boardHeader = document.getElementById('board-header');
+    if (boardHeader) boardHeader.style.display = 'none';
+
+    await renderAppSettingsView({
+        onBack: () => {
+            if (previousAppSettingsView === 'board' && state.currentBoardId) {
+                navigateToBoard(state.currentBoardId);
+            } else if (previousAppSettingsView === 'board-settings' && state.currentBoardId) {
+                navigateToBoardSettings(state.currentBoardId);
+            } else if (previousAppSettingsView === 'profile') {
+                navigateToProfile();
+            } else {
+                navigateToDashboard();
+            }
+        }
+    });
+}
+
+/**
  * Show one view, hide others.
- * @param {'dashboard'|'board'|'board-settings'|'profile'} view
+ * @param {'dashboard'|'board'|'board-settings'|'profile'|'app-settings'} view
  */
 function showView(view) {
     document.getElementById('view-dashboard')?.classList.toggle('hidden', view !== 'dashboard');
     document.getElementById('kanban-board')?.classList.toggle('hidden', view !== 'board');
     document.getElementById('view-board-settings')?.classList.toggle('hidden', view !== 'board-settings');
     document.getElementById('view-profile')?.classList.toggle('hidden', view !== 'profile');
+    document.getElementById('view-app-settings')?.classList.toggle('hidden', view !== 'app-settings');
     document.getElementById('nav-dashboard')?.classList.toggle('active', view === 'dashboard');
+    document.getElementById('sidebar-settings-btn')?.classList.toggle('active', view === 'app-settings');
 }
 
 // --------------------------------------------------------------------------
@@ -303,10 +349,10 @@ function initSidebar() {
     // Dashboard link
     document.getElementById('nav-dashboard')?.addEventListener('click', navigateToDashboard);
 
-    // Sidebar settings button
+    // Sidebar settings button -> opens full-page settings view
     document.getElementById('sidebar-settings-btn')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        toggleSettingsMenu('sidebar');
+        navigateToAppSettings();
     });
 
     // User profile in sidebar -> opens full-page profile view
@@ -503,6 +549,8 @@ async function setupLanguageControls() {
             renderBoardSettings();
         } else if (state.currentView === 'profile') {
             renderProfileView();
+        } else if (state.currentView === 'app-settings') {
+            renderAppSettingsView();
         }
 
         // Update theme toggle text in popup

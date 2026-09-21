@@ -2,7 +2,8 @@
 /* Board settings panel: members, rename, appearance */
 
 #view-board-settings,
-#view-profile {
+#view-profile,
+#view-app-settings {
     padding: 2rem 1.5rem;
     overflow-y: auto;
     flex: 1;
@@ -10,6 +11,12 @@
     width: 100%;
     margin: 0 auto;
     box-sizing: border-box;
+}
+
+.lang-option-card:hover,
+.theme-option-card:hover {
+    border-color: var(--clr-primary) !important;
+    transform: translateY(-1px);
 }
 
 /* ── Profile Avatar in full-page settings ── */

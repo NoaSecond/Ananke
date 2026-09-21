@@ -13,7 +13,7 @@ import { elements } from './dom.js';
 import { updateUserUI } from './auth-ui.js';
 import { renderBoard } from './board-ui.js';
 import { refreshSearchUsers } from './search-ui.js';
-import { t, getLanguage, setLanguage } from './i18n.js';
+import { t } from './i18n.js';
 
 let _onBack = null;
 let currentAvatarUrl = null;
@@ -48,7 +48,6 @@ export async function renderProfileView({ onBack } = {}) {
     const initials  = getInitials(user);
     const gradient  = getAvatarGradient(user);
 
-    const currentLang = getLanguage();
 
     container.innerHTML = `
         <div class="settings-page-header">
@@ -128,22 +127,6 @@ export async function renderProfileView({ onBack } = {}) {
                 </div>
             </div>
 
-            <!-- Section 3: Preferences & Language -->
-            <div class="settings-section">
-                <h3 class="settings-section-title">
-                    <span class="material-symbols-outlined">tune</span>
-                    ${t('profile.section_preferences')}
-                </h3>
-
-                <div class="form-group" style="max-width:320px;">
-                    <label class="form-label" for="profile-language-select">${t('profile.language_label')}</label>
-                    <select class="form-input" id="profile-language-select">
-                        <option value="en" ${currentLang === 'en' ? 'selected' : ''}>${t('profile.language_en')}</option>
-                        <option value="fr" ${currentLang === 'fr' ? 'selected' : ''}>${t('profile.language_fr')}</option>
-                    </select>
-                </div>
-            </div>
-
             <!-- Feedback message & Save action -->
             <div id="profile-form-message" style="font-size:0.88rem;min-height:1.2em;font-weight:500;"></div>
             
@@ -154,6 +137,21 @@ export async function renderProfileView({ onBack } = {}) {
                 </button>
             </div>
         </form>
+
+        <!-- Section: Session / Déconnexion -->
+        <div class="settings-section danger-zone" style="margin-top:1.5rem;">
+            <h3 class="settings-section-title">
+                <span class="material-symbols-outlined">logout</span>
+                ${t('profile.section_session') || 'Session'}
+            </h3>
+            <p style="font-size:0.85rem;color:var(--clr-text-muted);margin:0 0 1rem;">
+                ${t('profile.logout_desc') || 'Déconnectez-vous de votre session active sur cet appareil.'}
+            </p>
+            <button type="button" class="secondary-btn btn-danger" id="profile-logout-btn" style="display:inline-flex;align-items:center;gap:8px;padding:8px 18px;font-weight:600;">
+                <span class="material-symbols-outlined">logout</span>
+                <span>${t('profile.btn_logout') || 'Déconnexion'}</span>
+            </button>
+        </div>
     `;
 
     _bindEvents();
@@ -350,4 +348,12 @@ function _bindEvents() {
             }
         });
     }
+
+    // Sign out button
+    document.getElementById('profile-logout-btn')?.addEventListener('click', async () => {
+        try {
+            await API.logout();
+        } catch {}
+        window.location.reload();
+    });
 }
