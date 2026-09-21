@@ -89,8 +89,12 @@ router.get('/list', async (req, res) => {
         res.json({
             users: users.map(u => ({
                 id:         u.id,
-                name:       u.first_name ? `${u.first_name} ${u.last_name}` : u.email,
+                name:       u.first_name ? `${u.first_name} ${u.last_name}`.trim() : u.email,
+                first_name: u.first_name,
+                last_name:  u.last_name,
+                email:      u.email,
                 avatar_url: u.avatar_url,
+                role:       u.role,
             })),
         });
     } catch (err) {

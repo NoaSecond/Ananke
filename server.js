@@ -331,7 +331,8 @@ io.on('connection', (socket) => {
             processBoardBackground(newBoardData, oldBoard?.data);
 
             const changes = describeChanges(oldBoard?.data || {}, newBoardData);
-            await boardRepository.updateData(boardId, newBoardData);
+            const enrichedBoardData = await boardRepository.enrichBoardAssignees(newBoardData);
+            await boardRepository.updateData(boardId, enrichedBoardData);
 
             if (changes.length > 0) {
                 changes.forEach(c => logger.info(`[Board:${boardId}] ${socket.user.name}: ${c}`));
@@ -340,7 +341,7 @@ io.on('connection', (socket) => {
             }
 
             // Broadcast ONLY to members of this board room
-            io.to(`board:${boardId}`).emit('boardUpdate', newBoardData);
+            io.to(`board:${boardId}`).emit('boardUpdate', enrichedBoardData);
         } catch (err) {
             logger.error(`updateBoard socket error: ${err.message}`);
         }
@@ -390,9 +391,10 @@ io.on('connection', (socket) => {
                 }
             }
 
-            await boardRepository.updateData(boardId, boardData);
+            const enrichedBoardData = await boardRepository.enrichBoardAssignees(boardData);
+            await boardRepository.updateData(boardId, enrichedBoardData);
             logger.info(`[Board:${boardId}] Task "${task.title}" updated by ${socket.user.name}`);
-            io.to(`board:${boardId}`).emit('boardUpdate', boardData);
+            io.to(`board:${boardId}`).emit('boardUpdate', enrichedBoardData);
         } catch (err) {
             logger.error(`updateTask socket error: ${err.message}`);
         }

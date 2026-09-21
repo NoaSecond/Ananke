@@ -100,13 +100,38 @@ export function getAvatarGradient(user) {
     return AVATAR_GRADIENTS[idx];
 }
 
+// Local cache for user profiles (keyed by id and email)
+const userCache = new Map();
+
 /**
- * Resolves user representation, merging with state.currentUser if applicable
+ * Cache user objects for instant resolution across tasks and boards.
+ * @param {Object|Array<Object>} users
+ */
+export function cacheUsers(users) {
+    if (!users) return;
+    const list = Array.isArray(users) ? users : [users];
+    list.forEach(u => {
+        if (!u || typeof u !== 'object') return;
+        if (u.id) {
+            const prev = userCache.get(u.id);
+            userCache.set(u.id, { ...prev, ...u });
+        }
+        if (u.email) {
+            const prev = userCache.get(u.email);
+            userCache.set(u.email, { ...prev, ...u });
+        }
+    });
+}
+
+/**
+ * Resolves user representation, merging with state.currentUser, userCache, and state.boardMembers
  */
 export function resolveUser(user) {
     if (!user) return { id: null, name: 'Unknown', email: '', role: '', avatarUrl: null, initials: '?' };
 
     if (typeof user === 'string') {
+        const cached = userCache.get(user);
+        if (cached) return resolveUser(cached);
         return {
             id: null,
             name: user,
@@ -123,23 +148,32 @@ export function resolveUser(user) {
         (user.name && user.name === state.currentUser.name)
     );
 
-    const target = isCurrent ? { ...user, ...state.currentUser } : user;
+    const cached = isCurrent
+        ? state.currentUser
+        : ((user.id ? userCache.get(user.id) : null) ||
+           (user.email ? userCache.get(user.email) : null) ||
+           state.boardMembers?.find(m => m.id === user.id || (user.email && m.email === user.email)) ||
+           null);
+
+    const target = cached ? { ...user, ...cached } : user;
 
     let name = 'User';
     if (target.first_name && target.last_name) {
-        name = `${target.first_name} ${target.last_name}`;
+        name = `${target.first_name} ${target.last_name}`.trim();
     } else if (target.name) {
         name = target.name;
     } else if (target.email) {
         name = target.email;
     }
 
+    const avatarUrl = target.avatar_url || user.avatar_url || cached?.avatar_url || target.avatarUrl || user.avatarUrl || null;
+
     return {
         id: target.id,
         name,
         email: target.email || '',
         role: target.role || target.board_role || '',
-        avatarUrl: target.avatar_url || null,
+        avatarUrl,
         initials: getInitials(target)
     };
 }

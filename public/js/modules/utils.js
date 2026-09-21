@@ -109,7 +109,8 @@ export {
     resolveUser,
     renderAvatarHtml,
     createAvatarElement,
-    updateAvatarElement
+    updateAvatarElement,
+    cacheUsers
 } from './avatar.js';
 
 export const getContrastYIQ = (hexcolor) => {

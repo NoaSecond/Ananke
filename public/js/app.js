@@ -6,7 +6,7 @@
  */
 
 import { Logger } from './modules/utils.js';
-import { createAvatarElement } from './modules/avatar.js';
+import { createAvatarElement, cacheUsers } from './modules/avatar.js';
 import { state, API_URL, basePath, getFullUrl } from './modules/state.js';
 import { initModals } from './modules/modals.js';
 import { initAuth, handleUnauthorized, updateUserUI, openSetupModal, toggleSettingsMenu, setProfileNavigateHandler } from './modules/auth-ui.js';
@@ -188,8 +188,18 @@ export async function navigateToBoard(boardId) {
     }
 
     try {
-        const { board } = await API.getBoard(boardId);
-        if (board) {
+        const [boardRes, membersRes] = await Promise.allSettled([
+            API.getBoard(boardId),
+            API.getBoardMembers(boardId)
+        ]);
+
+        if (membersRes.status === 'fulfilled' && membersRes.value?.members) {
+            state.boardMembers = membersRes.value.members;
+            cacheUsers(state.boardMembers);
+        }
+
+        if (boardRes.status === 'fulfilled' && boardRes.value?.board) {
+            const board = boardRes.value.board;
             if (existingBoard) {
                 existingBoard.name = board.name;
                 existingBoard.description = board.description;
@@ -511,6 +521,7 @@ async function initSocket() {
     });
 
     state.socket.on('onlineUsers', (users) => {
+        cacheUsers(users);
         if (state.currentView === 'board' && state.currentBoardId) {
             updateBoardHeaderPresence();
         }
@@ -520,6 +531,8 @@ async function initSocket() {
     try {
         const { boards } = await API.getBoards();
         state.boards = boards;
+        boards?.forEach(b => { if (b.members) cacheUsers(b.members); });
+        API.getSimpleList().then(res => { if (res?.users) cacheUsers(res.users); }).catch(() => {});
         renderSidebarBoards();
         navigateToDashboard();
     } catch (err) {

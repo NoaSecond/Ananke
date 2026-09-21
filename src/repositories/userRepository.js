@@ -63,7 +63,7 @@ function findAll() {
 function findAllSimple() {
     return new Promise((resolve, reject) => {
         db.all(
-            `SELECT id, first_name, last_name, email, avatar_url FROM users ORDER BY first_name`,
+            `SELECT id, first_name, last_name, email, avatar_url, role FROM users ORDER BY first_name`,
             (err, rows) => err ? reject(err) : resolve(rows || [])
         );
     });
