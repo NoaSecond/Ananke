@@ -311,6 +311,10 @@
 
             <!-- Footer: user info -->
             <div class="sidebar-footer">
+                <button class="sidebar-item" id="sidebar-logs-btn" style="display:none;" data-i18n-title="nav.logs" title="Logs">
+                    <span class="material-symbols-outlined">terminal</span>
+                    <span class="sidebar-item-label" data-i18n="nav.logs">Logs</span>
+                </button>
                 <button class="sidebar-item" id="sidebar-settings-btn">
                     <span class="material-symbols-outlined">settings</span>
                     <span class="sidebar-item-label" data-i18n="nav.settings">Settings</span>
@@ -359,11 +363,6 @@
                     <button id="add-workflow-btn" class="action-btn">
                         <span class="material-symbols-outlined">add</span>
                         <span data-i18n="board.add_column">Add Column</span>
-                    </button>
-
-                    <!-- Server logs -->
-                    <button id="server-logs-btn" class="secondary-btn circular-btn" data-i18n-title="board.server_logs" title="Server Logs" style="display:none">
-                        <span class="material-symbols-outlined">terminal</span>
                     </button>
 
                     <!-- Settings button (header) -->
@@ -790,15 +789,19 @@
 
     <div id="logs-modal" class="modal-overlay">
         <div class="modal-content"
-            style="width: min(95vw, 800px); max-height: 90vh; display: flex; flex-direction: column;">
-            <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
-            <div style="margin-bottom: 1rem;">
-                <h2 style="margin: 0;">Server Logs</h2>
+            style="width: min(95vw, 800px); max-height: 90vh; display: flex; flex-direction: column; position: relative;">
+            <button class="modal-close-btn" style="z-index: 10;" title="Fermer" aria-label="Close"><span class="material-symbols-outlined">close</span></button>
+            <div style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; padding-right: 40px;">
+                <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: var(--clr-primary);">terminal</span>
+                    <span>Server Logs</span>
+                </h2>
+                <span id="logs-count-badge" style="font-size: 0.8rem; color: var(--clr-text-muted); font-weight: 500;"></span>
             </div>
             <div id="logs-container"
-                style="background: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; padding: 1rem; border-radius: 8px; flex: 1; overflow-y: auto; white-space: pre-wrap; word-break: break-all; border: 1px solid var(--border-color); min-height: 300px; margin-bottom: 1rem;">
+                style="background: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; padding: 1rem; border-radius: 8px; flex: 1; overflow-y: auto; white-space: pre-wrap; word-break: break-all; border: 1px solid var(--border-color); min-height: 300px; margin-bottom: 1rem; position: relative;">
             </div>
-            <div class="modal-actions" style="margin-top: auto;">
+            <div class="modal-actions" style="margin-top: auto; display: flex; justify-content: flex-start;">
                 <button id="clear-logs-btn" class="secondary-btn">Clear View</button>
             </div>
         </div>

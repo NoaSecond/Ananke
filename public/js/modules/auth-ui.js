@@ -367,13 +367,10 @@ export function updateUserUI() {
     const menuRole = document.getElementById('user-display-role-menu');
     if (menuRole) menuRole.textContent = displayRole;
 
-    if (['admin', 'owner'].includes(state.currentUser.role)) {
-        elements.manageUsersBtn.style.display = 'flex';
-        if (elements.serverLogsBtn) elements.serverLogsBtn.style.display = 'flex';
-    } else {
-        elements.manageUsersBtn.style.display = 'none';
-        if (elements.serverLogsBtn) elements.serverLogsBtn.style.display = 'none';
-    }
+    const isAdmin = ['admin', 'owner'].includes(state.currentUser.role);
+    if (elements.manageUsersBtn) elements.manageUsersBtn.style.display = isAdmin ? 'flex' : 'none';
+    const sidebarLogs = elements.sidebarLogsBtn || document.getElementById('sidebar-logs-btn');
+    if (sidebarLogs) sidebarLogs.style.display = isAdmin ? 'flex' : 'none';
 
     if (state.currentUser.role === 'owner') {
         elements.importLabel.style.display = 'flex';

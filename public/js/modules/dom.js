@@ -100,6 +100,7 @@ export const elements = {
     // Header & Settings
     onlineUsersContainer: document.getElementById('online-users-container'),
     serverLogsBtn: document.getElementById('server-logs-btn'),
+    sidebarLogsBtn: document.getElementById('sidebar-logs-btn'),
     settingsToggleBtn: document.getElementById('settings-toggle-btn'),
     settingsMenu: document.getElementById('settings-menu'),
     profileBtn: document.getElementById('profile-btn'),

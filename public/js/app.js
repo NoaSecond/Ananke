@@ -72,18 +72,70 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('settings-toggle-btn')?.addEventListener('click', openBoardSettings);
 
     // Server logs modal
-    document.getElementById('server-logs-btn')?.addEventListener('click', async () => {
-        document.getElementById('logs-modal')?.classList.add('visible');
+    const openLogsModal = async () => {
+        const modal = document.getElementById('logs-modal');
+        if (!modal) return;
+
+        // Open modal immediately so the UI is responsive
+        modal.classList.add('visible');
+
+        const container = document.getElementById('logs-container');
+        const badge = document.getElementById('logs-count-badge');
+        if (badge) badge.textContent = '';
+
+        // Display throbber immediately
+        if (container) {
+            container.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 260px; gap: 14px; color: #94a3b8;">
+                    <div class="spinner"></div>
+                    <span style="font-size: 0.85rem;">Chargement des logs en arrière-plan...</span>
+                </div>
+            `;
+        }
+
         try {
             const logs = await API.getLogs();
-            const container = document.getElementById('logs-container');
-            if (container) { container.innerHTML = ''; logs.forEach(appendLog); }
-        } catch (err) { Logger.error('Failed to load logs', err); }
-    });
+
+            // If the user closed the modal in the meantime, do not render
+            if (!modal.classList.contains('visible')) return;
+
+            if (container) {
+                if (!Array.isArray(logs) || logs.length === 0) {
+                    container.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 2rem;">Aucun log disponible.</div>`;
+                    return;
+                }
+
+                const colorMap = {
+                    INFO: '#4fc1ff', ERROR: '#f44336', WARN: '#ff9800',
+                    SUCCESS: '#4caf50', SOCKET: '#d32f2f', HTTP: '#00bcd4',
+                };
+
+                // Build HTML once without repeated DOM reflows
+                const html = logs.map(entry => {
+                    const color = colorMap[entry.type] || '#fff';
+                    return `<div><span style="color:gray">[${entry.timestamp}]</span> <span style="color:${color};font-weight:bold">${entry.type}:</span> <span style="color:#d4d4d4">${escHtml(entry.message)}</span></div>`;
+                }).join('');
+
+                container.innerHTML = html;
+                container.scrollTop = container.scrollHeight;
+
+                if (badge) badge.textContent = `${logs.length} logs`;
+            }
+        } catch (err) {
+            Logger.error('Failed to load logs', err);
+            if (container && modal.classList.contains('visible')) {
+                container.innerHTML = `<div style="color: #f44336; padding: 1.5rem; text-align: center;">Erreur lors du chargement des logs.</div>`;
+            }
+        }
+    };
+    document.getElementById('server-logs-btn')?.addEventListener('click', openLogsModal);
+    document.getElementById('sidebar-logs-btn')?.addEventListener('click', openLogsModal);
 
     document.getElementById('clear-logs-btn')?.addEventListener('click', () => {
         const container = document.getElementById('logs-container');
         if (container) container.innerHTML = '';
+        const badge = document.getElementById('logs-count-badge');
+        if (badge) badge.textContent = '0 logs';
     });
 
     // Session check on tab focus
@@ -495,8 +547,16 @@ function updateBoardHeaderPresence() {
 // --------------------------------------------------------------------------
 
 function appendLog(logEntry) {
+    const modal = document.getElementById('logs-modal');
+    if (!modal || !modal.classList.contains('visible')) return;
+
     const container = document.getElementById('logs-container');
     if (!container) return;
+
+    if (container.querySelector('.spinner')) {
+        container.innerHTML = '';
+    }
+
     const colorMap = {
         INFO: '#4fc1ff', ERROR: '#f44336', WARN: '#ff9800',
         SUCCESS: '#4caf50', SOCKET: '#d32f2f', HTTP: '#00bcd4',
