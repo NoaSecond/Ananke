@@ -180,8 +180,13 @@ function tryDelete(filePath) {
  * @returns {boolean} true if file existed and was deleted
  */
 function deleteMediaByUrl(url) {
-    if (!url || !url.startsWith('/uploads/')) return false;
-    const filePath = path.join(__dirname, '../../public', path.normalize(url));
+    if (!url || typeof url !== 'string' || !url.startsWith('/uploads/')) return false;
+    const uploadsDir = path.resolve(__dirname, '../../public/uploads');
+    const filePath = path.resolve(__dirname, '../../public', '.' + path.normalize(url));
+    if (!filePath.startsWith(uploadsDir + path.sep) && filePath !== uploadsDir) {
+        logger.warn(`Potential path traversal attempt in deleteMediaByUrl: ${url}`);
+        return false;
+    }
     if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
         return true;

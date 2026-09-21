@@ -32,7 +32,7 @@ async function reset() {
             password_hash TEXT,
             first_name TEXT,
             last_name TEXT,
-            role TEXT DEFAULT 'reader',
+            role TEXT DEFAULT 'user',
             is_setup_complete INTEGER DEFAULT 0,
             avatar_url TEXT,
             token_version INTEGER DEFAULT 1,

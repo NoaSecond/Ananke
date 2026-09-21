@@ -444,3 +444,37 @@ server.listen(PORT, () => {
     logger.success(`Ananke v3.0 running on http://localhost:${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+// --------------------------------------------------------------------------
+// Graceful Shutdown & Process Safety
+// --------------------------------------------------------------------------
+
+function gracefulShutdown(signal) {
+    logger.info(`${signal} received. Shutting down gracefully...`);
+    server.close(() => {
+        logger.info('HTTP server closed.');
+        io.close(() => {
+            logger.info('Socket.IO connections closed.');
+            db.close((err) => {
+                if (err) logger.error('Error closing SQLite DB:', err.message);
+                else logger.info('SQLite database closed.');
+                process.exit(0);
+            });
+        });
+    });
+
+    setTimeout(() => {
+        logger.error('Forced shutdown after timeout.');
+        process.exit(1);
+    }, 10000).unref();
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason) => {
+    logger.error('Unhandled Promise Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+    logger.error('Uncaught Exception:', err.stack || err);
+});

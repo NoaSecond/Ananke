@@ -29,8 +29,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 function initDb() {
     db.serialize(() => {
-        // Enable foreign key enforcement
+        // Enable foreign key enforcement & WAL mode for production concurrency
         db.run('PRAGMA foreign_keys = ON');
+        db.run('PRAGMA journal_mode = WAL');
+        db.run('PRAGMA synchronous = NORMAL');
 
         // ── Users ─────────────────────────────────────────────────────────
         db.run(`CREATE TABLE IF NOT EXISTS users (
@@ -82,6 +84,7 @@ function initDb() {
             added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (board_id, user_id)
         )`);
+        db.run(`CREATE INDEX IF NOT EXISTS idx_board_members_user_id ON board_members(user_id)`);
 
         // ── Migration v2 → v3 (board_store → boards) ──────────────────────
         runV2Migration();
