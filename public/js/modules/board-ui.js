@@ -4,9 +4,10 @@ import { Logger, ErrorHandler } from './utils.js';
 import { openTaskEditModal, openViewTaskModal } from './task-ui.js';
 import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
-import { handleSearch } from './search-ui.js';
-import { getInitials, getContrastYIQ, renderSafeMarkdown, escapeHtml } from './utils.js';
+import { renderAvatarHtml, getContrastYIQ, renderSafeMarkdown, escapeHtml } from './utils.js';
 import * as API from './api.js';
+import { t } from './i18n.js';
+import { handleSearch } from './search-ui.js';
 
 export const trackEvent = (action, category = 'Kanban', label = null, value = null) => {
     if (typeof gtag !== 'undefined') {
@@ -19,6 +20,10 @@ export const saveData = ErrorHandler.wrapSync(() => {
     if (state.socket) {
         state.socket.emit('updateBoard', state.boardData);
     }
+    if (state.currentBoardId && state.boards) {
+        const b = state.boards.find(item => item.id === state.currentBoardId);
+        if (b) b.data = state.boardData;
+    }
 }, 'Data saving');
 
 export const saveTaskOnly = ErrorHandler.wrapSync((task, workflowId) => {
@@ -27,16 +32,25 @@ export const saveTaskOnly = ErrorHandler.wrapSync((task, workflowId) => {
     }
 }, 'Task saving');
 
-const updateProjectTitle = ErrorHandler.wrapSync(() => {
-    if (state.boardData.projectName) {
-        elements.projectNameDisplay.textContent = state.boardData.projectName;
-        document.title = `${state.boardData.projectName} - Ananke`;
+export function isCurrentBoardReader() {
+    if (!state.currentUser) return true;
+    if (['admin', 'owner'].includes(state.currentUser.role)) return false;
+    const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+    return currentBoard?.board_role === 'reader';
+}
 
-        // Dynamic Meta Tags
-        const description = `Manage your project "${state.boardData.projectName}" with our free Kanban tool.`;
-        const metaDescription = document.querySelector('meta[name="description"]');
-        if (metaDescription) metaDescription.setAttribute('content', description);
+const updateProjectTitle = ErrorHandler.wrapSync(() => {
+    const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+    const boardName = currentBoard?.name || state.boardData?.projectName || 'Board';
+    if (elements.projectNameDisplay) {
+        elements.projectNameDisplay.textContent = boardName;
     }
+    document.title = `${boardName} - Ananke`;
+
+    // Dynamic Meta Tags
+    const description = `Manage your project "${boardName}" with our free Kanban tool.`;
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) metaDescription.setAttribute('content', description);
 }, 'Project title update');
 
 const generateDynamicKeywords = () => {
@@ -48,8 +62,10 @@ const generateDynamicKeywords = () => {
             }
         });
     }
-    if (state.boardData.projectName) {
-        keywords.push(state.boardData.projectName.toLowerCase());
+    const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+    const boardName = currentBoard?.name || state.boardData?.projectName;
+    if (boardName) {
+        keywords.push(boardName.toLowerCase());
     }
     const metaKeywords = document.querySelector('meta[name="keywords"]');
     if (metaKeywords) {
@@ -59,15 +75,13 @@ const generateDynamicKeywords = () => {
 
 export const renderBoard = ErrorHandler.wrapSync(() => {
     Logger.debug('🎨 Rendering Kanban board');
-    const isReader = state.currentUser?.role === 'reader';
+    const isReader = isCurrentBoardReader();
 
     // Toggle global controls based on role
     if (elements.addWorkflowBtn) {
         elements.addWorkflowBtn.style.display = isReader ? 'none' : 'inline-flex';
     }
     if (elements.projectTitle) {
-        const editIcon = elements.projectTitle.querySelector('.edit-icon');
-        if (editIcon) editIcon.style.display = isReader ? 'none' : 'inline-block';
         elements.projectTitle.style.cursor = isReader ? 'default' : 'pointer';
     }
 
@@ -102,7 +116,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     </button>
                     <div class="workflow-menu">
                         <button class="edit-workflow-btn" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                            <span class="material-symbols-outlined">edit</span> Edit
+                            <span class="material-symbols-outlined">edit</span> ${t('board.column_menu_rename')}
                         </button>
                         <button class="lock-workflow-btn" data-workflow-id="${workflow.id}">
                             <span class="material-symbols-outlined">${isLocked ? 'lock_open' : 'lock'}</span> ${isLocked ? 'Unlock' : 'Lock'}
@@ -111,10 +125,10 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                             <span class="material-symbols-outlined">content_copy</span> Duplicate
                         </button>
                         <button class="add-task-btn-menu" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                            <span class="material-symbols-outlined">add_task</span> Add Task
+                            <span class="material-symbols-outlined">add_task</span> ${t('board.add_task')}
                         </button>
                         <button class="delete-workflow-btn delete" data-workflow-id="${workflow.id}" ${isLocked ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                            <span class="material-symbols-outlined">delete</span> Delete
+                            <span class="material-symbols-outlined">delete</span> ${t('board.column_menu_delete')}
                         </button>
                     </div>
                 </div>`;
@@ -158,12 +172,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     </div>`);
 
                 const assigneesHtml = (task.assignees || []).map(a => {
-                    const isCurrentUser = state.currentUser && (a.id === state.currentUser.id || a.name === state.currentUser.name);
-                    const currentUserObj = isCurrentUser ? state.currentUser : a;
-                    const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : a.avatar_url;
-                    return avatarUrl
-                        ? `<img src="${getFullUrl(avatarUrl)}" class="task-assignee-avatar" title="${currentUserObj.name}" style="object-fit: cover;">`
-                        : `<div class="task-assignee-avatar" title="${currentUserObj.name}">${getInitials(currentUserObj)}</div>`;
+                    return renderAvatarHtml(a, { className: 'task-assignee-avatar' });
                 }).join('');
 
                 const commentsCount = (task.comments || []).length;
@@ -233,7 +242,7 @@ export const initDragAndDrop = () => {
     state.taskSortables.forEach(s => s.destroy());
     state.taskSortables = [];
 
-    const isReader = state.currentUser?.role === 'reader';
+    const isReader = isCurrentBoardReader();
 
     state.columnSortable = new Sortable(elements.kanbanBoard, {
         group: 'columns',
@@ -444,9 +453,9 @@ export const initBoardListeners = () => {
                     trackEvent('create_task', 'Task', title);
                 }
             }
+            closeModal(elements.addModal);
             saveData();
             renderBoard();
-            closeModal(elements.addModal);
         }
     }, 'Adding item'));
 
@@ -477,7 +486,9 @@ export const initBoardListeners = () => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${exportData.projectName || 'ananke-project'}-${new Date().toISOString().slice(0, 10)}.kanban`;
+                const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+                const boardName = currentBoard?.name || exportData.projectName || 'ananke-project';
+                a.download = `${boardName}-${new Date().toISOString().slice(0, 10)}.kanban`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -519,18 +530,39 @@ export const initBoardListeners = () => {
 
     // Project Title Edit
     elements.projectTitle.addEventListener('click', () => {
-        if (state.currentUser?.role === 'reader') return;
-        elements.projectNameInput.value = state.boardData.projectName || 'Ananke';
+        if (isCurrentBoardReader()) return;
+        const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+        elements.projectNameInput.value = currentBoard?.name || state.boardData?.projectName || '';
         openModal(elements.projectModal);
     });
 
-    elements.saveProjectBtn.addEventListener('click', () => {
+    elements.saveProjectBtn.addEventListener('click', async () => {
         const newName = elements.projectNameInput.value.trim();
-        if (newName) {
+        if (newName && state.currentBoardId) {
+            const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+            if (currentBoard) currentBoard.name = newName;
             state.boardData.projectName = newName;
-            saveData();
-            renderBoard();
+
+            if (elements.projectNameDisplay) {
+                elements.projectNameDisplay.textContent = newName;
+            }
+            document.title = `${newName} - Ananke`;
             closeModal(elements.projectModal);
+
+            try {
+                await API.updateBoardMeta(state.currentBoardId, {
+                    name: newName,
+                    description: currentBoard?.description || '',
+                    color: currentBoard?.color || '#6366f1',
+                    icon: currentBoard?.icon || 'dashboard',
+                });
+                const sidebarItemLabel = document.querySelector(`#sidebar-boards .sidebar-item[data-board-id="${state.currentBoardId}"] .sidebar-item-label`);
+                if (sidebarItemLabel) sidebarItemLabel.textContent = newName;
+            } catch (err) {
+                Logger.error('Failed to update board name', err);
+            }
+
+            saveData();
         }
     });
 

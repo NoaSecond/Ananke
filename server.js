@@ -1,145 +1,79 @@
+/**
+ * server.js — Ananke v3.0
+ *
+ * Responsabilité unique (S) : orchestrateur — configure Express, monte les routes,
+ * gère les WebSockets. Aucune logique métier directe ici.
+ *
+ * Les routes, middlewares et repositories gèrent chacun leur domaine (S, D).
+ */
+
 require('dotenv').config();
-const express = require('express');
-const http = require('http');
-const { Server } = require("socket.io");
-const path = require('path');
+
+const express      = require('express');
+const http         = require('http');
+const { Server }   = require('socket.io');
+const path         = require('path');
 const cookieParser = require('cookie-parser');
-const db = require('./src/config/database');
-const { getInstanceId } = require('./src/config/database');
-const { router: authRouter, authenticateToken } = require('./src/routes/auth');
-const jwt = require('jsonwebtoken');
-const morgan = require('morgan');
-const logger = require('./src/utils/logger');
-const { describeChanges } = require('./src/utils/boardDiff');
-const multer = require('multer');
-const crypto = require('crypto');
-const helmet = require('helmet');
+const helmet       = require('helmet');
+const morgan       = require('morgan');
+const rateLimit    = require('express-rate-limit');
+const jwt          = require('jsonwebtoken');
+const fs           = require('fs');
 
-const fs = require('fs');
-if (!fs.existsSync(path.join(__dirname, 'public', 'uploads'))) {
-    fs.mkdirSync(path.join(__dirname, 'public', 'uploads'), { recursive: true });
+const db                    = require('./src/config/database');
+const { getInstanceId }     = require('./src/config/database');
+const { router: authRouter } = require('./src/routes/auth');
+const usersRouter           = require('./src/routes/users');
+const boardsRouter          = require('./src/routes/boards');
+const authenticate          = require('./src/middleware/authenticate');
+const { requireRole }       = require('./src/middleware/requireRole');
+const { requireBoardRole }  = require('./src/middleware/boardAccess');
+const boardRepository       = require('./src/repositories/boardRepository');
+const memberRepository      = require('./src/repositories/memberRepository');
+const { upload, deleteMediaByUrl, processBoardBackground } = require('./src/utils/fileHelper');
+const { describeChanges }   = require('./src/utils/boardDiff');
+const logger                = require('./src/utils/logger');
+
+// --------------------------------------------------------------------------
+// Guard: JWT_SECRET must be strong and set
+// --------------------------------------------------------------------------
+
+const COMPROMISED_SECRETS = ['ananke-secret-key-prod-rev2'];
+if (!process.env.JWT_SECRET || COMPROMISED_SECRETS.includes(process.env.JWT_SECRET)) {
+    logger.error('FATAL: JWT_SECRET must be set to a strong, unique value.');
+    logger.error('Generate one with: node -e "require(\'crypto\').randomBytes(64).toString(\'hex\')"');
+    process.exit(1);
 }
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// Whitelist MIME stricte : seuls les images et vidéos sont acceptées
-const ALLOWED_MIMES = [
-    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
-    'video/mp4', 'video/webm'
-];
-
-// Whitelist MIME et extensions pour les avatars base64
-const ALLOWED_AVATAR_MIMES = {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp',
-    'image/gif': 'gif'
-};
-
-// Validation MIME stricte, limite de taille (10MB) et suppression des anciens fichiers de fond
-const MAX_BG_SIZE = 10 * 1024 * 1024;
-
-function processBoardBackground(newBoardData, oldBoardData) {
-    if (
-        newBoardData.background &&
-        newBoardData.background.type === 'image' &&
-        typeof newBoardData.background.value === 'string' &&
-        newBoardData.background.value.startsWith('data:image')
-    ) {
-        const matches = newBoardData.background.value.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        if (matches && matches.length === 3) {
-            const mime = matches[1].toLowerCase();
-            const ext = ALLOWED_AVATAR_MIMES[mime];
-            if (!ext) {
-                logger.warn(`Type MIME de fond d'écran non autorisé rejeté : ${mime}`);
-                newBoardData.background = oldBoardData && oldBoardData.background ? oldBoardData.background : { type: 'default', value: '' };
-                return;
-            }
-
-            const buffer = Buffer.from(matches[2], 'base64');
-            if (buffer.length > MAX_BG_SIZE) {
-                logger.warn(`Fond d'écran trop volumineux rejeté (${buffer.length} octets, max: ${MAX_BG_SIZE})`);
-                newBoardData.background = oldBoardData && oldBoardData.background ? oldBoardData.background : { type: 'default', value: '' };
-                return;
-            }
-
-            const bgPath = path.join(__dirname, 'public', 'uploads', 'background');
-            if (!fs.existsSync(bgPath)) fs.mkdirSync(bgPath, { recursive: true });
-
-            // Nettoyage de l'ancien fichier de fond sur disque s'il existe
-            if (
-                oldBoardData &&
-                oldBoardData.background &&
-                typeof oldBoardData.background.value === 'string' &&
-                oldBoardData.background.value.startsWith('/uploads/background/')
-            ) {
-                const oldFileName = path.basename(oldBoardData.background.value);
-                const oldFilePath = path.join(bgPath, oldFileName);
-                if (fs.existsSync(oldFilePath)) {
-                    try {
-                        fs.unlinkSync(oldFilePath);
-                    } catch (e) {
-                        logger.error(`Impossible de supprimer l'ancien fond : ${e.message}`);
-                    }
-                }
-            }
-
-            const fileName = `bg_${crypto.randomUUID().slice(0, 8)}_${Date.now()}.${ext}`;
-            fs.writeFileSync(path.join(bgPath, fileName), buffer);
-            newBoardData.background.value = `/uploads/background/${fileName}`;
-            logger.info(`Nouveau fond d'écran enregistré : ${fileName} (${Math.round(buffer.length / 1024)} KB)`);
-        }
-    }
-}
-
-const fileFilter = (req, file, cb) => {
-    if (ALLOWED_MIMES.includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error(`Type de fichier non autorisé : ${file.mimetype}`), false);
-    }
-};
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, path.join(__dirname, 'public', 'uploads'));
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        // Sanitisation du nom original : path.basename + suppression des caractères spéciaux
-        const safeOriginalName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
-        cb(null, uniqueSuffix + '-' + safeOriginalName);
-    }
-});
-
-const upload = multer({
-    storage,
-    fileFilter,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10 MB max par fichier
-});
+// --------------------------------------------------------------------------
+// Express setup
+// --------------------------------------------------------------------------
 
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
-// Content Security Policy & HTTP Security Headers
+// Content Security Policy
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com'],
+            defaultSrc:    ["'self'"],
+            scriptSrc:     ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com'],
             scriptSrcAttr: ["'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
-            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com', 'data:'],
-            imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-            connectSrc: ["'self'", 'ws:', 'wss:', 'https://raw.githubusercontent.com'],
-            objectSrc: ["'none'"],
-            baseUri: ["'self'"],
-            upgradeInsecureRequests: null
-        }
+            styleSrc:      ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
+            fontSrc:       ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com', 'data:'],
+            imgSrc:        ["'self'", 'data:', 'blob:', 'https:'],
+            connectSrc:    ["'self'", 'ws:', 'wss:', 'https://raw.githubusercontent.com', 'https://cdn.jsdelivr.net'],
+            objectSrc:     ["'none'"],
+            baseUri:       ["'self'"],
+            upgradeInsecureRequests: null,
+        },
     },
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
 }));
 
-// Redirection HTTPS obligatoire en production
+// HTTPS redirect in production
 if (process.env.NODE_ENV === 'production') {
     app.use((req, res, next) => {
         if (!req.secure && req.headers['x-forwarded-proto'] !== 'https') {
@@ -148,105 +82,67 @@ if (process.env.NODE_ENV === 'production') {
         next();
     });
 }
-const server = http.createServer(app);
-const io = new Server(server, {
-    maxHttpBufferSize: 1e7 // 10MB max par message WebSocket
-});
 
+const server = http.createServer(app);
+const io     = new Server(server, { maxHttpBufferSize: 1e7 });
+
+// Log relay to admin sockets
 logger.onLogCallback = (logEntry) => {
-    if (io && io.sockets && io.sockets.sockets) {
-        io.sockets.sockets.forEach(socket => {
-            if (socket.user && (socket.user.role === 'admin' || socket.user.role === 'owner')) {
-                socket.emit('serverLog', logEntry);
-            }
-        });
-    }
+    if (!io?.sockets?.sockets) return;
+    io.sockets.sockets.forEach(socket => {
+        if (socket.user && ['admin', 'owner'].includes(socket.user.role)) {
+            socket.emit('serverLog', logEntry);
+        }
+    });
 };
 
-// Le secret JWT NE DOIT JAMAIS avoir de fallback hardcodé.
-// Si JWT_SECRET est absent ou correspond à l'ancienne valeur compromise, le serveur refuse de démarrer.
-const COMPROMISED_SECRETS = ['ananke-secret-key-prod-rev2'];
-if (!process.env.JWT_SECRET || COMPROMISED_SECRETS.includes(process.env.JWT_SECRET)) {
-    logger.error('FATAL: JWT_SECRET must be set to a strong, unique value. Use: node -e "require(\'crypto\').randomBytes(64).toString(\'hex\')" to generate one.');
-    process.exit(1);
-}
-const JWT_SECRET = process.env.JWT_SECRET;
-
-// Réduction des limites de payload pour éviter les attaques DoS mémoire
+// Payload limits
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cookieParser());
 
-// Protéger les fichiers uploadés : authentification requise
-app.use('/uploads', authenticateToken, express.static(path.join(__dirname, 'public', 'uploads')));
+// Protected uploads (auth required)
+app.use('/uploads', authenticate, express.static(path.join(__dirname, 'public', 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// HTTP Logging
-app.use(morgan((tokens, req, res) => {
-    const status = tokens.status(req, res);
-    return [
-        tokens.method(req, res),
-        tokens.url(req, res),
-        status,
-        tokens['response-time'](req, res), 'ms'
-    ].join(' ');
-}, {
-    stream: {
-        write: (message) => {
-            logger.http(message.trim());
-        }
-    }
-}));
+// HTTP logging
+app.use(morgan((tokens, req, res) => [
+    tokens.method(req, res),
+    tokens.url(req, res),
+    tokens.status(req, res),
+    tokens['response-time'](req, res), 'ms',
+].join(' '), { stream: { write: msg => logger.http(msg.trim()) } }));
 
-// Routes
-app.use('/api/auth', authRouter);
+// --------------------------------------------------------------------------
+// API Routes
+// --------------------------------------------------------------------------
 
-// Basic API Routes (Protected example)
-app.get('/api/board', authenticateToken, (req, res) => {
-    db.get("SELECT data FROM board_store WHERE id = 1", (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(row ? JSON.parse(row.data) : {});
-    });
-});
+app.use('/api/auth',   authRouter);
+app.use('/api/users',  usersRouter);
+app.use('/api/boards', boardsRouter);
 
-const rateLimit = require('express-rate-limit');
+// --------------------------------------------------------------------------
+// File upload
+// --------------------------------------------------------------------------
 
-// Rate limiting sur les uploads : max 30 uploads par minute par IP
 const uploadLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 30,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Trop de requêtes d\'upload. Veuillez patienter une minute.' }
+    message: { error: 'Trop de requêtes d\'upload. Veuillez patienter.' },
 });
 
-// File Upload API
-app.post('/api/upload', authenticateToken, uploadLimiter, upload.array('files', 10), (req, res) => {
-    try {
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ error: 'No files uploaded.' });
-        }
-        const fileUrls = req.files.map(file => `/uploads/${file.filename}`);
-        logger.info(`${req.files.length} file(s) uploaded by ${req.user.name}`);
-        res.json({ urls: fileUrls });
-    } catch (err) {
-        logger.error(`Upload error: ${err.message}`);
-        res.status(500).json({ error: 'Failed to upload files.' });
-    }
+app.post('/api/upload', authenticate, uploadLimiter, upload.array('files', 10), (req, res) => {
+    if (!req.files?.length) return res.status(400).json({ error: 'No files uploaded.' });
+    const urls = req.files.map(f => `/uploads/${f.filename}`);
+    logger.info(`${req.files.length} file(s) uploaded by ${req.user.name}`);
+    res.json({ urls });
 });
 
-app.delete('/api/media', authenticateToken, (req, res) => {
+app.delete('/api/media', authenticate, (req, res) => {
+    const { url } = req.body;
+    if (!url || !url.startsWith('/uploads/')) return res.status(400).json({ error: 'Invalid URL' });
     try {
-        const { url } = req.body;
-        if (!url || !url.startsWith('/uploads/')) return res.status(400).json({ error: 'Invalid URL' });
-
-        const filename = path.basename(url);
-        const filepath = path.join(__dirname, 'public', 'uploads', filename);
-
-        if (fs.existsSync(filepath)) {
-            fs.unlinkSync(filepath);
-            logger.info(`Media deleted explicitly: ${filename}`);
-        }
+        deleteMediaByUrl(url);
         res.json({ success: true });
     } catch (err) {
         logger.error(`Delete media error: ${err.message}`);
@@ -254,315 +150,331 @@ app.delete('/api/media', authenticateToken, (req, res) => {
     }
 });
 
-// Protégé par authenticateToken pour empêcher le fingerprinting par des tiers non connectés
-app.get('/api/version', authenticateToken, async (req, res) => {
+// --------------------------------------------------------------------------
+// Misc protected endpoints
+// --------------------------------------------------------------------------
+
+app.get('/api/version', authenticate, async (req, res) => {
     try {
-        const pkgData = await fs.promises.readFile(path.join(__dirname, 'package.json'), 'utf8');
-        const pkg = JSON.parse(pkgData);
+        const pkg = JSON.parse(await fs.promises.readFile(path.join(__dirname, 'package.json'), 'utf8'));
         res.json({ version: pkg.version });
-    } catch (e) {
-        res.status(500).json({ error: 'Could not read version' });
-    }
+    } catch { res.status(500).json({ error: 'Could not read version' }); }
 });
 
-app.get('/api/logs', authenticateToken, (req, res) => {
-    if (req.user.role !== 'admin' && req.user.role !== 'owner') {
-        return res.status(403).json({ error: 'Unauthorized' });
-    }
+app.get('/api/logs', authenticate, requireRole('admin'), (req, res) => {
     res.json(logger.getHistory());
 });
 
-// Save Board API (for fallback or specific actions)
-app.post('/api/board', authenticateToken, (req, res) => {
-    // Determine permissions based on role? (Editors+)
-    const roles = ['editor', 'admin', 'owner'];
-    if (!roles.includes(req.user.role)) return res.sendStatus(403);
+// --------------------------------------------------------------------------
+// Central error handler
+// --------------------------------------------------------------------------
 
-    const newBoardData = req.body;
-
-    // Get current board to compare changes
-    db.get("SELECT data FROM board_store WHERE id = 1", (err, row) => {
-        if (err) {
-            logger.error(`Error fetching board for diff (API): ${err.message}`);
-            return res.status(500).json({ error: err.message });
-        }
-
-        const oldBoardData = row ? JSON.parse(row.data) : { workflows: [] };
-
-        // Traitement sécurisé du fond d'écran
-        processBoardBackground(newBoardData, oldBoardData);
-
-        const changes = describeChanges(oldBoardData, newBoardData);
-
-        const dataStr = JSON.stringify(newBoardData);
-        db.run("UPDATE board_store SET data = ? WHERE id = 1", [dataStr], (err) => {
-            if (err) {
-                logger.error(`Error saving board to DB (API): ${err.message}`);
-                return res.status(500).json({ error: err.message });
-            }
-
-            // Log the changes
-            if (changes.length > 0) {
-                changes.forEach(change => {
-                    logger.info(`Modification via API by ${req.user.name}: ${change}`);
-                });
-            } else {
-                logger.info(`Board updated via API by ${req.user.name}`);
-            }
-
-            res.json({ success: true, updatedBoard: newBoardData });
-            io.emit('boardUpdate', newBoardData);
-        });
-    });
-});
-
-// Gestionnaire d'erreurs Express centralisé : masque les stack traces
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-    logger.error(`Unhandled error: ${err.message}`, err.stack);
+    logger.error(`Unhandled error: ${err.message}`);
     const isProd = process.env.NODE_ENV === 'production';
     res.status(err.status || 500).json({
-        error: isProd ? 'Une erreur interne est survenue' : err.message
+        error: isProd ? 'Une erreur interne est survenue' : err.message,
     });
 });
 
-// Socket.io Middleware for Auth
+// ==========================================================================
+// Socket.io — Board rooms (isolation par board)
+// ==========================================================================
+
+// Socket auth middleware
 io.use((socket, next) => {
-    // Extract token from cookie
     const cookie = socket.handshake.headers.cookie;
-    if (!cookie) return next(new Error("Authentication error"));
+    if (!cookie) return next(new Error('Authentication error'));
 
-    // Simple cookie parser for this specific use case
-    const token = cookie.split(';').find(c => c.trim().startsWith('token='));
-    if (!token) return next(new Error("Authentication error"));
+    const tokenPart = cookie.split(';').find(c => c.trim().startsWith('token='));
+    if (!tokenPart) return next(new Error('Authentication error'));
 
-    const jwtToken = token.split('=')[1];
+    const jwtToken = tokenPart.split('=')[1];
 
-    jwt.verify(jwtToken, JWT_SECRET, (err, decoded) => {
-        if (err) return next(new Error("Authentication error"));
+    jwt.verify(jwtToken, JWT_SECRET, async (err, decoded) => {
+        if (err) return next(new Error('Authentication error'));
 
-        getInstanceId().then(instanceId => {
-            if (decoded.iid !== instanceId) {
-                return next(new Error("Authentication error"));
-            }
-            db.get("SELECT role, email, avatar_url, first_name, last_name, token_version FROM users WHERE id = ?", [decoded.id], (dbErr, row) => {
-                if (dbErr || !row) return next(new Error("Authentication error"));
-                const expectedVersion = row.token_version || 1;
-                const tokenVersion = decoded.tv || 1;
-                if (tokenVersion !== expectedVersion) {
-                    return next(new Error("Authentication error"));
-                }
-                decoded.role = row.role;
-                decoded.email = row.email;
-                decoded.avatar_url = row.avatar_url;
-                socket.user = decoded;
-                next();
-            });
-        }).catch(() => next(new Error("Authentication error")));
+        try {
+            const instanceId = await getInstanceId();
+            if (decoded.iid !== instanceId) return next(new Error('Authentication error'));
+
+            db.get('SELECT role, email, avatar_url, first_name, last_name, token_version FROM users WHERE id = ?',
+                [decoded.id], (dbErr, row) => {
+                    if (dbErr || !row) return next(new Error('Authentication error'));
+                    const expectedVersion = row.token_version || 1;
+                    if ((decoded.tv || 1) !== expectedVersion) return next(new Error('Authentication error'));
+                    decoded.role       = row.role;
+                    decoded.email      = row.email;
+                    decoded.avatar_url = row.avatar_url;
+                    decoded.first_name = row.first_name;
+                    decoded.last_name  = row.last_name;
+                    decoded.name       = row.first_name ? `${row.first_name} ${row.last_name}`.trim() : (decoded.name || row.email);
+                    socket.user = decoded;
+                    next();
+                });
+        } catch { next(new Error('Authentication error')); }
     });
 });
 
-const onlineUsers = new Map();
+const onlineUsers = new Map(); // socket.id → user info
+
+function getBoardPresenceMap() {
+    const presence = {};
+    if (!io || !io.sockets) return presence;
+    for (const [_, s] of io.sockets.sockets) {
+        if (s.currentBoardId && s.user) {
+            if (!presence[s.currentBoardId]) {
+                presence[s.currentBoardId] = [];
+            }
+            if (!presence[s.currentBoardId].some(u => u.id === s.user.id)) {
+                presence[s.currentBoardId].push({
+                    id:         s.user.id,
+                    name:       s.user.name,
+                    first_name: s.user.first_name,
+                    last_name:  s.user.last_name,
+                    avatar_url: s.user.avatar_url,
+                    role:       s.user.role,
+                    email:      s.user.email,
+                });
+            }
+        }
+    }
+    return presence;
+}
+
+function broadcastBoardPresence() {
+    io.emit('boardPresence', getBoardPresenceMap());
+}
 
 io.on('connection', (socket) => {
-    logger.socket(`User connected: ${socket.user.name} (${socket.user.role}) [ID: ${socket.id}]`);
+    socket.currentBoardId = null;
+    logger.socket(`User connected: ${socket.user.name} (${socket.user.role}) [${socket.id}]`);
 
     onlineUsers.set(socket.id, {
-        id: socket.user.id,
-        name: socket.user.name,
-        role: socket.user.role,
+        id:         socket.user.id,
+        name:       socket.user.name,
+        role:       socket.user.role,
         avatar_url: socket.user.avatar_url,
-        email: socket.user.email
+        email:      socket.user.email,
     });
 
-    // Broadcast latest online users list to all connected clients
-    io.emit('onlineUsers', Array.from(onlineUsers.values()));
+    broadcastOnlineUsers();
+    socket.emit('boardPresence', getBoardPresenceMap());
 
-    // Send initial board data
-    db.get("SELECT data FROM board_store WHERE id = 1", (err, row) => {
-        if (row) {
-            socket.emit('boardUpdate', JSON.parse(row.data));
+    // ── joinBoard — subscribe to a board room ──────────────────────────────
+    socket.on('joinBoard', async (boardId) => {
+        if (!boardId) return;
+
+        try {
+            const isGlobalAdmin = ['admin', 'owner'].includes(socket.user.role);
+            const hasAccess = isGlobalAdmin
+                || await memberRepository.hasAccess(boardId, socket.user.id);
+
+            if (!hasAccess) {
+                logger.warn(`Socket joinBoard denied: user=${socket.user.id} board=${boardId}`);
+                socket.emit('error', { code: 403, message: 'Accès refusé à ce board' });
+                return;
+            }
+
+            // Leave any previously joined board rooms
+            const currentRooms = [...socket.rooms].filter(r => r.startsWith('board:'));
+            for (const room of currentRooms) socket.leave(room);
+
+            socket.join(`board:${boardId}`);
+            socket.currentBoardId = boardId;
+
+            // Send current board data only to this socket
+            const board = await boardRepository.findById(boardId);
+            if (board) socket.emit('boardUpdate', board.data || {});
+
+            logger.socket(`User ${socket.user.name} joined board ${boardId}`);
+            broadcastBoardPresence();
+        } catch (err) {
+            logger.error(`joinBoard error: ${err.message}`);
         }
     });
 
-    // Handle Profile Updates from Clients
+    // ── leaveBoard — leave currently joined board room ─────────────────────
+    socket.on('leaveBoard', () => {
+        if (!socket.currentBoardId) return;
+        const currentRooms = [...socket.rooms].filter(r => r.startsWith('board:'));
+        for (const room of currentRooms) socket.leave(room);
+        const prevBoard = socket.currentBoardId;
+        socket.currentBoardId = null;
+        logger.socket(`User ${socket.user.name} left board ${prevBoard}`);
+        broadcastBoardPresence();
+    });
+
+    // ── updateBoard — save board and broadcast to room ─────────────────────
+    socket.on('updateBoard', async (newBoardData) => {
+        const boardId = socket.currentBoardId;
+        if (!boardId) return;
+
+        let canEdit = ['admin', 'owner'].includes(socket.user.role);
+        if (!canEdit) {
+            // Check board-level role (editor or board_admin)
+            try {
+                const member = await memberRepository.findByBoardAndUser(boardId, socket.user.id);
+                if (member && member.role !== 'reader') {
+                    canEdit = true;
+                }
+            } catch { return; }
+        }
+        if (!canEdit) {
+            logger.warn(`Unauthorized board edit: user=${socket.user.id} board=${boardId}`);
+            return;
+        }
+
+        try {
+            const oldBoard = await boardRepository.findById(boardId);
+            processBoardBackground(newBoardData, oldBoard?.data);
+
+            const changes = describeChanges(oldBoard?.data || {}, newBoardData);
+            await boardRepository.updateData(boardId, newBoardData);
+
+            if (changes.length > 0) {
+                changes.forEach(c => logger.info(`[Board:${boardId}] ${socket.user.name}: ${c}`));
+            } else {
+                logger.info(`[Board:${boardId}] Minor update by ${socket.user.name}`);
+            }
+
+            // Broadcast ONLY to members of this board room
+            io.to(`board:${boardId}`).emit('boardUpdate', newBoardData);
+        } catch (err) {
+            logger.error(`updateBoard socket error: ${err.message}`);
+        }
+    });
+
+    // ── updateTask — atomic task update ────────────────────────────────────
+    socket.on('updateTask', async ({ task, workflowId }) => {
+        const boardId = socket.currentBoardId;
+        if (!boardId || !task || !workflowId) return;
+
+        let canEdit = ['admin', 'owner'].includes(socket.user.role);
+        if (!canEdit) {
+            // Check board-level role (editor or board_admin)
+            try {
+                const member = await memberRepository.findByBoardAndUser(boardId, socket.user.id);
+                if (member && member.role !== 'reader') {
+                    canEdit = true;
+                }
+            } catch { return; }
+        }
+        if (!canEdit) {
+            logger.warn(`Unauthorized task edit: user=${socket.user.id} board=${boardId}`);
+            return;
+        }
+
+        try {
+            const board = await boardRepository.findById(boardId);
+            if (!board?.data?.workflows) return;
+
+            const boardData = board.data;
+
+            // Remove task from its current column
+            let oldIndex = -1;
+            let oldWfId  = null;
+            for (const wf of boardData.workflows) {
+                const idx = wf.tasks.findIndex(t => t.id === task.id);
+                if (idx !== -1) { oldWfId = wf.id; oldIndex = idx; wf.tasks.splice(idx, 1); break; }
+            }
+
+            // Insert into target column
+            const targetWf = boardData.workflows.find(w => w.id === workflowId);
+            if (targetWf) {
+                if (oldWfId === workflowId && oldIndex !== -1) {
+                    targetWf.tasks.splice(oldIndex, 0, task);
+                } else {
+                    targetWf.tasks.push(task);
+                }
+            }
+
+            await boardRepository.updateData(boardId, boardData);
+            logger.info(`[Board:${boardId}] Task "${task.title}" updated by ${socket.user.name}`);
+            io.to(`board:${boardId}`).emit('boardUpdate', boardData);
+        } catch (err) {
+            logger.error(`updateTask socket error: ${err.message}`);
+        }
+    });
+
+    // ── profileUpdated — refresh online user info ──────────────────────────
     socket.on('profileUpdated', () => {
-        db.get("SELECT role, email, avatar_url, first_name, last_name FROM users WHERE id = ?", [socket.user.id], (dbErr, row) => {
-            if (!dbErr && row) {
-                socket.user.role = row.role;
-                socket.user.email = row.email;
+        db.get('SELECT role, email, avatar_url, first_name, last_name FROM users WHERE id = ?',
+            [socket.user.id], (err, row) => {
+                if (err || !row) return;
+                socket.user.role      = row.role;
+                socket.user.email     = row.email;
                 socket.user.avatar_url = row.avatar_url;
-                socket.user.name = row.first_name ? `${row.first_name} ${row.last_name}` : row.email;
+                socket.user.name      = row.first_name
+                    ? `${row.first_name} ${row.last_name}`
+                    : row.email;
 
                 onlineUsers.set(socket.id, {
-                    id: socket.user.id,
-                    name: socket.user.name,
-                    role: socket.user.role,
+                    id:         socket.user.id,
+                    name:       socket.user.name,
+                    role:       socket.user.role,
                     avatar_url: socket.user.avatar_url,
-                    email: socket.user.email
+                    email:      socket.user.email,
                 });
-                io.emit('onlineUsers', Array.from(onlineUsers.values()));
-            }
-        });
-    });
-
-    // Handle Board Updates from Clients
-    socket.on('updateBoard', (newBoardData) => {
-        // RBAC Check for Edit
-        const canEdit = ['editor', 'admin', 'owner'].includes(socket.user.role);
-        if (!canEdit) {
-            logger.warn(`Unauthorized edit attempt: User ${socket.user.name} tried to update board but is ${socket.user.role}`);
-            return;
-        }
-
-        // Get current board to compare changes
-        db.get("SELECT data FROM board_store WHERE id = 1", (err, row) => {
-            if (err) {
-                logger.error(`Error fetching board for diff: ${err.message}`);
-                return;
-            }
-
-            const oldBoardData = row ? JSON.parse(row.data) : { workflows: [] };
-
-            // Traitement sécurisé du fond d'écran
-            processBoardBackground(newBoardData, oldBoardData);
-
-            // Cleanup base64 avatars in tasks if they are passed
-            if (newBoardData.workflows) {
-                newBoardData.workflows.forEach(w => {
-                    if (w.tasks) {
-                        w.tasks.forEach(t => {
-                            if (t.assignees) {
-                                t.assignees.forEach(a => {
-                                    if (a.avatar_url && typeof a.avatar_url === 'string' && a.avatar_url.startsWith('data:image')) {
-                                        const matches = a.avatar_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-                                        if (matches && matches.length === 3) {
-                                            const mime = matches[1].toLowerCase();
-                                            const ext = ALLOWED_AVATAR_MIMES[mime];
-                                            if (ext) {
-                                                const buffer = Buffer.from(matches[2], 'base64');
-                                                if (buffer.length > 5 * 1024 * 1024) return;
-                                                const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
-                                                if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
-                                                const targetId = a.id ? a.id : crypto.randomUUID().slice(0, 8);
-                                                const fileName = `avatar_${targetId}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
-                                                fs.writeFileSync(path.join(personPath, fileName), buffer);
-                                                a.avatar_url = `/uploads/Person/${fileName}`;
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-
-            const changes = describeChanges(oldBoardData, newBoardData);
-
-            // Save to DB
-            const dataStr = JSON.stringify(newBoardData);
-            db.run("UPDATE board_store SET data = ? WHERE id = 1", [dataStr], (err) => {
-                if (err) {
-                    logger.error(`Error saving board to DB: ${err.message}`);
-                    return;
-                }
-
-                // Log the changes
-                if (changes.length > 0) {
-                    changes.forEach(change => {
-                        logger.info(`Modification by ${socket.user.name}: ${change}`);
-                    });
-                } else {
-                    // Could be a minor change not caught by describeChanges (like colors)
-                    logger.info(`Board updated by ${socket.user.name} (minor changes)`);
-                }
-
+                broadcastOnlineUsers();
+                broadcastBoardPresence();
             });
-        });
     });
 
-    socket.on('updateTask', ({ task, workflowId }) => {
-        const canEdit = ['editor', 'admin', 'owner'].includes(socket.user.role);
-        if (!canEdit) {
-            logger.warn(`Unauthorized task edit attempt: User ${socket.user.name}`);
-            return;
-        }
-
-        db.get("SELECT data FROM board_store WHERE id = 1", (err, row) => {
-            if (err) {
-                logger.error(`Error fetching board for task update: ${err.message}`);
-                return;
-            }
-
-            const boardData = row ? JSON.parse(row.data) : { workflows: [] };
-
-            // Cleanup base64 avatars in the updated task if passed
-            if (task && task.assignees) {
-                task.assignees.forEach(a => {
-                    if (a.avatar_url && typeof a.avatar_url === 'string' && a.avatar_url.startsWith('data:image')) {
-                        const matches = a.avatar_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-                        if (matches && matches.length === 3) {
-                            const mime = matches[1].toLowerCase();
-                            const ext = ALLOWED_AVATAR_MIMES[mime];
-                            if (ext) {
-                                const personPath = path.join(__dirname, 'public', 'uploads', 'Person');
-                                if (!fs.existsSync(personPath)) fs.mkdirSync(personPath, { recursive: true });
-                                const targetId = a.id ? a.id : crypto.randomUUID().slice(0, 8);
-                                const fileName = `avatar_${targetId}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
-                                fs.writeFileSync(path.join(personPath, fileName), Buffer.from(matches[2], 'base64'));
-                                a.avatar_url = `/uploads/Person/${fileName}`;
-                            }
-                        }
-                    }
-                });
-            }
-
-            if (boardData.workflows) {
-                let oldWfId = null;
-                let oldIndex = -1;
-                // Remove task from previous workflow
-                for (const wf of boardData.workflows) {
-                    const idx = wf.tasks.findIndex(t => t.id == task.id);
-                    if (idx !== -1) {
-                        oldWfId = wf.id;
-                        oldIndex = idx;
-                        wf.tasks.splice(idx, 1);
-                        break;
-                    }
-                }
-
-                // Add task to target workflow
-                const targetWf = boardData.workflows.find(w => w.id == workflowId);
-                if (targetWf) {
-                    if (oldWfId == workflowId && oldIndex !== -1) {
-                        targetWf.tasks.splice(oldIndex, 0, task);
-                    } else {
-                        targetWf.tasks.push(task);
-                    }
-                }
-            }
-
-            const dataStr = JSON.stringify(boardData);
-            db.run("UPDATE board_store SET data = ? WHERE id = 1", [dataStr], (err) => {
-                if (err) {
-                    logger.error(`Error saving board to DB after task update: ${err.message}`);
-                    return;
-                }
-                logger.info(`Task ${task.title} updated by ${socket.user.name}`);
-                io.emit('boardUpdate', boardData);
-            });
-        });
-    });
-
+    // ── disconnect ─────────────────────────────────────────────────────────
     socket.on('disconnect', (reason) => {
         onlineUsers.delete(socket.id);
-        io.emit('onlineUsers', Array.from(onlineUsers.values()));
+        broadcastOnlineUsers();
+        broadcastBoardPresence();
         logger.socket(`User disconnected: ${socket.user.name} (${reason})`);
     });
+
+    function broadcastOnlineUsers() {
+        io.emit('onlineUsers', Array.from(onlineUsers.values()));
+    }
 });
+
+// --------------------------------------------------------------------------
+// Start server
+// --------------------------------------------------------------------------
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    logger.success(`Server running on http://localhost:${PORT}`);
+    logger.success(`Ananke v3.0 running on http://localhost:${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+});
+
+// --------------------------------------------------------------------------
+// Graceful Shutdown & Process Safety
+// --------------------------------------------------------------------------
+
+function gracefulShutdown(signal) {
+    logger.info(`${signal} received. Shutting down gracefully...`);
+    server.close(() => {
+        logger.info('HTTP server closed.');
+        io.close(() => {
+            logger.info('Socket.IO connections closed.');
+            db.close((err) => {
+                if (err) logger.error('Error closing SQLite DB:', err.message);
+                else logger.info('SQLite database closed.');
+                process.exit(0);
+            });
+        });
+    });
+
+    setTimeout(() => {
+        logger.error('Forced shutdown after timeout.');
+        process.exit(1);
+    }, 10000).unref();
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason) => {
+    logger.error('Unhandled Promise Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+    logger.error('Uncaught Exception:', err.stack || err);
 });

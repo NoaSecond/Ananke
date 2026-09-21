@@ -2,9 +2,10 @@ import { elements } from './dom.js';
 import * as API from './api.js';
 import { state, getFullUrl } from './state.js';
 import { openModal, closeModal, showConfirm } from './modals.js';
-import { renderBoard, saveData, saveTaskOnly } from './board-ui.js';
-import { Logger, getInitials, getContrastYIQ, renderSafeMarkdown, escapeHtml } from './utils.js';
+import { renderBoard, saveData, saveTaskOnly, isCurrentBoardReader } from './board-ui.js';
+import { Logger, getInitials, getContrastYIQ, renderSafeMarkdown, escapeHtml, renderAvatarHtml, resolveUser } from './utils.js';
 import { trackEvent } from './board-ui.js';
+import { t } from './i18n.js';
 
 let tempTags = [];
 let tempCustomFields = [];
@@ -122,13 +123,15 @@ export const initTaskListeners = () => {
                 break;
             }
         }
-        renderBoard();
         closeModal(elements.taskModal);
+        renderBoard();
     });
 
     elements.taskForm.deleteBtn.addEventListener('click', () => {
         const taskId = elements.taskForm.id.value;
-        showConfirm('Delete task?', () => {
+        showConfirm(t('task.confirm_delete') || 'Delete task?', () => {
+            closeModal(elements.taskModal);
+            closeModal(elements.viewTaskModal);
             for (const workflow of state.boardData.workflows) {
                 const tIndex = workflow.tasks.findIndex(t => t.id == taskId);
                 if (tIndex !== -1) {
@@ -144,7 +147,6 @@ export const initTaskListeners = () => {
             }
             saveData();
             renderBoard();
-            closeModal(elements.taskModal);
         });
     });
 
@@ -158,9 +160,9 @@ export const initTaskListeners = () => {
                 newTask.title = `${task.title} (Copy)`;
                 const taskIndex = workflow.tasks.findIndex(t => t.id == taskId);
                 workflow.tasks.splice(taskIndex + 1, 0, newTask);
+                closeModal(elements.taskModal);
                 saveData();
                 renderBoard();
-                closeModal(elements.taskModal);
                 break;
             }
         }
@@ -661,7 +663,7 @@ export const openViewTaskModal = (task, workflow) => {
 
     // Hide edit button for readers
     if (elements.viewTaskDisplay.editBtn) {
-        elements.viewTaskDisplay.editBtn.style.display = state.currentUser?.role === 'reader' ? 'none' : 'flex';
+        elements.viewTaskDisplay.editBtn.style.display = isCurrentBoardReader() ? 'none' : 'flex';
     }
 
     elements.viewTaskDisplay.title.textContent = task.title;
@@ -677,13 +679,11 @@ export const openViewTaskModal = (task, workflow) => {
     elements.viewTaskAssignees.style.flexWrap = 'wrap';
     elements.viewTaskAssignees.style.gap = '8px';
     elements.viewTaskAssignees.innerHTML = (task.assignees || []).map(a => {
-        const isCurrentUser = state.currentUser && (a.id === state.currentUser.id || a.name === state.currentUser.name);
-        const currentUserObj = isCurrentUser ? state.currentUser : a;
-        const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : a.avatar_url;
-        const safeName = escapeHtml(currentUserObj.name);
+        const resolved = resolveUser(a);
+        const safeName = escapeHtml(resolved.name);
         return `
             <div class="assignee-chip" style="border: 1px solid var(--border-color); background: var(--bg-color);">
-                ${avatarUrl ? `<img src="${getFullUrl(avatarUrl)}" class="assignee-avatar-small" title="${safeName}" style="object-fit: cover;">` : `<div class="assignee-avatar-small" title="${safeName}">${getInitials(currentUserObj)}</div>`}
+                ${renderAvatarHtml(a, { className: 'assignee-avatar-small', title: safeName })}
                 <span style="font-size:0.9rem;">${safeName}</span>
             </div>
         `;
@@ -714,7 +714,7 @@ export const openViewTaskModal = (task, workflow) => {
                     </div>
                     ${items.map((item, i) => `
                         <div style="display:flex; align-items:flex-start; gap:6px; margin-bottom: 4px;">
-                            <input type="checkbox" class="checklist-view-toggle cursor-pointer" style="margin-top:2px; width:16px; height:16px; flex-shrink:0;" data-field="${f.name.replace(/"/g, '&quot;')}" data-idx="${i}" ${item.checked ? 'checked' : ''} ${state.currentUser?.role === 'reader' ? 'disabled' : ''}>
+                            <input type="checkbox" class="checklist-view-toggle cursor-pointer" style="margin-top:2px; width:16px; height:16px; flex-shrink:0;" data-field="${f.name.replace(/"/g, '&quot;')}" data-idx="${i}" ${item.checked ? 'checked' : ''} ${isCurrentBoardReader() ? 'disabled' : ''}>
                             <span style="font-size: 0.9rem; line-height: 1.2; padding-top:2px; ${item.checked ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${item.text}</span>
                         </div>
                     `).join('')}
@@ -1015,15 +1015,13 @@ const renderCustomFields = (fields) => {
 const renderTaskAssignees = () => {
     elements.taskAssigneesContainer.innerHTML = '';
     tempAssignees.forEach((user, index) => {
+        const resolved = resolveUser(user);
         const el = document.createElement('div');
         el.className = 'assignee-chip';
-        const isCurrentUser = state.currentUser && (user.id === state.currentUser.id || user.name === state.currentUser.name);
-        const currentUserObj = isCurrentUser ? state.currentUser : user;
-        const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : user.avatar_url;
         el.innerHTML = `
             <span class="material-symbols-outlined drag-handle" style="font-size: 14px; margin-right: 4px; opacity: 0.5; cursor: grab;">drag_indicator</span>
-            ${avatarUrl ? `<img src="${getFullUrl(avatarUrl)}" class="assignee-avatar-small" style="object-fit: cover;">` : `<div class="assignee-avatar-small">${getInitials(currentUserObj)}</div>`}
-            <span>${currentUserObj.name}</span>
+            ${renderAvatarHtml(user, { className: 'assignee-avatar-small' })}
+            <span>${escapeHtml(resolved.name)}</span>
             <span class="remove-assignee" style="cursor: pointer; opacity: 0.7; margin-left: 4px;">&times;</span>
         `;
         el.querySelector('.remove-assignee').onclick = () => {
@@ -1053,14 +1051,7 @@ const renderTaskAssignees = () => {
 const renderAssigneePickerList = async () => {
     elements.assigneeListEl.innerHTML = 'Loading...';
     try {
-        // We need a list of all users, let's fetch simple list
-        // Assuming API is imported, wait, API is not imported yet. 
-        // I should import API or use existing list if available?
-        // Let's use API.
         const data = await API.getSimpleList();
-        // Dynamic import to avoid top-level circular dep if any? No, static import is fine generally.
-        // Let's stick to import * as API at top. (Check file imports)
-
         const users = data.users || [];
         if (state.currentUser) {
             users.sort((a, b) => {
@@ -1074,15 +1065,13 @@ const renderAssigneePickerList = async () => {
 
         elements.assigneeListEl.innerHTML = '';
         users.forEach(u => {
+            const resolved = resolveUser(u);
             const div = document.createElement('div');
             div.className = 'assignee-item';
-            const isCurrentUser = state.currentUser && (u.id === state.currentUser.id || u.name === state.currentUser.name);
-            const currentUserObj = isCurrentUser ? state.currentUser : u;
-            const avatarUrl = isCurrentUser && state.currentUser.avatar_url ? state.currentUser.avatar_url : u.avatar_url;
             div.innerHTML = `
-                ${avatarUrl ? `<img src="${getFullUrl(avatarUrl)}" class="assignee-avatar-small" style="object-fit: cover;">` : `<div class="assignee-avatar-small">${getInitials(currentUserObj)}</div>`}
-                <span>${currentUserObj.name}</span>
-             `;
+                ${renderAvatarHtml(u, { className: 'assignee-avatar-small' })}
+                <span>${escapeHtml(resolved.name)}</span>
+            `;
             div.onclick = () => {
                 addTempAssignee(u);
                 elements.assigneePicker.classList.add('hidden');

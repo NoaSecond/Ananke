@@ -239,6 +239,7 @@ select option {
     color: var(--primary-color) !important;
 }
 
+.role-select[data-role="user"],
 .role-select[data-role="reader"] {
     border-color: rgba(148, 163, 184, 0.4);
     background-color: rgba(148, 163, 184, 0.1);
@@ -259,6 +260,19 @@ select option {
     height: 32px;
     box-sizing: border-box;
     border: 1px solid transparent;
+}
+
+.role-badge.user,
+.role-badge.reader {
+    background-color: rgba(148, 163, 184, 0.1);
+    color: #94a3b8;
+    border-color: rgba(148, 163, 184, 0.4);
+}
+
+.role-badge.admin {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.4);
 }
 
 .role-badge.owner {
@@ -329,13 +343,14 @@ select option {
     gap: 0.4rem;
     color: #FFDD00 !important;
     text-decoration: none;
-    font-weight: 600;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    font-weight: 500;
+    transition: opacity 0.2s ease;
 }
 
 .bmc-link:hover {
-    transform: scale(1.05);
-    opacity: 0.9;
+    transform: none;
+    opacity: 0.85;
+    text-decoration: underline;
 }
 
 .bmc-link .material-symbols-outlined {
@@ -346,8 +361,9 @@ select option {
 .search-container {
     flex: 1;
     max-width: 480px;
-    margin: 0 1.5rem;
+    margin: 0 auto;
     position: relative;
+    min-width: 200px;
 }
 
 .search-wrapper {
@@ -444,4 +460,19 @@ select option {
 
 .autocomplete-item .item-value {
     font-size: 0.9rem;
+}
+
+/* Spinner / Throbber */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    border-top-color: var(--clr-primary, #6366f1);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
 }

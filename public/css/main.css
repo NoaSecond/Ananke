@@ -1,9 +1,14 @@
-@import 'modules/variables.css';
-@import 'modules/base.css';
-@import 'modules/layout.css';
-@import 'modules/components.css';
-@import 'modules/kanban.css';
-@import 'modules/modals.css';
-@import 'modules/auth.css';
-@import 'modules/settings.css';
-@import 'modules/responsive.css';
+/* === main.css — Ananke v3.0 === */
+/* Entry point: imports all CSS modules in order */
+
+@import url('./modules/variables.css');
+@import url('./modules/base.css');
+@import url('./modules/layout.css');
+@import url('./modules/dashboard.css');
+@import url('./modules/board-settings.css');
+@import url('./modules/components.css');
+@import url('./modules/kanban.css');
+@import url('./modules/modals.css');
+@import url('./modules/settings.css');
+@import url('./modules/auth.css');
+@import url('./modules/responsive.css');

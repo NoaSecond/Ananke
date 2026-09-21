@@ -1,20 +1,37 @@
+/**
+ * app.js — Ananke v3.0
+ *
+ * Responsabilité unique (S) : orchestrateur frontend — routing SPA, initialisation socket,
+ * coordination entre les vues. Aucune logique UI directe ici.
+ */
+
 import { Logger } from './modules/utils.js';
+import { createAvatarElement } from './modules/avatar.js';
 import { state, API_URL, basePath, getFullUrl } from './modules/state.js';
-import { elements } from './modules/dom.js';
 import { initModals } from './modules/modals.js';
-import { initAuth, handleUnauthorized, updateUserUI } from './modules/auth-ui.js';
+import { initAuth, handleUnauthorized, updateUserUI, openSetupModal, toggleSettingsMenu, setProfileNavigateHandler } from './modules/auth-ui.js';
 import { initBoardListeners, renderBoard } from './modules/board-ui.js';
 import { initTaskListeners, refreshTaskView } from './modules/task-ui.js';
 import { initWorkflowListeners } from './modules/workflow-ui.js';
 import { initUserManagement } from './modules/user-ui.js';
-import * as API from './modules/api.js';
 import { initThemeListeners, applyBackground } from './modules/theme-ui.js';
 import { initSearch } from './modules/search-ui.js';
+import { initDashboard, renderDashboard, openCreateBoardModal, updateDashboardPresence } from './modules/dashboard-ui.js';
+import { initBoardSettings, renderBoardSettings } from './modules/board-settings-ui.js';
+import { renderProfileView } from './modules/profile-ui.js';
+import { renderAppSettingsView } from './modules/app-settings-ui.js';
+import { initI18n, setLanguage, getLanguage, registerLanguageListener, t, translateDOM } from './modules/i18n.js';
+import { renderBoardIconHtml, loadBoardIcons } from './modules/board-icons.js';
+import * as API from './modules/api.js';
+
+// --------------------------------------------------------------------------
+// Boot
+// --------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
-    Logger.info('🚀 Ananke application started');
+    Logger.info('🚀 Ananke v3.0 started');
 
-    // --- Initialization ---
+    // Core init
     initModals();
     initBoardListeners();
     initTaskListeners();
@@ -23,289 +40,609 @@ document.addEventListener('DOMContentLoaded', () => {
     initThemeListeners();
     initSearch();
 
-    function escapeHtml(unsafe) {
-        return (unsafe || '').toString()
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
-    function appendLog(logEntry) {
-        if (!elements.logsContainer) return;
-        const colorMap = {
-            'INFO': '#4fc1ff',
-            'ERROR': '#f44336',
-            'WARN': '#ff9800',
-            'SUCCESS': '#4caf50',
-            'SOCKET': '#d32f2f',
-            'HTTP': '#00bcd4'
-        };
-        const color = colorMap[logEntry.type] || '#fff';
-        const logLine = document.createElement('div');
-        logLine.innerHTML = `<span style="color: gray;">[${logEntry.timestamp}]</span> <span style="color: ${color}; font-weight: bold;">${logEntry.type}:</span> <span style="color: #d4d4d4;">${escapeHtml(logEntry.message)}</span>`;
-        elements.logsContainer.appendChild(logLine);
-        elements.logsContainer.scrollTop = elements.logsContainer.scrollHeight;
-    }
-
-    if (elements.serverLogsBtn) {
-        elements.serverLogsBtn.onclick = async () => {
-            if (elements.logsModal) elements.logsModal.classList.add('visible');
-            try {
-                const logs = await API.getLogs();
-                if (elements.logsContainer) {
-                    elements.logsContainer.innerHTML = '';
-                    logs.forEach(log => appendLog(log));
-                }
-            } catch (err) {
-                Logger.error('Failed to load logs', err);
-            }
-        };
-    }
-
-    if (elements.clearLogsBtn) {
-        elements.clearLogsBtn.onclick = () => {
-            if (elements.logsContainer) elements.logsContainer.innerHTML = '';
-        };
-    }
-
-    // Theme Logic
-    const initTheme = () => {
-        const storedTheme = localStorage.getItem('theme');
-        const themeText = document.getElementById('theme-text');
-        const themeIcon = document.querySelector('.theme-icon');
-
-        const updateThemeUI = (isDark) => {
-            if (isDark) {
-                document.body.classList.add('dark-mode');
-                document.body.classList.remove('light-mode');
-                if (themeText) themeText.textContent = 'Light Mode';
-                if (themeIcon) themeIcon.textContent = 'light_mode';
+    initDashboard({
+        onBoardSelect:   navigateToBoard,
+        onBoardCreated:  renderSidebarBoards,
+        onBoardSettings: navigateToBoardSettings,
+    });
+    initBoardSettings({
+        onBack: () => {
+            if (previousBoardSettingsView === 'dashboard') {
+                navigateToDashboard();
             } else {
-                document.body.classList.remove('dark-mode');
-                document.body.classList.add('light-mode');
-                if (themeText) themeText.textContent = 'Dark Mode';
-                if (themeIcon) themeIcon.textContent = 'dark_mode';
+                navigateToBoard(state.currentBoardId);
             }
-        };
+        },
+        onDeleted: navigateToDashboard,
+        onUpdated: () => renderSidebarBoards(),
+    });
 
-        if (storedTheme === 'light') {
-            updateThemeUI(false);
-        } else {
-            updateThemeUI(true); // Default dark
-        }
-
-        if (elements.themeToggleBtn) {
-            elements.themeToggleBtn.onclick = (e) => {
-                e.stopPropagation();
-                const isDark = document.body.classList.toggle('dark-mode');
-                localStorage.setItem('theme', isDark ? 'dark' : 'light');
-                updateThemeUI(isDark);
-            };
-        }
-    };
     initTheme();
+    loadBoardIcons();
+    setupLanguageControls();
+    initSidebar();
+    initAuth(initSocket);
+    setProfileNavigateHandler(navigateToProfile);
 
-    // Language Logic
-    const initLanguage = () => {
-        const storedLang = localStorage.getItem('lang') || 'en';
-        const langBtns = document.querySelectorAll('.lang-btn');
+    // Board settings button in header (.settings-container / #settings-toggle-btn)
+    const openBoardSettings = (e) => {
+        e?.stopPropagation();
+        if (state.currentBoardId) navigateToBoardSettings(state.currentBoardId);
+    };
+    document.getElementById('settings-toggle-btn')?.addEventListener('click', openBoardSettings);
 
-        const updateLangUI = (lang) => {
-            langBtns.forEach(btn => {
-                if (btn.dataset.lang === lang) {
-                    btn.style.background = 'var(--primary-color)';
-                    btn.style.color = 'white';
-                } else {
-                    btn.style.background = 'none';
-                    btn.style.color = 'var(--text-color)';
+    // Server logs modal
+    const openLogsModal = async () => {
+        const modal = document.getElementById('logs-modal');
+        if (!modal) return;
+
+        // Open modal immediately so the UI is responsive
+        modal.classList.add('visible');
+
+        const container = document.getElementById('logs-container');
+        const badge = document.getElementById('logs-count-badge');
+        if (badge) badge.textContent = '';
+
+        // Display throbber immediately
+        if (container) {
+            container.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 260px; gap: 14px; color: #94a3b8;">
+                    <div class="spinner"></div>
+                    <span style="font-size: 0.85rem;">Chargement des logs en arrière-plan...</span>
+                </div>
+            `;
+        }
+
+        try {
+            const logs = await API.getLogs();
+
+            // If the user closed the modal in the meantime, do not render
+            if (!modal.classList.contains('visible')) return;
+
+            if (container) {
+                if (!Array.isArray(logs) || logs.length === 0) {
+                    container.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 2rem;">Aucun log disponible.</div>`;
+                    return;
                 }
-            });
 
-            localStorage.setItem('lang', lang);
+                const colorMap = {
+                    INFO: '#4fc1ff', ERROR: '#f44336', WARN: '#ff9800',
+                    SUCCESS: '#4caf50', SOCKET: '#d32f2f', HTTP: '#00bcd4',
+                };
 
-            // Literal translations for key UI elements
-            const translations = {
-                en: {
-                    addColumn: '<span class="material-symbols-outlined">add</span> Add Column',
-                    myProfile: '<span class="material-symbols-outlined">person</span> My Profile',
-                    users: '<span class="material-symbols-outlined">group</span> Users',
-                    background: '<span class="material-symbols-outlined">palette</span> Background',
-                    export: '<span class="material-symbols-outlined">download</span> Export (.kanban)',
-                    logout: '<span class="material-symbols-outlined">logout</span> Logout',
-                    searchPlaceholder: 'Search (Tag: Person: )',
-                    discussion: 'Discussion',
-                    commentPlaceholder: 'Write a comment...'
-                },
-                fr: {
-                    addColumn: '<span class="material-symbols-outlined">add</span> Ajouter Colonne',
-                    myProfile: '<span class="material-symbols-outlined">person</span> Mon Profil',
-                    users: '<span class="material-symbols-outlined">group</span> Utilisateurs',
-                    background: '<span class="material-symbols-outlined">palette</span> Arrière-plan',
-                    export: '<span class="material-symbols-outlined">download</span> Exporter (.kanban)',
-                    logout: '<span class="material-symbols-outlined">logout</span> Déconnexion',
-                    searchPlaceholder: 'Rechercher (Tag: Person: )',
-                    discussion: 'Discussion',
-                    commentPlaceholder: 'Écrire un commentaire...'
-                }
-            };
+                // Build HTML once without repeated DOM reflows
+                const html = logs.map(entry => {
+                    const color = colorMap[entry.type] || '#fff';
+                    return `<div><span style="color:gray">[${entry.timestamp}]</span> <span style="color:${color};font-weight:bold">${entry.type}:</span> <span style="color:#d4d4d4">${escHtml(entry.message)}</span></div>`;
+                }).join('');
 
-            const t = translations[lang];
-            const btnAddCol = document.getElementById('add-workflow-btn');
-            if (btnAddCol) btnAddCol.innerHTML = t.addColumn;
+                container.innerHTML = html;
+                container.scrollTop = container.scrollHeight;
 
-            const btnProfile = document.getElementById('profile-btn');
-            if (btnProfile) btnProfile.innerHTML = t.myProfile;
-
-            const btnUsers = document.getElementById('manage-users-btn');
-            if (btnUsers) btnUsers.innerHTML = t.users;
-
-            const btnBg = document.getElementById('bg-customize-btn');
-            if (btnBg) btnBg.innerHTML = t.background;
-
-            const btnExport = document.getElementById('export-btn');
-            if (btnExport) btnExport.innerHTML = t.export;
-
-            const btnLogout = document.getElementById('logout-btn');
-            if (btnLogout) btnLogout.innerHTML = t.logout;
-
-            const inputSearch = document.getElementById('global-search');
-            if (inputSearch) inputSearch.placeholder = t.searchPlaceholder;
-
-            const discussionHeader = document.querySelector('#view-task-discussion-section h4');
-            if (discussionHeader) discussionHeader.textContent = t.discussion;
-
-            const commentInput = document.getElementById('task-comment-input');
-            if (commentInput) commentInput.placeholder = t.commentPlaceholder;
-
-            if (lang === 'fr') {
-                Logger.info('Langue changée en Français');
-            } else {
-                Logger.info('Language changed to English');
+                if (badge) badge.textContent = `${logs.length} logs`;
             }
-        };
-
-        updateLangUI(storedLang);
-
-        langBtns.forEach(btn => {
-            btn.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                updateLangUI(btn.dataset.lang);
-            };
-        });
-
-        // Toggle on row click
-        const langRow = document.getElementById('language-toggle-btn');
-        if (langRow) {
-            langRow.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const current = localStorage.getItem('lang') || 'en';
-                const newLang = current === 'en' ? 'fr' : 'en';
-                updateLangUI(newLang);
-            };
+        } catch (err) {
+            Logger.error('Failed to load logs', err);
+            if (container && modal.classList.contains('visible')) {
+                container.innerHTML = `<div style="color: #f44336; padding: 1.5rem; text-align: center;">Erreur lors du chargement des logs.</div>`;
+            }
         }
     };
-    initLanguage();
+    document.getElementById('server-logs-btn')?.addEventListener('click', openLogsModal);
+    document.getElementById('sidebar-logs-btn')?.addEventListener('click', openLogsModal);
 
-    // Init Auth (calls initSocket on success)
-    initAuth(initSocket);
+    document.getElementById('clear-logs-btn')?.addEventListener('click', () => {
+        const container = document.getElementById('logs-container');
+        if (container) container.innerHTML = '';
+        const badge = document.getElementById('logs-count-badge');
+        if (badge) badge.textContent = '0 logs';
+    });
 
-    async function initSocket() {
-        if (state.socket) return;
-
-        // Fetch initial data via REST for reliability
-        try {
-            const data = await API.getBoard();
-            if (data && data.workflows) {
-                state.boardData = data;
-                applyBackground(state.boardData.background);
-                renderBoard();
-            }
-        } catch (e) {
-            Logger.debug('Rest API board fetch failed, relying on socket');
-        }
-
-        state.socket = io({ path: basePath + '/socket.io' });
-
-        // Erreur d'authentification socket (session expirée, reset serveur, instance différente)
-        state.socket.on('connect_error', (err) => {
-            if (err && err.message && err.message.toLowerCase().includes('auth')) {
-                Logger.warn('Erreur d\'authentification Socket.io — retour à la connexion');
-                handleUnauthorized();
-            }
-        });
-
-        // Reconnexion après redémarrage du serveur : re-valider la session côté serveur
-        if (state.socket.io) {
-            state.socket.io.on('reconnect', async () => {
-                try {
-                    const data = await API.getMe();
-                    state.currentUser = data.user;
-                    updateUserUI();
-                } catch (e) {
-                    Logger.warn('Session expirée lors de la reconnexion socket — déconnexion');
-                    handleUnauthorized();
-                }
-            });
-        }
-
-        state.socket.on('boardUpdate', (data) => {
-            if (!state.isDraggingInternal) {
-                state.boardData = data;
-                applyBackground(state.boardData.background);
-                renderBoard();
-                refreshTaskView();
-            }
-        });
-
-        state.socket.on('serverLog', (logEntry) => {
-            appendLog(logEntry);
-        });
-
-        state.socket.on('onlineUsers', (users) => {
-            if (!elements.onlineUsersContainer) return;
-            elements.onlineUsersContainer.innerHTML = '';
-
-            const uniqueUsersMap = new Map();
-            users.forEach(u => uniqueUsersMap.set(u.id, u));
-            const uniqueUsers = Array.from(uniqueUsersMap.values());
-
-            uniqueUsers.forEach(user => {
-                const userEl = document.createElement('div');
-                userEl.className = 'online-user-avatar';
-                userEl.title = user.name + (user.role ? ` (${user.role})` : '');
-
-                if (user.avatar_url) {
-                    userEl.style.backgroundImage = `url('${getFullUrl(user.avatar_url)}')`;
-                    userEl.style.backgroundSize = 'cover';
-                    userEl.style.backgroundPosition = 'center';
-                } else {
-                    const initials = (user.name || 'U').substring(0, 2).toUpperCase();
-                    userEl.textContent = initials;
-                }
-                elements.onlineUsersContainer.appendChild(userEl);
-            });
-        });
-
-        state.socket.on('connect', () => {
-            Logger.info('🔌 Connected to server');
-        });
-    }
-
-    // Vérification de validité de session dès que l'onglet redevient actif
-    const verifySessionOnActive = () => {
+    // Session check on tab focus
+    const verifySession = () => {
         if (state.currentUser) {
             API.getMe().catch(() => {
-                Logger.warn('Session non valide lors du focus — retour au login');
+                Logger.warn('Session invalid on focus — redirecting to login');
                 handleUnauthorized();
             });
         }
     };
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') verifySessionOnActive();
+        if (document.visibilityState === 'visible') verifySession();
     });
-    window.addEventListener('focus', verifySessionOnActive);
+    window.addEventListener('focus', verifySession);
 });
+
+// --------------------------------------------------------------------------
+// SPA Router
+// --------------------------------------------------------------------------
+
+/**
+ * Navigate to a specific board's kanban view.
+ * @param {string} boardId
+ */
+export async function navigateToBoard(boardId) {
+    state.currentBoardId = boardId;
+    state.currentView    = 'board';
+
+    showView('board');
+    updateSidebarActiveBoard(boardId);
+
+    // Auto-collapse sidebar in board view to maximize kanban board space
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.classList.add('collapsed');
+        sidebar.classList.remove('mobile-open');
+    }
+
+    // Set header title immediately from state.boards to prevent lag/flicker
+    const existingBoard = state.boards.find(b => b.id === boardId);
+    const initialTitle = existingBoard?.name || 'Board';
+    const headerTitle = document.getElementById('board-title-display');
+    if (headerTitle) headerTitle.textContent = initialTitle;
+    document.title = `${initialTitle} - Ananke`;
+
+    // Ask socket to join this board's room
+    if (state.socket) {
+        state.socket.emit('joinBoard', boardId);
+    }
+
+    try {
+        const { board } = await API.getBoard(boardId);
+        if (board) {
+            if (existingBoard) {
+                existingBoard.name = board.name;
+                existingBoard.description = board.description;
+                existingBoard.color = board.color;
+                existingBoard.icon = board.icon;
+            }
+            if (board.data) {
+                state.boardData = board.data;
+                applyBackground(state.boardData.background);
+                renderBoard();
+            }
+
+            const finalTitle = board.name || initialTitle;
+            if (headerTitle) headerTitle.textContent = finalTitle;
+            document.title = `${finalTitle} - Ananke`;
+        }
+    } catch (err) {
+        Logger.error('Failed to load board', err);
+    }
+
+    // Update board header visibility
+    const boardHeader = document.getElementById('board-header');
+    if (boardHeader) boardHeader.style.display = 'flex';
+    updateBoardHeaderPresence();
+}
+
+/**
+ * Navigate to the dashboard.
+ */
+export async function navigateToDashboard() {
+    state.currentView    = 'dashboard';
+
+    // Leave any active board on socket
+    if (state.socket && state.currentBoardId) {
+        state.socket.emit('leaveBoard');
+    }
+    state.currentBoardId = null;
+
+    showView('dashboard');
+    updateSidebarActiveBoard(null);
+    applyBackground(null);
+
+    // Re-expand sidebar on dashboard
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.classList.remove('collapsed');
+    }
+
+    try {
+        const { boards } = await API.getBoards();
+        state.boards = boards;
+        renderDashboard();
+        renderSidebarBoards();
+    } catch (err) {
+        Logger.error('Failed to load boards', err);
+    }
+
+    // Hide board header on dashboard
+    const boardHeader = document.getElementById('board-header');
+    if (boardHeader) boardHeader.style.display = 'none';
+}
+
+let previousBoardSettingsView = 'dashboard';
+
+/**
+ * Navigate to board settings.
+ * @param {string} boardId
+ */
+export async function navigateToBoardSettings(boardId) {
+    previousBoardSettingsView = state.currentView || 'dashboard';
+    state.currentBoardId = boardId;
+    state.currentView    = 'board-settings';
+
+    showView('board-settings');
+    updateSidebarActiveBoard(boardId);
+    applyBackground(null);
+
+    // Auto-collapse sidebar in board settings
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.classList.add('collapsed');
+        sidebar.classList.remove('mobile-open');
+    }
+
+    // Hide board header on settings
+    const boardHeader = document.getElementById('board-header');
+    if (boardHeader) boardHeader.style.display = 'none';
+
+    try {
+        const { members } = await API.getBoardMembers(boardId);
+        state.boardMembers = members;
+    } catch { state.boardMembers = []; }
+
+    await renderBoardSettings();
+}
+
+/**
+ * Navigate to user profile settings (full-page view).
+ */
+let previousView = 'dashboard';
+
+export async function navigateToProfile() {
+    previousView = state.currentView || 'dashboard';
+    state.currentView = 'profile';
+
+    if (state.socket && state.currentBoardId && previousView === 'board') {
+        state.socket.emit('leaveBoard');
+    }
+
+    showView('profile');
+    updateSidebarActiveBoard(null);
+    applyBackground(null);
+
+    // Auto-collapse sidebar in profile view
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.classList.add('collapsed');
+        sidebar.classList.remove('mobile-open');
+    }
+
+    // Hide board header on profile
+    const boardHeader = document.getElementById('board-header');
+    if (boardHeader) boardHeader.style.display = 'none';
+
+    await renderProfileView({
+        onBack: () => {
+            if (previousView === 'board' && state.currentBoardId) {
+                navigateToBoard(state.currentBoardId);
+            } else if (previousView === 'board-settings' && state.currentBoardId) {
+                navigateToBoardSettings(state.currentBoardId);
+            } else {
+                navigateToDashboard();
+            }
+        }
+    });
+}
+
+/**
+ * Navigate to Application settings (full-page view: users, language, theme).
+ */
+let previousAppSettingsView = 'dashboard';
+
+export async function navigateToAppSettings() {
+    previousAppSettingsView = state.currentView || 'dashboard';
+    state.currentView = 'app-settings';
+
+    if (state.socket && state.currentBoardId && previousAppSettingsView === 'board') {
+        state.socket.emit('leaveBoard');
+    }
+
+    showView('app-settings');
+    updateSidebarActiveBoard(null);
+    applyBackground(null);
+
+    // Auto-collapse sidebar in app settings view
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.classList.add('collapsed');
+        sidebar.classList.remove('mobile-open');
+    }
+
+    // Hide board header on settings
+    const boardHeader = document.getElementById('board-header');
+    if (boardHeader) boardHeader.style.display = 'none';
+
+    await renderAppSettingsView({
+        onBack: () => {
+            if (previousAppSettingsView === 'board' && state.currentBoardId) {
+                navigateToBoard(state.currentBoardId);
+            } else if (previousAppSettingsView === 'board-settings' && state.currentBoardId) {
+                navigateToBoardSettings(state.currentBoardId);
+            } else if (previousAppSettingsView === 'profile') {
+                navigateToProfile();
+            } else {
+                navigateToDashboard();
+            }
+        }
+    });
+}
+
+/**
+ * Show one view, hide others.
+ * @param {'dashboard'|'board'|'board-settings'|'profile'|'app-settings'} view
+ */
+function showView(view) {
+    document.getElementById('view-dashboard')?.classList.toggle('hidden', view !== 'dashboard');
+    document.getElementById('kanban-board')?.classList.toggle('hidden', view !== 'board');
+    document.getElementById('view-board-settings')?.classList.toggle('hidden', view !== 'board-settings');
+    document.getElementById('view-profile')?.classList.toggle('hidden', view !== 'profile');
+    document.getElementById('view-app-settings')?.classList.toggle('hidden', view !== 'app-settings');
+    document.getElementById('nav-dashboard')?.classList.toggle('active', view === 'dashboard');
+    document.getElementById('sidebar-settings-btn')?.classList.toggle('active', view === 'app-settings');
+}
+
+// --------------------------------------------------------------------------
+// Sidebar
+// --------------------------------------------------------------------------
+
+function initSidebar() {
+    // Mobile toggle
+    const mobileToggle = document.getElementById('sidebar-toggle-mobile');
+    const overlay      = document.getElementById('sidebar-overlay');
+    if (mobileToggle) {
+        const sidebar = document.getElementById('sidebar');
+        mobileToggle.addEventListener('click', () => sidebar?.classList.toggle('mobile-open'));
+        overlay?.addEventListener('click', () => sidebar?.classList.remove('mobile-open'));
+    }
+
+    // Dashboard link
+    document.getElementById('nav-dashboard')?.addEventListener('click', navigateToDashboard);
+
+    // Sidebar settings button -> opens full-page settings view
+    document.getElementById('sidebar-settings-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigateToAppSettings();
+    });
+
+    // User profile in sidebar -> opens full-page profile view
+    document.getElementById('sidebar-user')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigateToProfile();
+    });
+}
+
+/**
+ * Populate the sidebar board list.
+ */
+export function renderSidebarBoards() {
+    const container = document.getElementById('sidebar-boards');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    state.boards.forEach(board => {
+        const item = document.createElement('button');
+        item.className = 'sidebar-item';
+        item.dataset.boardId = board.id;
+        if (board.id === state.currentBoardId) item.classList.add('active');
+
+        item.innerHTML = `
+            ${renderBoardIconHtml(board.icon || 'dashboard')}
+            <span class="sidebar-item-label">${escHtml(board.name)}</span>
+        `;
+        item.style.setProperty('--board-accent', board.color || 'var(--clr-primary)');
+        item.addEventListener('click', () => navigateToBoard(board.id));
+        container.appendChild(item);
+    });
+
+    // Add board button (admin/owner only)
+    if (state.currentUser && ['admin', 'owner'].includes(state.currentUser.role)) {
+        const addBtn = document.createElement('button');
+        addBtn.className = 'sidebar-add-board';
+        addBtn.innerHTML = `<span class="material-symbols-outlined">add</span><span>New board</span>`;
+        addBtn.addEventListener('click', openCreateBoardModal);
+        container.appendChild(addBtn);
+    }
+}
+
+function updateSidebarActiveBoard(boardId) {
+    document.getElementById('nav-dashboard')?.classList.toggle('active', state.currentView === 'dashboard');
+    document.querySelectorAll('#sidebar-boards .sidebar-item[data-board-id]').forEach(el => {
+        el.classList.toggle('active', Boolean(boardId) && el.dataset.boardId === boardId);
+    });
+}
+
+// --------------------------------------------------------------------------
+// Socket.io
+// --------------------------------------------------------------------------
+
+async function initSocket() {
+    if (state.socket) return;
+
+    state.socket = io({ path: basePath + '/socket.io' });
+
+    state.socket.on('connect_error', (err) => {
+        if (err?.message?.toLowerCase().includes('auth')) {
+            Logger.warn('Socket auth error — redirecting to login');
+            handleUnauthorized();
+        }
+    });
+
+    // Re-verify session and re-join board after reconnect
+    state.socket.io?.on('reconnect', async () => {
+        try {
+            const data = await API.getMe();
+            state.currentUser = data.user;
+            updateUserUI();
+            if (state.currentBoardId) {
+                state.socket.emit('joinBoard', state.currentBoardId);
+            }
+        } catch {
+            Logger.warn('Session expired on reconnect');
+            handleUnauthorized();
+        }
+    });
+
+    state.socket.on('connect', () => Logger.info('🔌 Connected to server'));
+
+    // Board update — only received for the room we joined
+    state.socket.on('boardUpdate', (data) => {
+        if (!state.isDraggingInternal && state.currentView === 'board') {
+            const boardData = (data && data.data) ? data.data : data;
+            state.boardData = boardData;
+            applyBackground(state.boardData.background);
+            renderBoard();
+            refreshTaskView();
+        }
+    });
+
+    state.socket.on('serverLog', appendLog);
+
+    state.socket.on('boardPresence', (presenceMap) => {
+        state.boardPresence = presenceMap || {};
+        if (state.currentView === 'dashboard') {
+            updateDashboardPresence();
+        } else if (state.currentView === 'board' && state.currentBoardId) {
+            updateBoardHeaderPresence();
+        }
+    });
+
+    state.socket.on('onlineUsers', (users) => {
+        if (state.currentView === 'board' && state.currentBoardId) {
+            updateBoardHeaderPresence();
+        }
+    });
+
+    // Load boards and navigate to dashboard on first connect
+    try {
+        const { boards } = await API.getBoards();
+        state.boards = boards;
+        renderSidebarBoards();
+        navigateToDashboard();
+    } catch (err) {
+        Logger.error('Failed to load initial boards', err);
+        navigateToDashboard();
+    }
+}
+
+function updateBoardHeaderPresence() {
+    const container = document.getElementById('online-users-container');
+    if (!container) return;
+    container.innerHTML = '';
+    const activeUsers = (state.boardPresence && state.currentBoardId && state.boardPresence[state.currentBoardId]) || [];
+    activeUsers.forEach(user => {
+        const el = createAvatarElement(user, {
+            className: 'online-user-avatar',
+            title: `${user.name || 'User'}${user.role ? ` (${user.role})` : ''}`
+        });
+        container.appendChild(el);
+    });
+}
+
+// --------------------------------------------------------------------------
+// Logs
+// --------------------------------------------------------------------------
+
+function appendLog(logEntry) {
+    const modal = document.getElementById('logs-modal');
+    if (!modal || !modal.classList.contains('visible')) return;
+
+    const container = document.getElementById('logs-container');
+    if (!container) return;
+
+    if (container.querySelector('.spinner')) {
+        container.innerHTML = '';
+    }
+
+    const colorMap = {
+        INFO: '#4fc1ff', ERROR: '#f44336', WARN: '#ff9800',
+        SUCCESS: '#4caf50', SOCKET: '#d32f2f', HTTP: '#00bcd4',
+    };
+    const color = colorMap[logEntry.type] || '#fff';
+    const line  = document.createElement('div');
+    line.innerHTML = `<span style="color:gray">[${logEntry.timestamp}]</span> <span style="color:${color};font-weight:bold">${logEntry.type}:</span> <span style="color:#d4d4d4">${escHtml(logEntry.message)}</span>`;
+    container.appendChild(line);
+    container.scrollTop = container.scrollHeight;
+}
+
+
+// --------------------------------------------------------------------------
+// Theme
+// --------------------------------------------------------------------------
+
+function initTheme() {
+    const storedTheme = localStorage.getItem('theme');
+    const applyTheme  = (isDark) => {
+        document.body.classList.toggle('dark-mode', isDark);
+        document.body.classList.toggle('light-mode', !isDark);
+        const icon = document.querySelector('.theme-icon');
+        const text = document.getElementById('theme-text');
+        if (icon) icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+        if (text) text.textContent = t(isDark ? 'settings.theme_light' : 'settings.theme_dark');
+    };
+    applyTheme(storedTheme !== 'light');
+
+    document.getElementById('theme-toggle-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isDark = document.body.classList.toggle('dark-mode');
+        document.body.classList.toggle('light-mode', !isDark);
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        applyTheme(isDark);
+    });
+}
+
+// --------------------------------------------------------------------------
+// Language
+// --------------------------------------------------------------------------
+
+async function setupLanguageControls() {
+    // Re-render current view and dynamic elements when language changes
+    registerLanguageListener(() => {
+        if (state.currentView === 'dashboard') {
+            renderDashboard();
+        } else if (state.currentView === 'board') {
+            renderBoard();
+        } else if (state.currentView === 'board-settings') {
+            renderBoardSettings();
+        } else if (state.currentView === 'profile') {
+            renderProfileView();
+        } else if (state.currentView === 'app-settings') {
+            renderAppSettingsView();
+        }
+
+        // Update theme toggle text in popup
+        const text = document.getElementById('theme-text');
+        if (text) {
+            const isDark = document.body.classList.contains('dark-mode');
+            text.textContent = t(isDark ? 'settings.theme_light' : 'settings.theme_dark');
+        }
+    });
+
+    await initI18n();
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await setLanguage(btn.dataset.lang);
+        });
+    });
+
+    document.getElementById('language-toggle-btn')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await setLanguage(getLanguage() === 'en' ? 'fr' : 'en');
+    });
+}
+
+// --------------------------------------------------------------------------
+// Helpers
+// --------------------------------------------------------------------------
+
+function escHtml(str) {
+    return (str || '').toString()
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}

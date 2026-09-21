@@ -3,6 +3,7 @@ import * as API from './api.js';
 import { state } from './state.js';
 import { Logger } from './utils.js';
 import { openModal } from './modals.js';
+import { renderAvatarHtml } from './avatar.js';
 
 export function initUserManagement() {
     if (elements.manageUsersBtn) {
@@ -52,7 +53,7 @@ export async function loadUsers() {
     listEl.innerHTML = '<div style="padding:1rem; text-align:center; opacity:0.7;">Loading...</div>';
 
     try {
-        const data = await API.getUsers();
+        const data = await API.getUsers(); // now /api/users
         if (data.users && Array.isArray(data.users)) {
             renderUserList(data.users);
         } else {
@@ -74,18 +75,22 @@ function renderUserList(users) {
     listEl.innerHTML = users.map(u => {
         const isOwner = u.role === 'owner';
         const isSelf = state.currentUser && state.currentUser.id === u.id;
+        const avatarHtml = renderAvatarHtml(u, {
+            className: 'member-avatar',
+            style: 'width:32px;height:32px;font-size:0.75rem;flex-shrink:0;'
+        });
 
         return `
-        <div class="user-row">
-            <div class="user-info">
+        <div class="user-row" style="display:flex;align-items:center;gap:0.75rem;">
+            ${avatarHtml}
+            <div class="user-info" style="flex:1;min-width:0;">
                 <strong>${u.first_name || ''} ${u.last_name || ''}</strong>
                 <small>${u.email}</small>
             </div>
             <div style="display:flex; align-items:center; gap:0.5rem;">
                 ${!isOwner ? `
                     <select onchange="window.changeUserRole('${u.id}', this.value)" class="small-select role-select" data-role="${u.role}">
-                        <option value="reader" ${u.role === 'reader' ? 'selected' : ''}>Reader</option>
-                        <option value="editor" ${u.role === 'editor' ? 'selected' : ''}>Editor</option>
+                        <option value="user" ${u.role === 'user' || u.role === 'reader' || u.role === 'editor' ? 'selected' : ''}>User</option>
                         <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>
                     ${!isSelf ? `<button onclick="window.deleteUser('${u.id}')" class="delete-user-btn">Delete</button>` : ''}
