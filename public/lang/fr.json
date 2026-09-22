@@ -106,7 +106,8 @@
     "confirm_delete_used_tag": "L'étiquette \"{name}\" est utilisée dans {count} tâche(s). La supprimer la retirera de ces tâches. Continuer ?",
     "confirm_delete_tag": "Supprimer définitivement l'étiquette \"{name}\" ?",
     "tag_already_exists": "Une étiquette avec ce nom existe déjà.",
-    "tag_name_empty": "Le nom de l'étiquette ne peut pas être vide."
+    "tag_name_empty": "Le nom de l'étiquette ne peut pas être vide.",
+    "tag_created": "Étiquette créée avec succès !"
   },
   "profile": {
     "title": "Profil Utilisateur",

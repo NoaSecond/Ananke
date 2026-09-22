@@ -106,7 +106,8 @@
     "confirm_delete_used_tag": "The tag \"{name}\" is used in {count} task(s). Deleting it will remove it from those tasks. Continue?",
     "confirm_delete_tag": "Permanently delete tag \"{name}\"?",
     "tag_already_exists": "A tag with this name already exists.",
-    "tag_name_empty": "Tag name cannot be empty."
+    "tag_name_empty": "Tag name cannot be empty.",
+    "tag_created": "Tag created successfully!"
   },
   "profile": {
     "title": "User Profile",
