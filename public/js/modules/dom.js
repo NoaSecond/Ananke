@@ -99,6 +99,7 @@ export const elements = {
     logsModal: document.getElementById('logs-modal'),
     logsContainer: document.getElementById('logs-container'),
     clearLogsBtn: document.getElementById('clear-logs-btn'),
+    resetPasswordModal: document.getElementById('reset-password-modal'),
 
     // Header & Settings
     onlineUsersContainer: document.getElementById('online-users-container'),

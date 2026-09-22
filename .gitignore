@@ -21,6 +21,8 @@ pnpm-debug.log*
 # Base de données SQLite
 *.db
 *.db-*
+*.db-shm
+*.db-wal
 *.sqlite
 *.sqlite3
 ananke.db*

@@ -160,15 +160,33 @@ function validateProfileSetup(req, res, next) {
     next();
 }
 
+/**
+ * Validate the body for resetting a user's password.
+ */
+function validateResetPassword(req, res, next) {
+    const { password } = req.body;
+
+    if (!password || typeof password !== 'string' || password.length < 8) {
+        return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caractères.' });
+    }
+    if (password.length > 128) {
+        return res.status(400).json({ error: 'Mot de passe trop long.' });
+    }
+
+    next();
+}
+
 module.exports = {
     validateBoard,
     validateCreateAccount,
     validateUserRole,
     validateBoardMemberRole,
     validateProfileSetup,
+    validateResetPassword,
     sanitizeString,
     isValidHexColor,
     isValidEmail,
     ALLOWED_GLOBAL_ROLES,
     ALLOWED_BOARD_ROLES,
 };
+

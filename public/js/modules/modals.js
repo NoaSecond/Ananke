@@ -9,7 +9,7 @@ export const closeModal = (modal) => {
 };
 
 export const initModals = () => {
-    [elements.addModal, elements.viewTaskModal, elements.taskModal, elements.workflowModal, elements.projectModal, elements.confirmModal, elements.userManagementModal, elements.bgModal, elements.logsModal].forEach(modal => {
+    [elements.addModal, elements.viewTaskModal, elements.taskModal, elements.workflowModal, elements.projectModal, elements.confirmModal, elements.userManagementModal, elements.bgModal, elements.logsModal, elements.resetPasswordModal].forEach(modal => {
         if (!modal) return;
         modal.addEventListener('mousedown', (e) => {
             modal._mouseDownTarget = e.target;

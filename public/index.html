@@ -97,7 +97,7 @@
         },
         "datePublished": "2025-01-26",
         "dateModified": "2026-09-22",
-        "version": "3.0.2",
+        "version": "3.0.3",
         "downloadUrl": "https://github.com/NoaSecond/Ananke",
         "featureList": [
             "Interactive Kanban Board",
@@ -249,10 +249,16 @@
                         <input type="email" id="invite-email" required placeholder="email@example.com"
                             style="margin:0; height: 44px; box-sizing: border-box;">
                     </div>
-                    <div style="flex: 2; min-width: 150px;">
+                    <div style="flex: 2; min-width: 220px;">
                         <label style="font-size: 0.8rem;">Temp Password</label>
-                        <input type="text" id="invite-password" required placeholder="Temp123"
-                            style="margin:0; height: 44px; box-sizing: border-box;">
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="text" id="invite-password" required placeholder="Temp123"
+                                style="margin:0; height: 44px; padding-right: 135px; box-sizing: border-box; font-family: monospace; font-size: 0.9rem;">
+                            <div style="position: absolute; right: 6px; display: flex; gap: 4px;">
+                                <button type="button" id="invite-pwd-generate-btn" class="secondary-btn small-btn" style="font-size: 0.75rem; padding: 4px 8px;">Generate</button>
+                                <button type="button" id="invite-pwd-copy-btn" class="secondary-btn small-btn" style="font-size: 0.75rem; padding: 4px 8px;">Copy</button>
+                            </div>
+                        </div>
                     </div>
                     <div style="flex: 1; min-width: 100px;">
                         <label style="font-size: 0.8rem;">Role</label>
@@ -820,6 +826,37 @@
                 <button id="purge-logs-btn" class="danger-btn" style="display: inline-flex; align-items: center; gap: 6px;" data-i18n-title="modal.purge_logs_tooltip" title="Supprimer définitivement le fichier log sur le serveur">
                     <span class="material-symbols-outlined" style="font-size: 16px;">delete_forever</span>
                     <span data-i18n="modal.purge_logs">Vider le fichier log</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="reset-password-modal" class="modal-overlay">
+        <div class="modal-content" style="width: min(95vw, 440px);">
+            <button class="modal-close-btn" aria-label="Close"><span class="material-symbols-outlined">close</span></button>
+            <h2 style="display:flex;align-items:center;gap:8px;margin-bottom:0.5rem;">
+                <span class="material-symbols-outlined" style="color:var(--clr-primary);">lock_reset</span>
+                <span data-i18n="settings.reset_pwd_title">Reset Password</span>
+            </h2>
+            <p id="reset-password-user-info" style="font-size:0.85rem;color:var(--clr-text-muted);margin:0 0 1rem;"></p>
+            <input type="hidden" id="reset-password-user-id">
+            
+            <label for="reset-password-input" data-i18n="settings.temp_password" style="margin-top:0;">Temporary Password</label>
+            <div style="position:relative;display:flex;align-items:center;margin-bottom:0.75rem;">
+                <input type="text" id="reset-password-input" class="form-input" placeholder="Temp123!" style="margin:0;padding-right:135px;font-family:monospace;font-size:0.9rem;" required minlength="8">
+                <div style="position:absolute;right:6px;display:flex;gap:4px;">
+                    <button type="button" id="reset-password-generate-btn" class="secondary-btn small-btn" style="font-size:0.75rem;padding:4px 8px;" data-i18n="settings.generate_pwd">Generate</button>
+                    <button type="button" id="reset-password-copy-btn" class="secondary-btn small-btn" style="font-size:0.75rem;padding:4px 8px;" data-i18n="settings.copy_pwd">Copy</button>
+                </div>
+            </div>
+            
+            <div id="reset-password-message" style="margin-bottom:1rem;font-size:0.85rem;min-height:1.2em;"></div>
+
+            <div class="modal-actions">
+                <button type="button" id="reset-password-cancel-btn" class="secondary-btn" data-i18n="modal.btn_cancel">Cancel</button>
+                <button type="button" id="reset-password-save-btn" class="action-btn" style="display:flex;align-items:center;gap:6px;">
+                    <span class="material-symbols-outlined" style="font-size:18px;">check</span>
+                    <span data-i18n="settings.reset_pwd_btn">Reset Password</span>
                 </button>
             </div>
         </div>

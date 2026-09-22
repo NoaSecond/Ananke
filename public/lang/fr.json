@@ -11,9 +11,9 @@
     "edit_profile": "Modifier le profil"
   },
   "dashboard": {
-    "greeting_morning": "Bonjour, {name} 👋",
-    "greeting_afternoon": "Bonjour, {name} 👋",
-    "greeting_evening": "Bonsoir, {name} 👋",
+    "greeting_morning": "Bonjour, {name}",
+    "greeting_afternoon": "Bonjour, {name}",
+    "greeting_evening": "Bonsoir, {name}",
     "boards_count": "{count} tableaux accessibles",
     "boards_count_zero": "Aucun tableau accessible",
     "boards_count_one": "1 tableau accessible",
@@ -106,7 +106,8 @@
     "confirm_delete_used_tag": "L'étiquette \"{name}\" est utilisée dans {count} tâche(s). La supprimer la retirera de ces tâches. Continuer ?",
     "confirm_delete_tag": "Supprimer définitivement l'étiquette \"{name}\" ?",
     "tag_already_exists": "Une étiquette avec ce nom existe déjà.",
-    "tag_name_empty": "Le nom de l'étiquette ne peut pas être vide."
+    "tag_name_empty": "Le nom de l'étiquette ne peut pas être vide.",
+    "tag_created": "Étiquette créée avec succès !"
   },
   "profile": {
     "title": "Profil Utilisateur",
@@ -145,6 +146,14 @@
     "user_created_success": "Compte créé avec succès !",
     "users_admin_only": "La gestion des utilisateurs est réservée aux administrateurs.",
     "confirm_delete_user": "Êtes-vous sûr de vouloir supprimer cet utilisateur ?",
+    "reset_pwd_title": "Réinitialiser le mot de passe",
+    "reset_pwd_btn": "Réinitialiser",
+    "reset_pwd_tooltip": "Définir un mot de passe temporaire",
+    "reset_pwd_user_info": "Définir un nouveau mot de passe temporaire pour {email} :",
+    "reset_pwd_success": "Mot de passe réinitialisé avec succès !",
+    "generate_pwd": "Générer",
+    "copy_pwd": "Copier",
+    "copied": "Copié !",
     "section_language": "Langue",
     "language_desc": "Choisissez votre langue d'interface.",
     "section_theme": "Thème & Apparence",

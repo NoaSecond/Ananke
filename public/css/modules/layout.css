@@ -147,6 +147,7 @@ body.light-mode .sidebar-brand-icon {
     transition: background var(--transition-fast), color var(--transition-fast);
     color: var(--clr-text-muted);
     font-weight: 500;
+    line-height: 1.4;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -188,6 +189,9 @@ body.light-mode .sidebar-brand-icon {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.4;
+    padding-bottom: 2px;
+    margin-bottom: -2px;
     transition: opacity var(--transition-fast);
 }
 
@@ -231,6 +235,7 @@ body.light-mode .sidebar-brand-icon {
     cursor: pointer;
     font-size: 0.82rem;
     font-weight: 500;
+    line-height: 1.4;
     transition: all var(--transition-fast);
     width: calc(100% - 12px);
     text-align: left;

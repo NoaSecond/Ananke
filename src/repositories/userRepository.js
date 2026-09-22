@@ -151,6 +151,25 @@ function remove(id) {
     });
 }
 /**
+ * Reset a user's password and increment token_version to revoke active sessions.
+ * @param {string} id
+ * @param {string} passwordHash
+ * @returns {Promise<{ changed: boolean }>}
+ */
+function resetPassword(id, passwordHash) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `UPDATE users SET password_hash = ?, token_version = COALESCE(token_version, 1) + 1 WHERE id = ?`,
+            [passwordHash, id],
+            function (err) {
+                if (err) return reject(err);
+                resolve({ changed: this.changes > 0 });
+            }
+        );
+    });
+}
+
+/**
  * Increment user's token_version to immediately revoke all active JWT sessions.
  * @param {string} id
  * @returns {Promise<void>}
@@ -165,5 +184,5 @@ function incrementTokenVersion(id) {
     });
 }
 
-module.exports = { findById, findByEmail, findAll, findAllSimple, create, updateProfile, updateRole, remove, incrementTokenVersion };
+module.exports = { findById, findByEmail, findAll, findAllSimple, create, updateProfile, updateRole, remove, resetPassword, incrementTokenVersion };
 

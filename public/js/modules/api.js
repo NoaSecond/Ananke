@@ -99,6 +99,15 @@ export async function updateUserRole(id, role) {
     return res.json();
 }
 
+export async function resetUserPassword(id, password) {
+    const res = await apiFetch(`${API_URL}/users/${id}/password`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ password }),
+    });
+    return res.json();
+}
+
 export async function deleteUser(id) {
     const res = await apiFetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
     return res.json();
