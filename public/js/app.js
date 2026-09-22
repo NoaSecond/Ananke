@@ -198,7 +198,7 @@ export async function navigateToBoard(boardId) {
     const initialTitle = existingBoard?.name || 'Board';
     const headerTitle = document.getElementById('board-title-display');
     if (headerTitle) headerTitle.textContent = initialTitle;
-    document.title = `${initialTitle} - Ananke`;
+    document.title = initialTitle;
 
     // Ask socket to join this board's room
     if (state.socket) {
@@ -232,7 +232,7 @@ export async function navigateToBoard(boardId) {
 
             const finalTitle = board.name || initialTitle;
             if (headerTitle) headerTitle.textContent = finalTitle;
-            document.title = `${finalTitle} - Ananke`;
+            document.title = finalTitle;
         }
     } catch (err) {
         Logger.error('Failed to load board', err);
@@ -249,6 +249,7 @@ export async function navigateToBoard(boardId) {
  */
 export async function navigateToDashboard() {
     state.currentView    = 'dashboard';
+    document.title       = t('nav.dashboard') || 'Tableau de bord';
 
     // Leave any active board on socket
     if (state.socket && state.currentBoardId) {
@@ -291,6 +292,10 @@ export async function navigateToBoardSettings(boardId) {
     state.currentBoardId = boardId;
     state.currentView    = 'board-settings';
 
+    const board = state.boards.find(b => b.id === boardId);
+    const bName = board?.name || 'Board';
+    document.title = t('board_settings.title', { name: bName }) || `Paramètres — ${bName}`;
+
     showView('board-settings');
     updateSidebarActiveBoard(boardId);
     applyBackground(null);
@@ -322,6 +327,7 @@ let previousView = 'dashboard';
 export async function navigateToProfile() {
     previousView = state.currentView || 'dashboard';
     state.currentView = 'profile';
+    document.title = t('profile.title') || 'Profil Utilisateur';
 
     if (state.socket && state.currentBoardId && previousView === 'board') {
         state.socket.emit('leaveBoard');
@@ -363,6 +369,7 @@ let previousAppSettingsView = 'dashboard';
 export async function navigateToAppSettings() {
     previousAppSettingsView = state.currentView || 'dashboard';
     state.currentView = 'app-settings';
+    document.title = t('settings.page_title') || 'Paramètres';
 
     if (state.socket && state.currentBoardId && previousAppSettingsView === 'board') {
         state.socket.emit('leaveBoard');
@@ -633,14 +640,22 @@ async function setupLanguageControls() {
     // Re-render current view and dynamic elements when language changes
     registerLanguageListener(() => {
         if (state.currentView === 'dashboard') {
+            document.title = t('nav.dashboard') || 'Tableau de bord';
             renderDashboard();
         } else if (state.currentView === 'board') {
+            const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
+            if (currentBoard?.name) document.title = currentBoard.name;
             renderBoard();
         } else if (state.currentView === 'board-settings') {
+            const board = state.boards.find(b => b.id === state.currentBoardId);
+            const bName = board?.name || 'Board';
+            document.title = t('board_settings.title', { name: bName }) || `Paramètres — ${bName}`;
             renderBoardSettings();
         } else if (state.currentView === 'profile') {
+            document.title = t('profile.title') || 'Profil Utilisateur';
             renderProfileView();
         } else if (state.currentView === 'app-settings') {
+            document.title = t('settings.page_title') || 'Paramètres';
             renderAppSettingsView();
         }
 

@@ -51,7 +51,7 @@ const updateProjectTitle = ErrorHandler.wrapSync(() => {
     if (elements.projectNameDisplay) {
         elements.projectNameDisplay.textContent = boardName;
     }
-    document.title = `${boardName} - Ananke`;
+    document.title = boardName;
 
     // Dynamic Meta Tags
     const description = `Manage your project "${boardName}" with our free Kanban tool.`;
@@ -564,7 +564,7 @@ export const initBoardListeners = () => {
             if (elements.projectNameDisplay) {
                 elements.projectNameDisplay.textContent = newName;
             }
-            document.title = `${newName} - Ananke`;
+            document.title = newName;
             closeModal(elements.projectModal);
 
             try {

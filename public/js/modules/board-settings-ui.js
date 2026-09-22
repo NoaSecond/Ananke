@@ -513,7 +513,9 @@ function _bindGeneralForm() {
                     b.icon = icon;
                 }
                 const pageTitle = document.querySelector('.settings-page-title');
-                if (pageTitle) pageTitle.textContent = `Board Settings — ${name}`;
+                const settingsTitle = t('board_settings.title', { name }) || `Board Settings — ${name}`;
+                if (pageTitle) pageTitle.textContent = settingsTitle;
+                document.title = settingsTitle;
 
                 const headerTitle = document.getElementById('board-title-display');
                 if (headerTitle) headerTitle.textContent = name;
