@@ -14,10 +14,10 @@ const logger = require('../utils/logger');
 const JWT_SECRET = process.env.JWT_SECRET;
 
 function clearTokenCookie(req, res) {
-    const cookiePath = process.env.APP_BASE_PATH || req.headers['x-forwarded-prefix'] || '/';
+    const cookiePath = process.env.APP_BASE_PATH || req?.headers?.['x-forwarded-prefix'] || '/';
     const isSecure = process.env.NODE_ENV === 'production'
-        || req.secure
-        || req.headers['x-forwarded-proto'] === 'https'
+        || req?.secure
+        || req?.headers?.['x-forwarded-proto'] === 'https'
         || process.env.COOKIE_SECURE === 'true';
     res.clearCookie('token', { path: cookiePath, httpOnly: true, secure: isSecure, sameSite: 'strict' });
     if (cookiePath !== '/') {
