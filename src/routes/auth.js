@@ -65,13 +65,13 @@ router.use((req, res, next) => {
 
 function isSecureCookie(req) {
     return process.env.NODE_ENV === 'production'
-        || req.secure
-        || req.headers['x-forwarded-proto'] === 'https'
+        || req?.secure
+        || req?.headers?.['x-forwarded-proto'] === 'https'
         || process.env.COOKIE_SECURE === 'true';
 }
 
 function getCookiePath(req) {
-    return process.env.APP_BASE_PATH || req.headers['x-forwarded-prefix'] || '/';
+    return process.env.APP_BASE_PATH || req?.headers?.['x-forwarded-prefix'] || '/';
 }
 
 function setCookieToken(req, res, token) {
@@ -212,7 +212,7 @@ router.post('/complete-setup', authenticate, validateProfileSetup, async (req, r
         const updated = await userRepository.findById(userId);
         const name = `${updated.first_name} ${updated.last_name}`;
         const token = await issueToken(updated);
-        setCookieToken(res, token);
+        setCookieToken(req, res, token);
 
         logger.info(`Profile updated: ${name} (${updated.email})`);
         res.json({ success: true, user: { ...updated, name, token_version: undefined } });
