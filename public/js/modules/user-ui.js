@@ -16,6 +16,45 @@ export function initUserManagement() {
 
     if (elements.inviteForm) {
         const inviteRoleSelect = document.getElementById('invite-role');
+        const invitePwdInput = document.getElementById('invite-password');
+        const inviteGenBtn = document.getElementById('invite-pwd-generate-btn');
+        const inviteCopyBtn = document.getElementById('invite-pwd-copy-btn');
+
+        const generatePwd = () => {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*';
+            let res = '';
+            const array = new Uint8Array(10);
+            crypto.getRandomValues(array);
+            for (let i = 0; i < 10; i++) res += chars[array[i] % chars.length];
+            return res;
+        };
+
+        if (invitePwdInput && !invitePwdInput.value) {
+            invitePwdInput.value = generatePwd();
+        }
+
+        if (inviteGenBtn) {
+            inviteGenBtn.onclick = () => {
+                if (invitePwdInput) {
+                    invitePwdInput.value = generatePwd();
+                    invitePwdInput.focus();
+                }
+            };
+        }
+
+        if (inviteCopyBtn) {
+            inviteCopyBtn.onclick = async () => {
+                if (invitePwdInput && invitePwdInput.value) {
+                    try {
+                        await navigator.clipboard.writeText(invitePwdInput.value);
+                        const orig = inviteCopyBtn.textContent;
+                        inviteCopyBtn.textContent = 'Copied!';
+                        setTimeout(() => { inviteCopyBtn.textContent = orig; }, 1500);
+                    } catch (_) {}
+                }
+            };
+        }
+
         if (inviteRoleSelect) {
             inviteRoleSelect.addEventListener('change', (e) => {
                 inviteRoleSelect.setAttribute('data-role', e.target.value);
@@ -35,6 +74,9 @@ export function initUserManagement() {
                     messageEl.textContent = 'Account created successfully!';
                     messageEl.style.color = '#22c55e';
                     elements.inviteForm.reset();
+                    if (invitePwdInput) {
+                        invitePwdInput.value = generatePwd();
+                    }
                     loadUsers();
                 } else {
                     messageEl.textContent = res.error || 'Creation failed';

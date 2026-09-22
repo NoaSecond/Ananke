@@ -249,10 +249,16 @@
                         <input type="email" id="invite-email" required placeholder="email@example.com"
                             style="margin:0; height: 44px; box-sizing: border-box;">
                     </div>
-                    <div style="flex: 2; min-width: 150px;">
+                    <div style="flex: 2; min-width: 220px;">
                         <label style="font-size: 0.8rem;">Temp Password</label>
-                        <input type="text" id="invite-password" required placeholder="Temp123"
-                            style="margin:0; height: 44px; box-sizing: border-box;">
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="text" id="invite-password" required placeholder="Temp123"
+                                style="margin:0; height: 44px; padding-right: 135px; box-sizing: border-box; font-family: monospace; font-size: 0.9rem;">
+                            <div style="position: absolute; right: 6px; display: flex; gap: 4px;">
+                                <button type="button" id="invite-pwd-generate-btn" class="secondary-btn small-btn" style="font-size: 0.75rem; padding: 4px 8px;">Generate</button>
+                                <button type="button" id="invite-pwd-copy-btn" class="secondary-btn small-btn" style="font-size: 0.75rem; padding: 4px 8px;">Copy</button>
+                            </div>
+                        </div>
                     </div>
                     <div style="flex: 1; min-width: 100px;">
                         <label style="font-size: 0.8rem;">Role</label>

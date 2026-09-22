@@ -66,20 +66,26 @@ export async function renderAppSettingsView({ onBack } = {}) {
                         <form id="app-settings-create-user-form" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
                             <div style="flex:2;min-width:200px;">
                                 <label class="form-label" style="font-size:0.8rem;" for="app-settings-email">${t('profile.email')}</label>
-                                <input class="form-input" type="email" id="app-settings-email" required placeholder="user@example.com" style="margin:0;">
+                                <input class="form-input" type="email" id="app-settings-email" required placeholder="user@example.com" style="margin:0;height:42px;box-sizing:border-box;">
                             </div>
-                            <div style="flex:2;min-width:160px;">
+                            <div style="flex:2;min-width:240px;">
                                 <label class="form-label" style="font-size:0.8rem;" for="app-settings-password">${t('settings.temp_password')}</label>
-                                <input class="form-input" type="text" id="app-settings-password" required placeholder="Temp123!" style="margin:0;">
+                                <div style="position:relative;display:flex;align-items:center;">
+                                    <input class="form-input" type="text" id="app-settings-password" required placeholder="Temp123!" style="margin:0;height:42px;box-sizing:border-box;padding-right:135px;font-family:monospace;font-size:0.9rem;">
+                                    <div style="position:absolute;right:6px;display:flex;gap:4px;">
+                                        <button type="button" id="app-settings-pwd-generate-btn" class="secondary-btn small-btn" style="font-size:0.75rem;padding:4px 8px;" data-i18n="settings.generate_pwd">${t('settings.generate_pwd') || 'Generate'}</button>
+                                        <button type="button" id="app-settings-pwd-copy-btn" class="secondary-btn small-btn" style="font-size:0.75rem;padding:4px 8px;" data-i18n="settings.copy_pwd">${t('settings.copy_pwd') || 'Copy'}</button>
+                                    </div>
+                                </div>
                             </div>
                             <div style="flex:1;min-width:120px;">
                                 <label class="form-label" style="font-size:0.8rem;" for="app-settings-role">${t('settings.role_label') || 'Role'}</label>
-                                <select class="form-input role-select" id="app-settings-role" data-role="user" style="margin:0;">
+                                <select class="form-input role-select" id="app-settings-role" data-role="user" style="margin:0;height:42px;box-sizing:border-box;width:100%;">
                                     <option value="user">${t('roles.user') || 'Utilisateur'}</option>
                                     <option value="admin">${t('roles.admin') || 'Admin'}</option>
                                 </select>
                             </div>
-                            <button type="submit" class="action-btn" style="flex-shrink:0;height:40px;display:flex;align-items:center;gap:6px;padding:0 18px;">
+                            <button type="submit" class="action-btn" style="flex-shrink:0;height:42px;display:flex;align-items:center;gap:6px;padding:0 18px;">
                                 <span class="material-symbols-outlined" style="font-size:18px;">add</span>
                                 <span>${t('settings.create_user_btn')}</span>
                             </button>
@@ -221,6 +227,40 @@ function _bindEvents(isAdmin) {
 
     if (form) {
         const roleSelect = document.getElementById('app-settings-role');
+        const pwdInput = document.getElementById('app-settings-password');
+        const genBtn = document.getElementById('app-settings-pwd-generate-btn');
+        const copyBtn = document.getElementById('app-settings-pwd-copy-btn');
+
+        // Pre-fill with a secure temporary password
+        if (pwdInput && !pwdInput.value) {
+            pwdInput.value = _generateRandomPassword(10);
+        }
+
+        if (genBtn) {
+            genBtn.addEventListener('click', () => {
+                if (pwdInput) {
+                    pwdInput.value = _generateRandomPassword(10);
+                    pwdInput.focus();
+                    pwdInput.select();
+                }
+            });
+        }
+
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async () => {
+                if (pwdInput && pwdInput.value) {
+                    try {
+                        await navigator.clipboard.writeText(pwdInput.value);
+                        const orig = copyBtn.textContent;
+                        copyBtn.textContent = t('settings.copied') || 'Copié !';
+                        setTimeout(() => { copyBtn.textContent = orig; }, 1500);
+                    } catch (err) {
+                        Logger.error('Copy to clipboard failed', err);
+                    }
+                }
+            });
+        }
+
         if (roleSelect) {
             roleSelect.addEventListener('change', (e) => {
                 roleSelect.setAttribute('data-role', e.target.value);
@@ -243,6 +283,9 @@ function _bindEvents(isAdmin) {
                         msgEl.style.color = 'var(--clr-success, #22c55e)';
                     }
                     form.reset();
+                    if (pwdInput) {
+                        pwdInput.value = _generateRandomPassword(10);
+                    }
                     _loadUsersList();
                 } else {
                     if (msgEl) {
