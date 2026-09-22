@@ -181,7 +181,7 @@ function runV2Migration() {
 
                 db.run(
                     `INSERT INTO boards (id, name, description, icon, color, data) VALUES (?, ?, ?, ?, ?, ?)`,
-                    [boardId, boardName, 'Migrated from Ananke v2', 'dashboard', '#6366f1', JSON.stringify(boardData)],
+                    [boardId, boardName, 'Default board', 'dashboard', '#6366f1', JSON.stringify(boardData)],
                     (insertErr) => {
                         if (insertErr) {
                             logger.error(`Board migration failed: ${insertErr.message}`);
