@@ -192,6 +192,17 @@ app.get('/api/logs', authenticate, requireRole('admin'), (req, res) => {
     res.json(logger.getHistory());
 });
 
+app.delete('/api/logs', authenticate, requireRole('admin'), (req, res) => {
+    try {
+        logger.clearLogs();
+        logger.info(`Logs cleared by ${req.user.name}`);
+        res.json({ success: true, message: 'Logs vidés avec succès.' });
+    } catch (err) {
+        logger.error(`Delete logs error: ${err.message}`);
+        res.status(500).json({ error: 'Échec lors de la suppression des logs.' });
+    }
+});
+
 // --------------------------------------------------------------------------
 // Central error handler
 // --------------------------------------------------------------------------

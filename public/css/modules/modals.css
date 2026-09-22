@@ -20,6 +20,10 @@
     visibility: visible;
 }
 
+#confirm-modal {
+    z-index: 2000;
+}
+
 .modal-content {
     background: var(--modal-bg, var(--clr-surface));
     padding: 2rem;

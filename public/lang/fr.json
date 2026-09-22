@@ -154,7 +154,12 @@
     "btn_delete": "Supprimer",
     "btn_confirm": "Confirmer",
     "loading": "Chargement...",
-    "error": "Une erreur est survenue"
+    "error": "Une erreur est survenue",
+    "clear_view": "Vider l'affichage",
+    "purge_logs": "Vider le fichier log",
+    "purge_logs_tooltip": "Supprimer définitivement le fichier log sur le serveur",
+    "confirm_purge_logs": "Êtes-vous sûr de vouloir vider définitivement le fichier log du serveur ?",
+    "logs_purged": "Le fichier de logs a été vidé avec succès."
   },
   "roles": {
     "owner": "Propriétaire",

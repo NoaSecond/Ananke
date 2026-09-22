@@ -808,8 +808,12 @@
             <div id="logs-container"
                 style="background: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; padding: 1rem; border-radius: 8px; flex: 1; overflow-y: auto; white-space: pre-wrap; word-break: break-all; border: 1px solid var(--border-color); min-height: 300px; margin-bottom: 1rem; position: relative;">
             </div>
-            <div class="modal-actions" style="margin-top: auto; display: flex; justify-content: flex-start;">
-                <button id="clear-logs-btn" class="secondary-btn">Clear View</button>
+            <div class="modal-actions" style="margin-top: auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <button id="clear-logs-btn" class="secondary-btn" data-i18n="modal.clear_view">Clear View</button>
+                <button id="purge-logs-btn" class="danger-btn" style="display: inline-flex; align-items: center; gap: 6px;" data-i18n-title="modal.purge_logs_tooltip" title="Supprimer définitivement le fichier log sur le serveur">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">delete_forever</span>
+                    <span data-i18n="modal.purge_logs">Vider le fichier log</span>
+                </button>
             </div>
         </div>
     </div>

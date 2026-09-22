@@ -109,6 +109,22 @@ function saveLog(type, message, args) {
 const logger = {
     onLogCallback: null,
     getHistory: () => logsHistory,
+    clearLogs: () => {
+        try {
+            logsHistory.length = 0;
+            if (fs.existsSync(LOG_FILE)) {
+                fs.writeFileSync(LOG_FILE, '', 'utf8');
+            }
+            const oldLog = path.join(LOGS_DIR, 'app.log.old');
+            if (fs.existsSync(oldLog)) {
+                fs.unlinkSync(oldLog);
+            }
+            return true;
+        } catch (err) {
+            console.error('Failed to clear log files:', err);
+            throw err;
+        }
+    },
     info: (message, ...args) => {
         const timestamp = new Date().toISOString();
         console.log(`${pc.gray(`[${timestamp}]`)} ${pc.blue('INFO:')} ${message}`, ...args);

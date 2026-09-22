@@ -154,7 +154,12 @@
     "btn_delete": "Delete",
     "btn_confirm": "Confirm",
     "loading": "Loading...",
-    "error": "An error occurred"
+    "error": "An error occurred",
+    "clear_view": "Clear View",
+    "purge_logs": "Clear Log File",
+    "purge_logs_tooltip": "Permanently delete server log file",
+    "confirm_purge_logs": "Are you sure you want to permanently clear the server log file?",
+    "logs_purged": "Server log file has been cleared."
   },
   "roles": {
     "owner": "Owner",

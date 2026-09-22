@@ -225,3 +225,9 @@ export async function getLogs() {
     if (res.ok) return res.json();
     throw new Error('Failed to fetch logs');
 }
+
+export async function clearServerLogs() {
+    const res = await apiFetch(`${API_URL}/logs`, { method: 'DELETE' });
+    if (res.ok) return res.json();
+    throw new Error('Failed to clear logs');
+}
