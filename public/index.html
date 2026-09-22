@@ -526,7 +526,10 @@
             <input type="hidden" id="add-modal-type">
             <input type="hidden" id="add-modal-workflow-id">
             <label for="add-modal-input">Title</label>
-            <input type="text" id="add-modal-input" placeholder="New title...">
+            <div style="position: relative; display: flex; align-items: center;">
+                <input type="text" id="add-modal-input" placeholder="New title..." maxlength="100" style="padding-right: 55px; width: 100%;">
+                <span id="add-modal-counter" style="position: absolute; right: 10px; font-size: 0.72rem; color: var(--clr-text-muted); pointer-events: none; font-family: var(--font-mono, monospace);"></span>
+            </div>
             <div class="modal-actions">
                 <button id="save-add-btn" class="action-btn"
                     style="display: flex; align-items: center; justify-content: center; gap: 4px;">Add <span
@@ -596,7 +599,10 @@
     <div id="task-modal" class="modal-overlay">
         <div class="modal-content task-modal-content">
             <div class="modal-header-custom">
-                <input type="text" id="task-title-input" class="modal-title-input" placeholder="Task Title">
+                <div style="position: relative; flex-grow: 1; display: flex; align-items: center;">
+                    <input type="text" id="task-title-input" class="modal-title-input" placeholder="Task Title" maxlength="100" style="padding-right: 55px; width: 100%;">
+                    <span id="task-title-counter" style="position: absolute; right: 10px; font-size: 0.72rem; color: var(--clr-text-muted); pointer-events: none; font-family: var(--font-mono, monospace);"></span>
+                </div>
                 <div class="header-controls">
                     <select id="task-column-select" class="column-select" title="Move to column"></select>
                     <button id="edit-to-view-btn" class="icon-only-btn" title="View Task">
@@ -742,7 +748,7 @@
             <h2 data-i18n="board.column_menu_rename">Edit Column</h2>
             <input type="hidden" id="workflow-id-input">
             <label for="workflow-title-input" data-i18n="board.column_new_title">Title</label>
-            <input type="text" id="workflow-title-input" placeholder="Column title">
+            <input type="text" id="workflow-title-input" placeholder="Column title" maxlength="100">
             <label for="workflow-color-input">Color</label>
             <input type="color" id="workflow-color-input">
 

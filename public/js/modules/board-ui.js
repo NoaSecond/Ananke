@@ -1,7 +1,7 @@
 import { state, getFullUrl } from './state.js';
 import { elements } from './dom.js';
 import { Logger, ErrorHandler } from './utils.js';
-import { openTaskEditModal, openViewTaskModal } from './task-ui.js';
+import { openTaskEditModal, openViewTaskModal, updateInputCounter } from './task-ui.js';
 import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
 import { renderAvatarHtml, getContrastYIQ, renderSafeMarkdown, escapeHtml } from './utils.js';
@@ -37,6 +37,12 @@ export function isCurrentBoardReader() {
     if (['admin', 'owner'].includes(state.currentUser.role)) return false;
     const currentBoard = state.boards.find(b => b.id === state.currentBoardId);
     return currentBoard?.board_role === 'reader';
+}
+
+function truncateTitle(title, maxLen = 80) {
+    if (!title) return '';
+    const trimmed = title.trim();
+    return trimmed.length > maxLen ? trimmed.slice(0, maxLen).trim() + '...' : trimmed;
 }
 
 const updateProjectTitle = ErrorHandler.wrapSync(() => {
@@ -185,7 +191,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                 taskCard.innerHTML = `
                     ${taskActionsHtml}
                     ${(task.showIdOnCard && task.id) ? `<div class="task-card-id" style="font-size: 0.7rem; opacity: 0.55; font-family: monospace; margin-bottom: 4px; user-select: text;">ID: ${escapeHtml(task.id)}</div>` : ''}
-                    <h4>${escapeHtml(task.title)}</h4>
+                    <h4 title="${escapeHtml(task.title || '')}">${escapeHtml(truncateTitle(task.title, 80))}</h4>
                     ${(task.showTags !== false && task.tags && task.tags.length > 0) ? `
                     <div class="task-tags-display">
                         ${task.tags.map(tag => `<span class="tag-pill-small" style="background-color: ${escapeHtml(tag.color)}; color: ${getContrastYIQ(tag.color || '#3b82f6')};" title="${escapeHtml(tag.name)}">${escapeHtml(tag.name)}</span>`).join('')}
@@ -307,6 +313,7 @@ const openAddModal = (type, workflowId = null) => {
     elements.addModalInput.value = '';
     elements.addModalTitle.textContent = type === 'workflow' ? 'Add Column' : 'Add Task';
     elements.addModalInput.placeholder = type === 'workflow' ? 'New column name' : 'New task title';
+    updateInputCounter(elements.addModalInput, elements.addModalCounter, 100);
     if (workflowId) elements.addModalWorkflowId.value = workflowId;
     openModal(elements.addModal);
     setTimeout(() => {
@@ -426,7 +433,7 @@ export const initBoardListeners = () => {
 
     elements.saveAddBtn.addEventListener('click', ErrorHandler.wrapSync(() => {
         const type = elements.addModalType.value;
-        const title = elements.addModalInput.value.trim();
+        const title = elements.addModalInput.value.trim().slice(0, 100);
         if (title) {
             if (type === 'workflow') {
                 const newWorkflow = {
@@ -467,6 +474,9 @@ export const initBoardListeners = () => {
         }
     }, 'Adding item'));
 
+    elements.addModalInput.addEventListener('input', () => {
+        updateInputCounter(elements.addModalInput, elements.addModalCounter, 100);
+    });
     elements.addModalInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') elements.saveAddBtn.click() });
 
     // Export/Import Listeners

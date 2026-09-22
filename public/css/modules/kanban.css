@@ -207,6 +207,15 @@
     padding-right: 20px;
     font-size: 0.95rem;
     font-weight: 600;
+    line-height: 1.35;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .task-card-description {
