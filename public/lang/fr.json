@@ -11,9 +11,9 @@
     "edit_profile": "Modifier le profil"
   },
   "dashboard": {
-    "greeting_morning": "Bonjour, {name} 👋",
-    "greeting_afternoon": "Bonjour, {name} 👋",
-    "greeting_evening": "Bonsoir, {name} 👋",
+    "greeting_morning": "Bonjour, {name}",
+    "greeting_afternoon": "Bonjour, {name}",
+    "greeting_evening": "Bonsoir, {name}",
     "boards_count": "{count} tableaux accessibles",
     "boards_count_zero": "Aucun tableau accessible",
     "boards_count_one": "1 tableau accessible",
