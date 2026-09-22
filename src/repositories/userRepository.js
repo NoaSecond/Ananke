@@ -57,13 +57,13 @@ function findAll() {
 }
 
 /**
- * Return a minimal list of users for assignee pickers.
+ * Return a minimal list of users for assignee pickers (F-03 minimization).
  * @returns {Promise<object[]>}
  */
 function findAllSimple() {
     return new Promise((resolve, reject) => {
         db.all(
-            `SELECT id, first_name, last_name, email, avatar_url, role FROM users ORDER BY first_name`,
+            `SELECT id, first_name, last_name, avatar_url FROM users ORDER BY first_name`,
             (err, rows) => err ? reject(err) : resolve(rows || [])
         );
     });
@@ -150,5 +150,20 @@ function remove(id) {
         );
     });
 }
+/**
+ * Increment user's token_version to immediately revoke all active JWT sessions.
+ * @param {string} id
+ * @returns {Promise<void>}
+ */
+function incrementTokenVersion(id) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `UPDATE users SET token_version = COALESCE(token_version, 1) + 1 WHERE id = ?`,
+            [id],
+            (err) => err ? reject(err) : resolve()
+        );
+    });
+}
 
-module.exports = { findById, findByEmail, findAll, findAllSimple, create, updateProfile, updateRole, remove };
+module.exports = { findById, findByEmail, findAll, findAllSimple, create, updateProfile, updateRole, remove, incrementTokenVersion };
+

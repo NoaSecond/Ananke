@@ -57,13 +57,30 @@ async function issueToken(user) {
     );
 }
 
-function setCookieToken(res, token) {
+// Force no-store on sensitive auth endpoints (F-15)
+router.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store, private');
+    next();
+});
+
+function isSecureCookie(req) {
+    return process.env.NODE_ENV === 'production'
+        || req.secure
+        || req.headers['x-forwarded-proto'] === 'https'
+        || process.env.COOKIE_SECURE === 'true';
+}
+
+function getCookiePath(req) {
+    return process.env.APP_BASE_PATH || req.headers['x-forwarded-prefix'] || '/';
+}
+
+function setCookieToken(req, res, token) {
     res.cookie('token', token, {
         httpOnly: true,
-        secure:   process.env.NODE_ENV === 'production',
+        secure:   isSecureCookie(req),
         sameSite: 'strict',
         maxAge:   24 * 60 * 60 * 1000,
-        path:     '/',
+        path:     getCookiePath(req),
     });
 }
 
@@ -91,7 +108,7 @@ router.post('/login', loginLimiter, async (req, res) => {
         logger.info(`User logged in: ${name} (${user.role}) from ${clientIp}`);
 
         const token = await issueToken(user);
-        setCookieToken(res, token);
+        setCookieToken(req, res, token);
 
         res.json({
             success: true,
@@ -117,14 +134,30 @@ router.post('/login', loginLimiter, async (req, res) => {
 // POST /api/auth/logout
 // --------------------------------------------------------------------------
 
-router.post('/logout', (req, res) => {
-    res.clearCookie('token', {
+router.post('/logout', async (req, res) => {
+    const token = req.cookies.token;
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            if (decoded?.id) {
+                await userRepository.incrementTokenVersion(decoded.id);
+            }
+        } catch (_) {
+            // Token already invalid or expired
+        }
+    }
+    const cookiePath = getCookiePath(req);
+    const clearOpts = {
         httpOnly: true,
-        secure:   process.env.NODE_ENV === 'production',
+        secure:   isSecureCookie(req),
         sameSite: 'strict',
-        path:     '/',
-    });
-    logger.info('User logged out');
+        path:     cookiePath,
+    };
+    res.clearCookie('token', clearOpts);
+    if (cookiePath !== '/') {
+        res.clearCookie('token', { ...clearOpts, path: '/' });
+    }
+    logger.info('User logged out (token version incremented)');
     res.json({ success: true });
 });
 

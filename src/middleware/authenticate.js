@@ -13,6 +13,18 @@ const logger = require('../utils/logger');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+function clearTokenCookie(req, res) {
+    const cookiePath = process.env.APP_BASE_PATH || req.headers['x-forwarded-prefix'] || '/';
+    const isSecure = process.env.NODE_ENV === 'production'
+        || req.secure
+        || req.headers['x-forwarded-proto'] === 'https'
+        || process.env.COOKIE_SECURE === 'true';
+    res.clearCookie('token', { path: cookiePath, httpOnly: true, secure: isSecure, sameSite: 'strict' });
+    if (cookiePath !== '/') {
+        res.clearCookie('token', { path: '/', httpOnly: true, secure: isSecure, sameSite: 'strict' });
+    }
+}
+
 /**
  * Express middleware — attaches `req.user` on success, returns 401 on failure.
  */
@@ -24,27 +36,27 @@ async function authenticate(req, res, next) {
     try {
         decoded = jwt.verify(token, JWT_SECRET);
     } catch {
-        res.clearCookie('token', { path: '/' });
+        clearTokenCookie(req, res);
         return res.status(401).json({ error: 'Session expirée ou invalide.' });
     }
 
     try {
         const instanceId = await getInstanceId();
         if (decoded.iid !== instanceId) {
-            res.clearCookie('token', { path: '/' });
+            clearTokenCookie(req, res);
             return res.status(401).json({ error: 'Session invalide, veuillez vous reconnecter.' });
         }
 
         const user = await userRepository.findById(decoded.id);
         if (!user) {
-            res.clearCookie('token', { path: '/' });
+            clearTokenCookie(req, res);
             return res.status(401).json({ error: 'Utilisateur introuvable.' });
         }
 
         const expectedVersion = user.token_version || 1;
         const tokenVersion    = decoded.tv          || 1;
         if (tokenVersion !== expectedVersion) {
-            res.clearCookie('token', { path: '/' });
+            clearTokenCookie(req, res);
             return res.status(401).json({ error: 'Session expirée, veuillez vous reconnecter.' });
         }
 

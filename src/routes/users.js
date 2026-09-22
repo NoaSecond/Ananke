@@ -11,6 +11,7 @@ const bcrypt   = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 
 const authenticate      = require('../middleware/authenticate');
+const requireSetup      = require('../middleware/requireSetup');
 const { requireRole }   = require('../middleware/requireRole');
 const { validateCreateAccount, validateUserRole } = require('../middleware/validate');
 const userRepository    = require('../repositories/userRepository');
@@ -18,8 +19,13 @@ const logger            = require('../utils/logger');
 
 const router = express.Router();
 
-// All user management routes require authentication
+// All user management routes require authentication, completed setup, and no-store cache
 router.use(authenticate);
+router.use(requireSetup);
+router.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store, private');
+    next();
+});
 
 // --------------------------------------------------------------------------
 // Rate limiting
@@ -80,7 +86,7 @@ router.get('/', requireRole('admin'), async (req, res) => {
 });
 
 // --------------------------------------------------------------------------
-// GET /api/users/list  — Lightweight list for assignee pickers (any authenticated user)
+// GET /api/users/list  — Lightweight list for assignee pickers (F-03 minimization)
 // --------------------------------------------------------------------------
 
 router.get('/list', async (req, res) => {
@@ -89,12 +95,8 @@ router.get('/list', async (req, res) => {
         res.json({
             users: users.map(u => ({
                 id:         u.id,
-                name:       u.first_name ? `${u.first_name} ${u.last_name}`.trim() : u.email,
-                first_name: u.first_name,
-                last_name:  u.last_name,
-                email:      u.email,
+                name:       u.first_name ? `${u.first_name} ${u.last_name}`.trim() : 'Membre',
                 avatar_url: u.avatar_url,
-                role:       u.role,
             })),
         });
     } catch (err) {

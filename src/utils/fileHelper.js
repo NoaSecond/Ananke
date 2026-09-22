@@ -38,6 +38,72 @@ const ALLOWED_IMAGE_MIMES = {
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10 MB
 
 // --------------------------------------------------------------------------
+// Magic bytes detection & security validation
+// --------------------------------------------------------------------------
+
+const FORBIDDEN_EXTENSIONS = [
+    '.html', '.htm', '.xhtml', '.svg', '.xml', '.php', '.phtml',
+    '.js', '.mjs', '.cjs', '.sh', '.bat', '.cmd', '.exe', '.vbs', '.py', '.rb',
+];
+
+/**
+ * Inspects a binary buffer header to determine real MIME type via magic bytes.
+ * @param {Buffer} buffer
+ * @returns {{ mime: string, ext: string } | null}
+ */
+function detectFileSignature(buffer) {
+    if (!buffer || buffer.length < 4) return null;
+
+    // Check for dangerous markup signatures in header text
+    const headerStr = buffer.slice(0, Math.min(buffer.length, 512)).toString('latin1').toLowerCase();
+    if (headerStr.includes('<html') || headerStr.includes('<!doctype') ||
+        headerStr.includes('<script') || headerStr.includes('<svg') ||
+        headerStr.includes('<?xml')) {
+        return null;
+    }
+
+    // JPEG: FF D8 FF
+    if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+        return { mime: 'image/jpeg', ext: 'jpg' };
+    }
+
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (buffer.length >= 8 &&
+        buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47 &&
+        buffer[4] === 0x0D && buffer[5] === 0x0A && buffer[6] === 0x1A && buffer[7] === 0x0A) {
+        return { mime: 'image/png', ext: 'png' };
+    }
+
+    // GIF: GIF87a (47 49 46 38 37 61) or GIF89a (47 49 46 38 39 61)
+    if (buffer.length >= 6 &&
+        buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38 &&
+        (buffer[4] === 0x37 || buffer[4] === 0x39) && buffer[5] === 0x61) {
+        return { mime: 'image/gif', ext: 'gif' };
+    }
+
+    // WEBP: RIFF....WEBP (52 49 46 46 .... 57 45 42 50)
+    if (buffer.length >= 12 &&
+        buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+        buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+        return { mime: 'image/webp', ext: 'webp' };
+    }
+
+    // MP4: bytes 4..7 are 'ftyp'
+    if (buffer.length >= 8 &&
+        buffer[4] === 0x66 && buffer[5] === 0x74 && buffer[6] === 0x79 && buffer[7] === 0x70) {
+        return { mime: 'video/mp4', ext: 'mp4' };
+    }
+
+    // WEBM: 1A 45 DF A3
+    if (buffer.length >= 4 &&
+        buffer[0] === 0x1A && buffer[1] === 0x45 && buffer[2] === 0xDF && buffer[3] === 0xA3) {
+        return { mime: 'video/webm', ext: 'webm' };
+    }
+
+    return null;
+}
+
+// --------------------------------------------------------------------------
 // Multer configuration
 // --------------------------------------------------------------------------
 
@@ -46,12 +112,17 @@ const storage = multer.diskStorage({
         cb(null, path.join(__dirname, '../../public/uploads'));
     },
     filename: (req, file, cb) => {
-        const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
-        cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeName}`);
+        // Save to temporary unique filename without trusting client extension
+        const tempName = `tmp_${Date.now()}_${crypto.randomBytes(8).toString('hex')}.tmp`;
+        cb(null, tempName);
     },
 });
 
 const fileFilter = (req, file, cb) => {
+    const rawExt = path.extname(file.originalname || '').toLowerCase();
+    if (FORBIDDEN_EXTENSIONS.includes(rawExt)) {
+        return cb(new Error(`Extension interdite : ${rawExt}`), false);
+    }
     if (ALLOWED_MEDIA_MIMES.includes(file.mimetype)) {
         cb(null, true);
     } else {
@@ -64,6 +135,57 @@ const upload = multer({
     fileFilter,
     limits: { fileSize: MAX_UPLOAD_SIZE },
 });
+
+/**
+ * Middleware validating written files by magic bytes, renaming to safe extensions,
+ * and removing any forged or malicious files.
+ */
+function validateAndSaveUploadedFiles(req, res, next) {
+    if (!req.files || req.files.length === 0) return next();
+
+    const verifiedFiles = [];
+    try {
+        for (const file of req.files) {
+            const tempPath = file.path;
+            const buffer = Buffer.alloc(512);
+            let bytesRead = 0;
+            const fd = fs.openSync(tempPath, 'r');
+            try {
+                bytesRead = fs.readSync(fd, buffer, 0, 512, 0);
+            } finally {
+                fs.closeSync(fd);
+            }
+
+            const headerSlice = buffer.slice(0, bytesRead);
+            const detected = detectFileSignature(headerSlice);
+
+            // Check if magic bytes match allowed MIME types
+            if (!detected || !ALLOWED_MEDIA_MIMES.includes(detected.mime)) {
+                logger.warn(`Rejected upload: signature mismatch or unknown format for ${file.originalname}`);
+                for (const f of req.files) tryDelete(f.path);
+                return res.status(400).json({
+                    error: 'Format de fichier non autorisé ou signature corrompue.',
+                });
+            }
+
+            // Assign safe canonical filename with verified extension
+            const finalFilename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${detected.ext}`;
+            const finalPath = path.join(path.dirname(tempPath), finalFilename);
+            fs.renameSync(tempPath, finalPath);
+
+            file.filename = finalFilename;
+            file.path     = finalPath;
+            file.mimetype = detected.mime;
+            verifiedFiles.push(file);
+        }
+        req.files = verifiedFiles;
+        next();
+    } catch (err) {
+        logger.error(`Error validating uploaded files: ${err.message}`);
+        for (const f of req.files) tryDelete(f.path);
+        return res.status(500).json({ error: 'Erreur lors du traitement du fichier.' });
+    }
+}
 
 // --------------------------------------------------------------------------
 // Board background processing
@@ -101,6 +223,13 @@ function processBoardBackground(newBoardData, oldBoardData) {
         return;
     }
 
+    const detected = detectFileSignature(buffer);
+    if (!detected || !ALLOWED_IMAGE_MIMES[detected.mime]) {
+        logger.warn(`Rejected background: magic bytes mismatch or forbidden format`);
+        newBoardData.background = oldBoardData?.background || { type: 'default', value: '' };
+        return;
+    }
+
     const bgDir = path.join(__dirname, '../../public/uploads/background');
     fs.mkdirSync(bgDir, { recursive: true });
 
@@ -110,7 +239,7 @@ function processBoardBackground(newBoardData, oldBoardData) {
         tryDelete(path.join(bgDir, path.basename(oldValue)));
     }
 
-    const fileName = `bg_${crypto.randomUUID().slice(0, 8)}_${Date.now()}.${ext}`;
+    const fileName = `bg_${crypto.randomUUID().slice(0, 8)}_${Date.now()}.${detected.ext}`;
     fs.writeFileSync(path.join(bgDir, fileName), buffer);
     newBoardData.background.value = `/uploads/background/${fileName}`;
     logger.info(`Background saved: ${fileName} (${Math.round(buffer.length / 1024)} KB)`);
@@ -144,6 +273,12 @@ function processAvatar(base64DataUrl, userId, oldAvatarUrl = null) {
     const buffer = Buffer.from(matches[2], 'base64');
     if (buffer.length > 5 * 1024 * 1024) return base64DataUrl; // 5 MB max for avatars
 
+    const detected = detectFileSignature(buffer);
+    if (!detected || !ALLOWED_IMAGE_MIMES[detected.mime]) {
+        logger.warn(`Rejected avatar: magic bytes mismatch or forbidden format`);
+        return base64DataUrl;
+    }
+
     const avatarDir = path.join(__dirname, '../../public/uploads/Person');
     fs.mkdirSync(avatarDir, { recursive: true });
 
@@ -152,7 +287,7 @@ function processAvatar(base64DataUrl, userId, oldAvatarUrl = null) {
         tryDelete(path.join(avatarDir, path.basename(oldAvatarUrl)));
     }
 
-    const fileName = `user_${userId}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
+    const fileName = `user_${userId}_${crypto.randomUUID().slice(0, 8)}.${detected.ext}`;
     fs.writeFileSync(path.join(avatarDir, fileName), buffer);
     return `/uploads/Person/${fileName}`;
 }
@@ -199,6 +334,8 @@ fs.mkdirSync(path.join(__dirname, '../../public/uploads'), { recursive: true });
 
 module.exports = {
     upload,
+    validateAndSaveUploadedFiles,
+    detectFileSignature,
     processBoardBackground,
     processAvatar,
     tryDelete,

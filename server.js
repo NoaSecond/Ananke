@@ -26,11 +26,12 @@ const { router: authRouter } = require('./src/routes/auth');
 const usersRouter           = require('./src/routes/users');
 const boardsRouter          = require('./src/routes/boards');
 const authenticate          = require('./src/middleware/authenticate');
+const requireSetup          = require('./src/middleware/requireSetup');
 const { requireRole }       = require('./src/middleware/requireRole');
 const { requireBoardRole }  = require('./src/middleware/boardAccess');
 const boardRepository       = require('./src/repositories/boardRepository');
 const memberRepository      = require('./src/repositories/memberRepository');
-const { upload, deleteMediaByUrl, processBoardBackground } = require('./src/utils/fileHelper');
+const { upload, validateAndSaveUploadedFiles, deleteMediaByUrl, processBoardBackground } = require('./src/utils/fileHelper');
 const { describeChanges }   = require('./src/utils/boardDiff');
 const logger                = require('./src/utils/logger');
 
@@ -54,13 +55,12 @@ const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
-// Content Security Policy
+// Content Security Policy (F-07 hardening: no unsafe-inline in script-src-attr)
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc:    ["'self'"],
             scriptSrc:     ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com'],
-            scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc:      ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
             fontSrc:       ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com', 'data:'],
             imgSrc:        ["'self'", 'data:', 'blob:', 'https:'],
@@ -71,7 +71,14 @@ app.use(helmet({
         },
     },
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
+
+// Additional hardening headers (F-19)
+app.use((req, res, next) => {
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+    next();
+});
 
 // HTTPS redirect in production
 if (process.env.NODE_ENV === 'production') {
@@ -101,8 +108,28 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cookieParser());
 
-// Protected uploads (auth required)
-app.use('/uploads', authenticate, express.static(path.join(__dirname, 'public', 'uploads')));
+// Protected uploads (auth required, sandbox CSP, no-cache, nosniff, safe types only)
+app.use('/uploads', authenticate, (req, res, next) => {
+    res.set({
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+        'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+    });
+    next();
+}, express.static(path.join(__dirname, 'public', 'uploads'), {
+    setHeaders: (res, filePath) => {
+        const ext = path.extname(filePath).toLowerCase();
+        if (!['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.webm'].includes(ext)) {
+            res.set('Content-Disposition', 'attachment');
+        }
+    }
+}));
+
+// Static files (support optional base path mount)
+const APP_BASE_PATH = (process.env.APP_BASE_PATH || '').replace(/\/$/, '');
+if (APP_BASE_PATH) {
+    app.use(APP_BASE_PATH, express.static(path.join(__dirname, 'public')));
+}
 app.use(express.static(path.join(__dirname, 'public')));
 
 // HTTP logging
@@ -131,7 +158,7 @@ const uploadLimiter = rateLimit({
     message: { error: 'Trop de requêtes d\'upload. Veuillez patienter.' },
 });
 
-app.post('/api/upload', authenticate, uploadLimiter, upload.array('files', 10), (req, res) => {
+app.post('/api/upload', authenticate, requireSetup, uploadLimiter, upload.array('files', 10), validateAndSaveUploadedFiles, (req, res) => {
     if (!req.files?.length) return res.status(400).json({ error: 'No files uploaded.' });
     const urls = req.files.map(f => `/uploads/${f.filename}`);
     logger.info(`${req.files.length} file(s) uploaded by ${req.user.name}`);
@@ -217,7 +244,8 @@ io.use((socket, next) => {
     });
 });
 
-const onlineUsers = new Map(); // socket.id → user info
+// Map: userId → { sockets: Set<socketId>, user: { id, name, avatar_url } }
+const connectedUsers = new Map();
 
 function getBoardPresenceMap() {
     const presence = {};
@@ -228,14 +256,11 @@ function getBoardPresenceMap() {
                 presence[s.currentBoardId] = [];
             }
             if (!presence[s.currentBoardId].some(u => u.id === s.user.id)) {
+                // F-17 Minimization: do not expose email or global role in board presence
                 presence[s.currentBoardId].push({
                     id:         s.user.id,
                     name:       s.user.name,
-                    first_name: s.user.first_name,
-                    last_name:  s.user.last_name,
                     avatar_url: s.user.avatar_url,
-                    role:       s.user.role,
-                    email:      s.user.email,
                 });
             }
         }
@@ -247,17 +272,29 @@ function broadcastBoardPresence() {
     io.emit('boardPresence', getBoardPresenceMap());
 }
 
+function broadcastOnlineUsers() {
+    // F-17 Minimization & F-18 Deduplication: emit unique list without email or role
+    const users = Array.from(connectedUsers.values()).map(entry => entry.user);
+    io.emit('onlineUsers', users);
+}
+
 io.on('connection', (socket) => {
     socket.currentBoardId = null;
     logger.socket(`User connected: ${socket.user.name} (${socket.user.role}) [${socket.id}]`);
 
-    onlineUsers.set(socket.id, {
-        id:         socket.user.id,
-        name:       socket.user.name,
-        role:       socket.user.role,
-        avatar_url: socket.user.avatar_url,
-        email:      socket.user.email,
-    });
+    const userId = socket.user.id;
+    if (!connectedUsers.has(userId)) {
+        connectedUsers.set(userId, {
+            sockets: new Set([socket.id]),
+            user: {
+                id:         socket.user.id,
+                name:       socket.user.name,
+                avatar_url: socket.user.avatar_url,
+            },
+        });
+    } else {
+        connectedUsers.get(userId).sockets.add(socket.id);
+    }
 
     broadcastOnlineUsers();
     socket.emit('boardPresence', getBoardPresenceMap());
@@ -412,13 +449,11 @@ io.on('connection', (socket) => {
                     ? `${row.first_name} ${row.last_name}`
                     : row.email;
 
-                onlineUsers.set(socket.id, {
-                    id:         socket.user.id,
-                    name:       socket.user.name,
-                    role:       socket.user.role,
-                    avatar_url: socket.user.avatar_url,
-                    email:      socket.user.email,
-                });
+                const entry = connectedUsers.get(socket.user.id);
+                if (entry) {
+                    entry.user.name       = socket.user.name;
+                    entry.user.avatar_url = socket.user.avatar_url;
+                }
                 broadcastOnlineUsers();
                 broadcastBoardPresence();
             });
@@ -426,15 +461,18 @@ io.on('connection', (socket) => {
 
     // ── disconnect ─────────────────────────────────────────────────────────
     socket.on('disconnect', (reason) => {
-        onlineUsers.delete(socket.id);
+        const userId = socket.user.id;
+        if (connectedUsers.has(userId)) {
+            const entry = connectedUsers.get(userId);
+            entry.sockets.delete(socket.id);
+            if (entry.sockets.size === 0) {
+                connectedUsers.delete(userId);
+            }
+        }
         broadcastOnlineUsers();
         broadcastBoardPresence();
         logger.socket(`User disconnected: ${socket.user.name} (${reason})`);
     });
-
-    function broadcastOnlineUsers() {
-        io.emit('onlineUsers', Array.from(onlineUsers.values()));
-    }
 });
 
 // --------------------------------------------------------------------------
