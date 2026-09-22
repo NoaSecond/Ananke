@@ -13,7 +13,7 @@ const rateLimit = require('express-rate-limit');
 const authenticate      = require('../middleware/authenticate');
 const requireSetup      = require('../middleware/requireSetup');
 const { requireRole }   = require('../middleware/requireRole');
-const { validateCreateAccount, validateUserRole } = require('../middleware/validate');
+const { validateCreateAccount, validateUserRole, validateResetPassword } = require('../middleware/validate');
 const userRepository    = require('../repositories/userRepository');
 const logger            = require('../utils/logger');
 
@@ -133,6 +133,30 @@ router.put('/:id/role', requireRole('admin'), validateUserRole, async (req, res)
         res.json({ success: true });
     } catch (err) {
         logger.error(`Update role error: ${err.message}`);
+        res.status(500).json({ error: 'Erreur interne du serveur' });
+    }
+});
+
+// --------------------------------------------------------------------------
+// PUT /api/users/:id/password  — Reset user password (owner only)
+// --------------------------------------------------------------------------
+
+router.put('/:id/password', requireRole('owner'), validateResetPassword, async (req, res) => {
+    const userId = req.params.id;
+    const { password } = req.body;
+
+    try {
+        const target = await userRepository.findById(userId);
+        if (!target) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+
+        const passwordHash = bcrypt.hashSync(password, 10);
+        const { changed } = await userRepository.resetPassword(userId, passwordHash);
+        if (!changed) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+
+        logger.info(`Password reset for ${target.email} (by owner ${req.user.name || req.user.email})`);
+        res.json({ success: true, message: 'Mot de passe réinitialisé avec succès' });
+    } catch (err) {
+        logger.error(`Reset password error: ${err.message}`);
         res.status(500).json({ error: 'Erreur interne du serveur' });
     }
 });

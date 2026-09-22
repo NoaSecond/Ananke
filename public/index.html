@@ -825,6 +825,37 @@
         </div>
     </div>
 
+    <div id="reset-password-modal" class="modal-overlay">
+        <div class="modal-content" style="width: min(95vw, 440px);">
+            <button class="modal-close-btn" aria-label="Close"><span class="material-symbols-outlined">close</span></button>
+            <h2 style="display:flex;align-items:center;gap:8px;margin-bottom:0.5rem;">
+                <span class="material-symbols-outlined" style="color:var(--clr-primary);">lock_reset</span>
+                <span data-i18n="settings.reset_pwd_title">Reset Password</span>
+            </h2>
+            <p id="reset-password-user-info" style="font-size:0.85rem;color:var(--clr-text-muted);margin:0 0 1rem;"></p>
+            <input type="hidden" id="reset-password-user-id">
+            
+            <label for="reset-password-input" data-i18n="settings.temp_password" style="margin-top:0;">Temporary Password</label>
+            <div style="position:relative;display:flex;align-items:center;margin-bottom:0.75rem;">
+                <input type="text" id="reset-password-input" class="form-input" placeholder="Temp123!" style="margin:0;padding-right:135px;font-family:monospace;font-size:0.9rem;" required minlength="8">
+                <div style="position:absolute;right:6px;display:flex;gap:4px;">
+                    <button type="button" id="reset-password-generate-btn" class="secondary-btn small-btn" style="font-size:0.75rem;padding:4px 8px;" data-i18n="settings.generate_pwd">Generate</button>
+                    <button type="button" id="reset-password-copy-btn" class="secondary-btn small-btn" style="font-size:0.75rem;padding:4px 8px;" data-i18n="settings.copy_pwd">Copy</button>
+                </div>
+            </div>
+            
+            <div id="reset-password-message" style="margin-bottom:1rem;font-size:0.85rem;min-height:1.2em;"></div>
+
+            <div class="modal-actions">
+                <button type="button" id="reset-password-cancel-btn" class="secondary-btn" data-i18n="modal.btn_cancel">Cancel</button>
+                <button type="button" id="reset-password-save-btn" class="action-btn" style="display:flex;align-items:center;gap:6px;">
+                    <span class="material-symbols-outlined" style="font-size:18px;">check</span>
+                    <span data-i18n="settings.reset_pwd_btn">Reset Password</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"
         integrity="sha384-r+ljwOAhwY4/kdyzMnuBg7MEVoWpTMp5EYUDntB/E9qzNwL9dAEcNrb2XaV+mJc2" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"

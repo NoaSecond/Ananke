@@ -13,6 +13,8 @@ import * as API from './api.js';
 import { Logger, escapeHtml } from './utils.js';
 import { renderAvatarHtml } from './avatar.js';
 import { t, getLanguage, setLanguage } from './i18n.js';
+import { elements } from './dom.js';
+import { openModal, closeModal } from './modals.js';
 
 let _onBack = null;
 
@@ -277,6 +279,17 @@ async function _loadUsersList() {
     }
 }
 
+function _generateRandomPassword(length = 10) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*';
+    let result = '';
+    const array = new Uint8Array(length);
+    crypto.getRandomValues(array);
+    for (let i = 0; i < length; i++) {
+        result += chars[array[i] % chars.length];
+    }
+    return result;
+}
+
 function _renderUserRows(users) {
     const listEl = document.getElementById('app-settings-user-list');
     if (!listEl) return;
@@ -285,6 +298,8 @@ function _renderUserRows(users) {
         listEl.innerHTML = `<div style="padding:1rem;text-align:center;color:var(--clr-text-muted);font-size:0.85rem;">No users found.</div>`;
         return;
     }
+
+    const isCurrentUserOwner = state.currentUser && state.currentUser.role === 'owner';
 
     listEl.innerHTML = users.map(u => {
         const isOwner = u.role === 'owner';
@@ -308,12 +323,19 @@ function _renderUserRows(users) {
                         <option value="user" ${u.role === 'user' || u.role === 'reader' || u.role === 'editor' ? 'selected' : ''}>${t('roles.user') || 'Utilisateur'}</option>
                         <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>${t('roles.admin') || 'Admin'}</option>
                     </select>
-                    ${!isSelf ? `
-                        <button type="button" class="member-remove-btn app-settings-delete-user-btn" data-user-id="${u.id}" title="${t('modal.btn_delete')}" style="padding:4px 8px;border-radius:6px;border:none;background:transparent;cursor:pointer;color:var(--clr-text-muted);transition:color var(--transition-fast);">
-                            <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
-                        </button>
-                    ` : ''}
                 ` : `<span class="role-badge owner">${t('roles.owner') || 'Owner'}</span>`}
+
+                ${isCurrentUserOwner ? `
+                    <button type="button" class="member-remove-btn app-settings-reset-pwd-btn" data-user-id="${u.id}" data-user-email="${escapeHtml(u.email || '')}" data-user-name="${escapeHtml(displayName)}" title="${t('settings.reset_pwd_tooltip') || 'Set temporary password'}" style="padding:4px 8px;border-radius:6px;border:none;background:transparent;cursor:pointer;color:var(--clr-text-muted);transition:color var(--transition-fast);">
+                        <span class="material-symbols-outlined" style="font-size:18px;">lock_reset</span>
+                    </button>
+                ` : ''}
+
+                ${!isOwner && !isSelf ? `
+                    <button type="button" class="member-remove-btn app-settings-delete-user-btn" data-user-id="${u.id}" title="${t('modal.btn_delete')}" style="padding:4px 8px;border-radius:6px;border:none;background:transparent;cursor:pointer;color:var(--clr-text-muted);transition:color var(--transition-fast);">
+                        <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+                    </button>
+                ` : ''}
             </div>
         </div>
         `;
@@ -340,6 +362,16 @@ function _renderUserRows(users) {
         });
     });
 
+    // Bind reset password listeners (owner only)
+    listEl.querySelectorAll('.app-settings-reset-pwd-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const userId = btn.dataset.userId;
+            const email = btn.dataset.userEmail;
+            const name = btn.dataset.userName;
+            _openResetPasswordModal(userId, email, name);
+        });
+    });
+
     // Bind delete listeners
     listEl.querySelectorAll('.app-settings-delete-user-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -358,4 +390,113 @@ function _renderUserRows(users) {
             }
         });
     });
+}
+
+function _openResetPasswordModal(userId, email, name) {
+    const modal = elements.resetPasswordModal || document.getElementById('reset-password-modal');
+    if (!modal) return;
+
+    const idInput = document.getElementById('reset-password-user-id');
+    const pwdInput = document.getElementById('reset-password-input');
+    const infoEl = document.getElementById('reset-password-user-info');
+    const msgEl = document.getElementById('reset-password-message');
+    const generateBtn = document.getElementById('reset-password-generate-btn');
+    const copyBtn = document.getElementById('reset-password-copy-btn');
+    const cancelBtn = document.getElementById('reset-password-cancel-btn');
+    const saveBtn = document.getElementById('reset-password-save-btn');
+
+    if (idInput) idInput.value = userId;
+    if (infoEl) infoEl.textContent = t('settings.reset_pwd_user_info', { email: email || name }) || `Set a new temporary password for ${email || name}:`;
+    if (msgEl) {
+        msgEl.textContent = '';
+        msgEl.style.color = '';
+    }
+
+    // Auto-generate an initial secure temporary password
+    const tempPwd = _generateRandomPassword(10);
+    if (pwdInput) {
+        pwdInput.value = tempPwd;
+    }
+
+    if (generateBtn) {
+        generateBtn.onclick = () => {
+            if (pwdInput) {
+                pwdInput.value = _generateRandomPassword(10);
+                pwdInput.focus();
+                pwdInput.select();
+            }
+        };
+    }
+
+    if (copyBtn) {
+        copyBtn.onclick = async () => {
+            if (pwdInput && pwdInput.value) {
+                try {
+                    await navigator.clipboard.writeText(pwdInput.value);
+                    const originalText = copyBtn.textContent;
+                    copyBtn.textContent = t('settings.copied') || 'Copié !';
+                    setTimeout(() => { copyBtn.textContent = originalText; }, 1500);
+                } catch (err) {
+                    Logger.error('Copy to clipboard failed', err);
+                }
+            }
+        };
+    }
+
+    if (cancelBtn) {
+        cancelBtn.onclick = () => closeModal(modal);
+    }
+
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.onclick = async () => {
+            const password = pwdInput ? pwdInput.value.trim() : '';
+            if (!password || password.length < 8) {
+                if (msgEl) {
+                    msgEl.textContent = t('settings.min_length_pwd') || 'Le mot de passe doit contenir au moins 8 caractères.';
+                    msgEl.style.color = 'var(--clr-danger, #ef4444)';
+                }
+                return;
+            }
+
+            saveBtn.disabled = true;
+            if (msgEl) {
+                msgEl.textContent = t('modal.loading') || 'Loading...';
+                msgEl.style.color = 'var(--clr-text-muted)';
+            }
+
+            try {
+                const res = await API.resetUserPassword(userId, password);
+                if (res.success) {
+                    if (msgEl) {
+                        msgEl.textContent = t('settings.reset_pwd_success') || 'Mot de passe réinitialisé avec succès !';
+                        msgEl.style.color = 'var(--clr-success, #22c55e)';
+                    }
+                    Logger.success('Password reset successfully');
+                    setTimeout(() => {
+                        closeModal(modal);
+                        saveBtn.disabled = false;
+                    }, 1200);
+                } else {
+                    saveBtn.disabled = false;
+                    if (msgEl) {
+                        msgEl.textContent = res.error || 'Reset failed';
+                        msgEl.style.color = 'var(--clr-danger, #ef4444)';
+                    }
+                }
+            } catch (err) {
+                saveBtn.disabled = false;
+                if (msgEl) {
+                    msgEl.textContent = err.message || 'Error occurred';
+                    msgEl.style.color = 'var(--clr-danger, #ef4444)';
+                }
+            }
+        };
+    }
+
+    openModal(modal);
+    if (pwdInput) {
+        pwdInput.focus();
+        pwdInput.select();
+    }
 }
