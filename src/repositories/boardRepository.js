@@ -9,6 +9,83 @@ const db = require('../config/database');
 const crypto = require('crypto');
 
 /**
+ * Enrich task assignees inside board data with latest user information (avatars, names).
+ * @param {object} boardData
+ * @returns {Promise<object>}
+ */
+async function enrichBoardAssignees(boardData) {
+    if (!boardData || !Array.isArray(boardData.workflows)) return boardData;
+
+    const userIds = new Set();
+    for (const workflow of boardData.workflows) {
+        if (Array.isArray(workflow.tasks)) {
+            for (const task of workflow.tasks) {
+                if (Array.isArray(task.assignees)) {
+                    for (const a of task.assignees) {
+                        const id = typeof a === 'string' ? a : a?.id;
+                        if (id) userIds.add(id);
+                    }
+                }
+            }
+        }
+    }
+
+    if (userIds.size === 0) return boardData;
+
+    const idList = Array.from(userIds);
+    const placeholders = idList.map(() => '?').join(',');
+    const users = await new Promise((resolve) => {
+        db.all(
+            `SELECT id, first_name, last_name, email, avatar_url, role FROM users WHERE id IN (${placeholders})`,
+            idList,
+            (err, rows) => resolve(rows || [])
+        );
+    });
+
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    for (const workflow of boardData.workflows) {
+        if (Array.isArray(workflow.tasks)) {
+            for (const task of workflow.tasks) {
+                if (Array.isArray(task.assignees)) {
+                    task.assignees = task.assignees.map(a => {
+                        const id = typeof a === 'string' ? a : a?.id;
+                        const u = userMap.get(id);
+                        if (!u) return a;
+                        const fullName = (u.first_name || u.last_name)
+                            ? `${u.first_name || ''} ${u.last_name || ''}`.trim()
+                            : u.email;
+                        if (typeof a === 'string') {
+                            return {
+                                id: u.id,
+                                name: fullName,
+                                first_name: u.first_name,
+                                last_name: u.last_name,
+                                email: u.email,
+                                avatar_url: u.avatar_url,
+                                role: u.role,
+                            };
+                        }
+                        return {
+                            ...a,
+                            id: u.id,
+                            name: fullName || a.name,
+                            first_name: u.first_name !== undefined ? u.first_name : a.first_name,
+                            last_name: u.last_name !== undefined ? u.last_name : a.last_name,
+                            email: u.email || a.email,
+                            avatar_url: u.avatar_url,
+                            role: u.role || a.role,
+                        };
+                    });
+                }
+            }
+        }
+    }
+
+    return boardData;
+}
+
+/**
  * Find a board by its ID.
  * Returns null if not found.
  * @param {string} id
@@ -19,10 +96,11 @@ function findById(id) {
         db.get(
             `SELECT id, name, description, icon, color, data, created_by, created_at FROM boards WHERE id = ?`,
             [id],
-            (err, row) => {
+            async (err, row) => {
                 if (err) return reject(err);
                 if (!row) return resolve(null);
                 try { row.data = row.data ? JSON.parse(row.data) : {}; } catch { row.data = {}; }
+                row.data = await enrichBoardAssignees(row.data);
                 resolve(row);
             }
         );
@@ -52,16 +130,17 @@ function findAllForUser(userId, globalRole) {
 
         const params = isGlobalAdmin ? [] : [userId];
 
-        db.all(query, params, (err, rows) => {
+        db.all(query, params, async (err, rows) => {
             if (err) return reject(err);
-            const parsed = (rows || []).map(row => {
+            const parsed = await Promise.all((rows || []).map(async row => {
                 try {
                     row.data = row.data ? JSON.parse(row.data) : {};
                 } catch {
                     row.data = {};
                 }
+                row.data = await enrichBoardAssignees(row.data);
                 return row;
-            });
+            }));
             resolve(parsed);
         });
     });
@@ -137,4 +216,4 @@ function remove(id) {
     });
 }
 
-module.exports = { findById, findAllForUser, create, updateMeta, updateData, remove };
+module.exports = { findById, findAllForUser, create, updateMeta, updateData, remove, enrichBoardAssignees };

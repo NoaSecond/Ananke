@@ -6,9 +6,9 @@
  */
 
 import { Logger } from './modules/utils.js';
-import { createAvatarElement } from './modules/avatar.js';
+import { createAvatarElement, cacheUsers } from './modules/avatar.js';
 import { state, API_URL, basePath, getFullUrl } from './modules/state.js';
-import { initModals } from './modules/modals.js';
+import { initModals, showConfirm } from './modules/modals.js';
 import { initAuth, handleUnauthorized, updateUserUI, openSetupModal, toggleSettingsMenu, setProfileNavigateHandler } from './modules/auth-ui.js';
 import { initBoardListeners, renderBoard } from './modules/board-ui.js';
 import { initTaskListeners, refreshTaskView } from './modules/task-ui.js';
@@ -138,6 +138,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (badge) badge.textContent = '0 logs';
     });
 
+    document.getElementById('purge-logs-btn')?.addEventListener('click', () => {
+        const confirmMsg = t('modal.confirm_purge_logs') || 'Êtes-vous sûr de vouloir vider définitivement le fichier log du serveur ?';
+        showConfirm(confirmMsg, async () => {
+            try {
+                await API.clearServerLogs();
+                const container = document.getElementById('logs-container');
+                if (container) {
+                    container.innerHTML = `<div style="color: #4caf50; padding: 1rem; text-align: center; font-style: italic;">${t('modal.logs_purged') || 'Le fichier de logs a été vidé avec succès.'}</div>`;
+                }
+                const badge = document.getElementById('logs-count-badge');
+                if (badge) badge.textContent = '0 logs';
+            } catch (err) {
+                Logger.error('Failed to purge server logs', err);
+                alert(err.message || 'Échec lors de la suppression des logs.');
+            }
+        });
+    });
+
     // Session check on tab focus
     const verifySession = () => {
         if (state.currentUser) {
@@ -188,8 +206,18 @@ export async function navigateToBoard(boardId) {
     }
 
     try {
-        const { board } = await API.getBoard(boardId);
-        if (board) {
+        const [boardRes, membersRes] = await Promise.allSettled([
+            API.getBoard(boardId),
+            API.getBoardMembers(boardId)
+        ]);
+
+        if (membersRes.status === 'fulfilled' && membersRes.value?.members) {
+            state.boardMembers = membersRes.value.members;
+            cacheUsers(state.boardMembers);
+        }
+
+        if (boardRes.status === 'fulfilled' && boardRes.value?.board) {
+            const board = boardRes.value.board;
             if (existingBoard) {
                 existingBoard.name = board.name;
                 existingBoard.description = board.description;
@@ -511,6 +539,7 @@ async function initSocket() {
     });
 
     state.socket.on('onlineUsers', (users) => {
+        cacheUsers(users);
         if (state.currentView === 'board' && state.currentBoardId) {
             updateBoardHeaderPresence();
         }
@@ -520,6 +549,8 @@ async function initSocket() {
     try {
         const { boards } = await API.getBoards();
         state.boards = boards;
+        boards?.forEach(b => { if (b.members) cacheUsers(b.members); });
+        API.getSimpleList().then(res => { if (res?.users) cacheUsers(res.users); }).catch(() => {});
         renderSidebarBoards();
         navigateToDashboard();
     } catch (err) {

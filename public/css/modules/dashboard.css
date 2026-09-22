@@ -35,12 +35,13 @@
 /* ── Board card ── */
 
 .board-card {
-    background: var(--clr-surface-2);
+    background: var(--task-card-bg, var(--clr-surface));
     border: 1px solid var(--clr-border);
     border-radius: var(--border-radius-lg);
     padding: 1.25rem;
     cursor: pointer;
-    transition: box-shadow var(--transition-base), border-color var(--transition-base);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
     position: relative;
     overflow: hidden;
     display: flex;
@@ -49,7 +50,8 @@
 }
 
 .board-card:hover {
-    box-shadow: var(--shadow-lg), 0 0 0 1px var(--clr-primary-glow);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md), 0 0 0 1px var(--clr-primary-glow);
     border-color: rgba(99,102,241,0.3);
 }
 
@@ -123,6 +125,7 @@
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     line-height: 1.5;
     min-height: 2.25rem;

@@ -17,6 +17,7 @@ const fs         = require('fs');
 const path       = require('path');
 
 const authenticate              = require('../middleware/authenticate');
+const requireSetup              = require('../middleware/requireSetup');
 const { requireRole }           = require('../middleware/requireRole');
 const { requireBoardRole }      = require('../middleware/boardAccess');
 const { validateBoard, validateBoardMemberRole } = require('../middleware/validate');
@@ -66,8 +67,9 @@ router.get('/icons', async (req, res) => {
     }
 });
 
-// All other board routes require authentication
+// All other board routes require authentication and completed setup
 router.use(authenticate);
+router.use(requireSetup);
 
 // --------------------------------------------------------------------------
 // Rate limiting

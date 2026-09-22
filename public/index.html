@@ -67,7 +67,8 @@
     <!-- CSS -->
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"
+        integrity="sha384-oMy41mb/qJnpJlpXOF57hSu2KGi47l/UV9+tPNrBOs7/ap5Vubj/3phrCtjutHMQ" crossorigin="anonymous">
     <link rel="stylesheet" href="css/main.css">
 
     <!-- Schema.org JSON-LD -->
@@ -96,7 +97,7 @@
         },
         "datePublished": "2025-01-26",
         "dateModified": "2026-09-19",
-        "version": "3.0.0",
+        "version": "3.0.1",
         "downloadUrl": "https://github.com/NoaSecond/Ananke",
         "featureList": [
             "Interactive Kanban Board",
@@ -360,7 +361,7 @@
                 <div class="controls">
                     <div id="online-users-container" class="online-users-container"></div>
 
-                    <button id="add-workflow-btn" class="action-btn">
+                    <button id="add-workflow-btn" class="secondary-btn">
                         <span class="material-symbols-outlined">add</span>
                         <span data-i18n="board.add_column">Add Column</span>
                     </button>
@@ -525,7 +526,10 @@
             <input type="hidden" id="add-modal-type">
             <input type="hidden" id="add-modal-workflow-id">
             <label for="add-modal-input">Title</label>
-            <input type="text" id="add-modal-input" placeholder="New title...">
+            <div style="position: relative; display: flex; align-items: center;">
+                <input type="text" id="add-modal-input" placeholder="New title..." maxlength="100" style="padding-right: 55px; width: 100%;">
+                <span id="add-modal-counter" style="position: absolute; right: 10px; font-size: 0.72rem; color: var(--clr-text-muted); pointer-events: none; font-family: var(--font-mono, monospace);"></span>
+            </div>
             <div class="modal-actions">
                 <button id="save-add-btn" class="action-btn"
                     style="display: flex; align-items: center; justify-content: center; gap: 4px;">Add <span
@@ -595,7 +599,10 @@
     <div id="task-modal" class="modal-overlay">
         <div class="modal-content task-modal-content">
             <div class="modal-header-custom">
-                <input type="text" id="task-title-input" class="modal-title-input" placeholder="Task Title">
+                <div style="position: relative; flex-grow: 1; display: flex; align-items: center;">
+                    <input type="text" id="task-title-input" class="modal-title-input" placeholder="Task Title" maxlength="100" style="padding-right: 55px; width: 100%;">
+                    <span id="task-title-counter" style="position: absolute; right: 10px; font-size: 0.72rem; color: var(--clr-text-muted); pointer-events: none; font-family: var(--font-mono, monospace);"></span>
+                </div>
                 <div class="header-controls">
                     <select id="task-column-select" class="column-select" title="Move to column"></select>
                     <button id="edit-to-view-btn" class="icon-only-btn" title="View Task">
@@ -659,7 +666,7 @@
                         <button id="add-assignee-btn" class="secondary-btn small-btn circular-btn" title="Assign User">
                             <span class="material-symbols-outlined">person_add</span>
                         </button>
-                        <div id="assignee-picker" class="tag-picker hidden" style="width: 320px;">
+                        <div id="assignee-picker" class="tag-picker hidden" style="width: min(92vw, 360px);">
                             <h4>Assign User</h4>
                             <input type="text" id="assignee-search-input" placeholder="Search users..."
                                 class="small-input" style="width: 100%; padding: 0.4rem 0.6rem; margin-bottom: 0.2rem;"
@@ -693,13 +700,20 @@
                                 style="width: 100%; padding: 0.4rem 0.6rem; margin-bottom: 0.2rem;" autocomplete="off">
                             <div id="available-tags-list" class="available-tags-list"></div>
                             <div class="tag-picker-divider">or create new</div>
-                            <div class="create-tag-row">
-                                <input type="text" id="new-tag-name" placeholder="Tag name" class="small-input">
-                                <input type="color" id="new-tag-color" value="#3b82f6" class="color-input-small">
-                                <button id="add-tag-btn" class="action-btn small-btn"
-                                    style="display: flex; align-items: center; justify-content: center; gap: 4px;">Create
-                                    <span class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
-                                        title="Raccourci : Entrée">keyboard_return</span></button>
+                            <div class="create-tag-container" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                                <div style="position: relative; width: 100%; display: flex; align-items: center;">
+                                    <input type="text" id="new-tag-name" placeholder="Tag name" class="small-input" maxlength="30" style="width: 100%; font-size: 0.9rem; padding: 0.45rem 0.6rem; padding-right: 42px;">
+                                    <span id="tag-name-counter" style="position: absolute; right: 8px; font-size: 0.72rem; color: var(--clr-text-muted); pointer-events: none; font-variant-numeric: tabular-nums;">0/30</span>
+                                </div>
+                                <div class="create-tag-row" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <input type="color" id="new-tag-color" value="#3b82f6" class="color-input-small" title="Choisir une couleur" aria-label="Tag color">
+                                    </div>
+                                    <button id="add-tag-btn" class="action-btn small-btn"
+                                        style="display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0.35rem 0.8rem;">Create
+                                        <span class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
+                                            title="Raccourci : Entrée">keyboard_return</span></button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -741,7 +755,7 @@
             <h2 data-i18n="board.column_menu_rename">Edit Column</h2>
             <input type="hidden" id="workflow-id-input">
             <label for="workflow-title-input" data-i18n="board.column_new_title">Title</label>
-            <input type="text" id="workflow-title-input" placeholder="Column title">
+            <input type="text" id="workflow-title-input" placeholder="Column title" maxlength="100">
             <label for="workflow-color-input">Color</label>
             <input type="color" id="workflow-color-input">
 
@@ -801,16 +815,24 @@
             <div id="logs-container"
                 style="background: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; padding: 1rem; border-radius: 8px; flex: 1; overflow-y: auto; white-space: pre-wrap; word-break: break-all; border: 1px solid var(--border-color); min-height: 300px; margin-bottom: 1rem; position: relative;">
             </div>
-            <div class="modal-actions" style="margin-top: auto; display: flex; justify-content: flex-start;">
-                <button id="clear-logs-btn" class="secondary-btn">Clear View</button>
+            <div class="modal-actions" style="margin-top: auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <button id="clear-logs-btn" class="secondary-btn" data-i18n="modal.clear_view">Clear View</button>
+                <button id="purge-logs-btn" class="danger-btn" style="display: inline-flex; align-items: center; gap: 6px;" data-i18n-title="modal.purge_logs_tooltip" title="Supprimer définitivement le fichier log sur le serveur">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">delete_forever</span>
+                    <span data-i18n="modal.purge_logs">Vider le fichier log</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"
+        integrity="sha384-r+ljwOAhwY4/kdyzMnuBg7MEVoWpTMp5EYUDntB/E9qzNwL9dAEcNrb2XaV+mJc2" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"
+        integrity="sha384-HZZ/fukV+9G8gwTNjN7zQDG0Sp7MsZy5DDN6VfY3Be7V9dvQpEpR2jF2HlyFUUjU" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"
+        integrity="sha384-H+hy9ULve6xfxRkWIh/YOtvDdpXgV2fmAGQkIDTxIgZwNoaoBal14Di2YTMR6MzR" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"
+        integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous"></script>
     <script src="socket.io/socket.io.js"></script>
     <script type="module" src="js/app.js"></script>
 </body>

@@ -14,6 +14,23 @@ let tempMedia = [];
 let currentViewingTask = null;
 let currentViewingWorkflow = null;
 
+// Helper for input character counter
+export function updateInputCounter(inputEl, counterEl, max = 100) {
+    if (!counterEl || !inputEl) return;
+    const len = inputEl.value.length;
+    counterEl.textContent = `${len}/${max}`;
+    if (len >= max) {
+        counterEl.style.color = 'var(--clr-danger, #ef4444)';
+        counterEl.style.fontWeight = '600';
+    } else if (len >= max * 0.85) {
+        counterEl.style.color = 'var(--clr-warning, #f59e0b)';
+        counterEl.style.fontWeight = '500';
+    } else {
+        counterEl.style.color = 'var(--clr-text-muted, #888)';
+        counterEl.style.fontWeight = 'normal';
+    }
+}
+
 // --- Task Editing Logic ---
 export const openTaskEditModal = (task, workflow) => {
     elements.taskForm.id.value = task.id;
@@ -23,7 +40,8 @@ export const openTaskEditModal = (task, workflow) => {
     if (elements.taskForm.showId) {
         elements.taskForm.showId.checked = task.showIdOnCard === true;
     }
-    elements.taskForm.title.value = task.title;
+    elements.taskForm.title.value = task.title || '';
+    updateInputCounter(elements.taskForm.title, elements.taskForm.titleCounter, 100);
     elements.taskForm.description.value = task.description;
     elements.taskForm.color.value = task.color;
     elements.taskForm.showTags.checked = task.showTags !== false;
@@ -91,6 +109,10 @@ window.checkTaskDirty = () => {
 };
 
 export const initTaskListeners = () => {
+    elements.taskForm.title.addEventListener('input', () => {
+        updateInputCounter(elements.taskForm.title, elements.taskForm.titleCounter, 100);
+    });
+
     elements.taskForm.saveBtn.addEventListener('click', () => {
         const taskId = elements.taskForm.id.value;
         // Find task across workflows
@@ -101,7 +123,7 @@ export const initTaskListeners = () => {
                 const newWorkflowId = elements.taskForm.columnSelect.value;
                 const targetWorkflow = state.boardData.workflows.find(w => w.id == newWorkflowId);
 
-                task.title = elements.taskForm.title.value;
+                task.title = (elements.taskForm.title.value || '').trim().slice(0, 100);
                 task.description = elements.taskForm.description.value;
                 task.color = elements.taskForm.color.value;
                 task.tags = [...tempTags];
@@ -183,8 +205,24 @@ export const initTaskListeners = () => {
         }
     });
 
-    elements.taskForm.addTagBtn.addEventListener('click', () => {
-        const name = elements.taskForm.newTagName.value.trim();
+    const updateTagCounter = () => {
+        if (!elements.taskForm.newTagNameCounter || !elements.taskForm.newTagName) return;
+        const count = elements.taskForm.newTagName.value.length;
+        elements.taskForm.newTagNameCounter.textContent = `${count}/30`;
+        if (count >= 30) {
+            elements.taskForm.newTagNameCounter.style.color = '#ef4444';
+        } else if (count >= 24) {
+            elements.taskForm.newTagNameCounter.style.color = '#f59e0b';
+        } else {
+            elements.taskForm.newTagNameCounter.style.color = 'var(--clr-text-muted)';
+        }
+    };
+
+    elements.taskForm.newTagName?.addEventListener('input', updateTagCounter);
+
+    const handleCreateTag = () => {
+        const rawName = elements.taskForm.newTagName.value.trim();
+        const name = rawName.slice(0, 30);
         const color = elements.taskForm.newTagColor.value;
         if (name) {
             const newTag = { name, color };
@@ -193,10 +231,21 @@ export const initTaskListeners = () => {
                 state.boardData.tags.push(newTag);
                 saveData();
             }
-            tempTags.push(newTag);
-            renderTags(tempTags);
+            if (!tempTags.find(t => t.name === name)) {
+                tempTags.push(newTag);
+                renderTags(tempTags);
+            }
             elements.taskForm.newTagName.value = '';
+            updateTagCounter();
             toggleTagPicker(false);
+        }
+    };
+
+    elements.taskForm.addTagBtn.addEventListener('click', handleCreateTag);
+    elements.taskForm.newTagName?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleCreateTag();
         }
     });
 
@@ -811,6 +860,13 @@ const toggleTagPicker = (show) => {
     if (show) {
         elements.taskForm.tagPicker.classList.remove('hidden');
         renderAvailableTags();
+        if (elements.taskForm.newTagName) {
+            elements.taskForm.newTagName.value = '';
+            if (elements.taskForm.newTagNameCounter) {
+                elements.taskForm.newTagNameCounter.textContent = '0/30';
+                elements.taskForm.newTagNameCounter.style.color = 'var(--clr-text-muted)';
+            }
+        }
         if (elements.taskForm.tagSearchInput) {
             elements.taskForm.tagSearchInput.value = '';
             setTimeout(() => elements.taskForm.tagSearchInput.focus(), 50);

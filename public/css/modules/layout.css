@@ -370,6 +370,33 @@ body.light-mode .sidebar-brand-icon {
     flex-wrap: wrap;
 }
 
+#add-workflow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.4rem 0.85rem;
+    background: var(--clr-surface-2);
+    color: var(--clr-text);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--border-radius-md, 8px);
+    box-shadow: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+#add-workflow-btn:hover {
+    background: var(--clr-surface-3);
+    border-color: var(--clr-primary);
+    color: var(--clr-primary);
+}
+
+#add-workflow-btn .material-symbols-outlined {
+    font-size: 18px;
+    color: var(--clr-primary);
+}
+
 /* ── View container (kanban / dashboard / settings) ── */
 
 #view-container {
@@ -403,6 +430,10 @@ body.light-mode .sidebar-brand-icon {
     align-items: center;
 }
 
+.online-users-container:not(:empty) {
+    margin-right: 0.85rem;
+}
+
 .online-users-container .online-user-avatar {
     width: 30px;
     height: 30px;
@@ -419,24 +450,24 @@ body.light-mode .sidebar-brand-icon {
     letter-spacing: -0.04em;
     box-shadow: var(--shadow-sm);
     z-index: 1;
-    transition: transform var(--transition-fast), z-index var(--transition-fast);
+    transition: border-color var(--transition-fast), z-index var(--transition-fast);
     cursor: default;
     position: relative;
     overflow: hidden;
 }
 
-.online-users-container .online-user-avatar::after {
-    content: '';
-    position: absolute;
-    bottom: -2px; right: -2px;
-    width: 9px; height: 9px;
-    background: var(--clr-success);
-    border: 2px solid var(--clr-surface);
+.online-users-container .online-user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     border-radius: 50%;
 }
 
 .online-users-container .online-user-avatar:first-child { margin-left: 0; }
-.online-users-container .online-user-avatar:hover { transform: translateY(-3px); z-index: 10; }
+.online-users-container .online-user-avatar:hover {
+    border-color: #ffffff;
+    z-index: 10;
+}
 
 /* ── Custom background adaptations ── */
 
@@ -483,14 +514,14 @@ body.light-mode .sidebar-brand-icon {
 
 .footer-left { display: flex; align-items: center; gap: 0.5rem; }
 .footer-left a, #app-footer a {
-    color: #ffffff;
+    color: var(--clr-text);
     text-decoration: none;
     font-weight: 500;
-    transition: opacity var(--transition-fast);
+    transition: color var(--transition-fast), opacity var(--transition-fast);
 }
 .footer-left a:hover, #app-footer a:hover {
-    color: #ffffff;
-    opacity: 0.85;
+    color: var(--clr-primary);
+    opacity: 0.9;
     text-decoration: underline;
 }
 .footer-right { display: flex; gap: 1rem; align-items: center; }

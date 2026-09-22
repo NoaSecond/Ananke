@@ -73,39 +73,53 @@
     --accent-color:  var(--clr-accent);
     --primary-color: var(--clr-primary);
     --danger-color:  var(--clr-danger);
+
+    /* Component-specific surfaces */
+    --column-bg:     var(--clr-surface-2);
+    --task-card-bg:  var(--clr-surface-2);
+    --modal-bg:      var(--clr-surface-2);
+    --input-bg:      var(--clr-surface-3);
+    --input-border:  var(--clr-border);
 }
 
 /* ── Light mode ── */
 body.light-mode {
-    --clr-bg:           #f0f2f8;
+    --clr-bg:           #f8fafc;
     --clr-surface:      #ffffff;
-    --clr-surface-2:    #f7f8fc;
-    --clr-surface-3:    #eef0f8;
-    --clr-border:       rgba(0,0,0,0.08);
-    --clr-border-focus: rgba(99,102,241,0.5);
+    --clr-surface-2:    #f1f5f9;
+    --clr-surface-3:    #e2e8f0;
+    --clr-border:       #e2e8f0;
+    --clr-border-focus: rgba(99,102,241,0.6);
 
-    --clr-text:         #1e2133;
-    --clr-text-muted:   #6b7280;
-    --clr-text-subtle:  #9ca3af;
+    --clr-text:         #0f172a;
+    --clr-text-muted:   #475569;
+    --clr-text-subtle:  #64748b;
 
-    --clr-primary-glow: rgba(99,102,241,0.15);
+    --clr-primary-glow: rgba(99,102,241,0.18);
 
-    --shadow-sm:  0 1px 3px rgba(0,0,0,0.08);
-    --shadow-md:  0 4px 16px rgba(0,0,0,0.1);
-    --shadow-lg:  0 8px 32px rgba(0,0,0,0.12);
+    --shadow-sm:  0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+    --shadow-md:  0 4px 12px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
+    --shadow-lg:  0 12px 28px rgba(15,23,42,0.1), 0 4px 8px rgba(15,23,42,0.05);
 
     --sidebar-bg:          #ffffff;
-    --sidebar-item-hover:  rgba(99,102,241,0.07);
-    --sidebar-item-active: rgba(99,102,241,0.12);
-    --sidebar-border:      rgba(0,0,0,0.06);
+    --sidebar-item-hover:  rgba(99,102,241,0.08);
+    --sidebar-item-active: rgba(99,102,241,0.14);
+    --sidebar-border:      #e2e8f0;
 
-    --glass-bg: rgba(255,255,255,0.8);
+    --glass-bg: rgba(255,255,255,0.85);
+
+    /* Component-specific surfaces */
+    --column-bg:    #f1f5f9;
+    --task-card-bg: #ffffff;
+    --modal-bg:     #ffffff;
+    --input-bg:     #ffffff;
+    --input-border: #cbd5e1;
 
     /* Legacy */
     --bg-color:     var(--clr-bg);
     --text-color:   var(--clr-text);
     --header-bg:    var(--clr-surface);
     --border-color: var(--clr-border);
-    --card-bg:      var(--clr-surface-2);
-    --shadow-color: rgba(0,0,0,0.06);
+    --card-bg:      var(--clr-surface);
+    --shadow-color: rgba(15,23,42,0.06);
 }

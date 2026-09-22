@@ -18,8 +18,12 @@ pnpm-debug.log*
 
 # Fichiers système
 .DS_Store
-Thumbs.db
-ananke.db
+# Base de données SQLite
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+ananke.db*
 
 # Fichiers uploadés par les utilisateurs
 public/uploads/**

@@ -18,9 +18,19 @@ export function setUnauthorizedHandler(fn) { _handleUnauthorized = fn; }
 
 async function apiFetch(input, init = {}) {
     const res = await fetch(input, init);
-    if ((res.status === 401 || res.status === 403) && _handleUnauthorized) {
+    if (res.status === 401 && _handleUnauthorized) {
         _handleUnauthorized();
         throw new Error('Unauthorized');
+    }
+    if (res.status === 403) {
+        let errMsg = 'Accès refusé';
+        try {
+            const data = await res.clone().json();
+            if (data?.error) errMsg = data.error;
+        } catch (_) {}
+        const err = new Error(errMsg);
+        err.status = 403;
+        throw err;
     }
     return res;
 }
@@ -214,4 +224,10 @@ export async function getLogs() {
     const res = await apiFetch(`${API_URL}/logs`);
     if (res.ok) return res.json();
     throw new Error('Failed to fetch logs');
+}
+
+export async function clearServerLogs() {
+    const res = await apiFetch(`${API_URL}/logs`, { method: 'DELETE' });
+    if (res.ok) return res.json();
+    throw new Error('Failed to clear logs');
 }

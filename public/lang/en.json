@@ -94,7 +94,19 @@
     "danger_title": "Danger Zone",
     "danger_desc": "Once you delete a board, there is no going back. All tasks and columns will be permanently deleted.",
     "btn_delete_board": "Delete this board",
-    "confirm_delete_board": "Are you absolutely sure? This action cannot be undone. Enter board name to confirm:"
+    "confirm_delete_board": "Are you absolutely sure? This action cannot be undone. Enter board name to confirm:",
+    "section_tags": "Tag Management",
+    "tags_desc": "Manage existing tags, customize their color or name, and create new ones.",
+    "add_tag_title": "Create a new tag",
+    "tag_name_placeholder": "Tag name (e.g. Urgent, Bug, Frontend...)",
+    "btn_create_tag": "Create Tag",
+    "no_tags": "No tags defined for this board.",
+    "tag_used_in_tasks": "{count} task(s)",
+    "tag_not_used": "Not used",
+    "confirm_delete_used_tag": "The tag \"{name}\" is used in {count} task(s). Deleting it will remove it from those tasks. Continue?",
+    "confirm_delete_tag": "Permanently delete tag \"{name}\"?",
+    "tag_already_exists": "A tag with this name already exists.",
+    "tag_name_empty": "Tag name cannot be empty."
   },
   "profile": {
     "title": "User Profile",
@@ -154,7 +166,12 @@
     "btn_delete": "Delete",
     "btn_confirm": "Confirm",
     "loading": "Loading...",
-    "error": "An error occurred"
+    "error": "An error occurred",
+    "clear_view": "Clear View",
+    "purge_logs": "Clear Log File",
+    "purge_logs_tooltip": "Permanently delete server log file",
+    "confirm_purge_logs": "Are you sure you want to permanently clear the server log file?",
+    "logs_purged": "Server log file has been cleared."
   },
   "roles": {
     "owner": "Owner",

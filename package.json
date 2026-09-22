@@ -1,6 +1,6 @@
 {
   "name": "ananke",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Hosted Collaborative Kanban Board",
   "main": "server.js",
   "scripts": {
