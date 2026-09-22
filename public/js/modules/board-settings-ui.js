@@ -6,12 +6,14 @@
 
 import { state, getFullUrl } from './state.js';
 import * as API from './api.js';
-import { Logger } from './utils.js';
+import { Logger, getContrastYIQ } from './utils.js';
 import { renderAvatarHtml, resolveUser } from './avatar.js';
 import { updatePreview } from './theme-ui.js';
 import { BOARD_COLORS } from './dashboard-ui.js';
 import { BOARD_ICONS, loadBoardIcons, renderIconSwatchesHtml, renderBoardIconHtml, getDefaultIconId } from './board-icons.js';
 import { t } from './i18n.js';
+import { saveData } from './board-ui.js';
+import { showConfirm } from './modals.js';
 
 let _onBack            = null;
 let _onDeleted         = null;
@@ -63,6 +65,12 @@ export async function renderBoardSettings() {
             m => m.id === state.currentUser.id && m.board_role === 'board_admin'
         ) || (board.created_by && board.created_by === state.currentUser.id));
 
+    const canEdit = canAdmin || (state.currentUser && (
+        ['admin', 'owner'].includes(state.currentUser.role) || state.boardMembers?.some(
+            m => m.id === state.currentUser.id && ['editor', 'board_admin'].includes(m.board_role)
+        )
+    ));
+
     container.innerHTML = `
         <div class="settings-page-header">
             <button class="settings-page-back-btn" id="settings-back-btn" title="${t('board_settings.back_to_board')}">
@@ -74,6 +82,8 @@ export async function renderBoardSettings() {
         ${canAdmin ? renderGeneralSection(board) : ''}
 
         ${canAdmin ? renderBackgroundSection(board) : ''}
+
+        ${canEdit ? renderTagsSection() : ''}
 
         <div class="settings-section">
             <h3 class="settings-section-title">
@@ -102,6 +112,10 @@ export async function renderBoardSettings() {
         _bindGeneralForm();
         _bindBackgroundSection();
         _bindDangerZone();
+    }
+
+    if (canEdit) {
+        _bindTagsSection();
     }
 
     // Load members
@@ -230,6 +244,47 @@ function renderBackgroundSection(board) {
                 </button>
                 <div id="board-bg-message" style="font-size:0.85rem;min-height:1.2em;font-weight:500;"></div>
             </div>
+        </div>
+    `;
+}
+
+function renderTagsSection() {
+    return `
+        <div class="settings-section" id="board-tags-section">
+            <h3 class="settings-section-title">
+                <span class="material-symbols-outlined">label</span>
+                ${t('board_settings.section_tags') || 'Gestion des Étiquettes'}
+            </h3>
+            <p style="font-size:0.85rem;color:var(--clr-text-muted);margin:0 0 1.25rem;">
+                ${t('board_settings.tags_desc') || 'Gérez les étiquettes existantes de ce tableau, modifiez leur couleur ou leur libellé, ou créez-en de nouvelles.'}
+            </p>
+
+            <!-- Add Tag Box -->
+            <div style="background: var(--clr-surface-2); border: 1px solid var(--clr-border); border-radius: var(--border-radius-md, 8px); padding: 1rem; margin-bottom: 1.25rem;">
+                <h4 style="margin: 0 0 0.75rem; font-size: 0.9rem; font-weight: 600;">
+                    ${t('board_settings.add_tag_title') || 'Créer une nouvelle étiquette'}
+                </h4>
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                    <div style="position: relative; flex: 1; min-width: 180px;">
+                        <input type="text" id="settings-new-tag-name" class="form-input"
+                            placeholder="${t('board_settings.tag_name_placeholder') || 'Nom de l\'étiquette (ex: Urgent, Bug, Frontend...)'}"
+                            maxlength="30" style="padding-right: 42px;">
+                        <span id="settings-new-tag-counter" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.72rem; color: var(--clr-text-muted); pointer-events: none; font-variant-numeric: tabular-nums;">0/30</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <input type="color" id="settings-new-tag-color" value="#3b82f6" class="color-input-small" title="Choisir une couleur" aria-label="Tag color">
+                    </div>
+                    <button type="button" id="settings-add-tag-btn" class="action-btn"
+                        style="display: flex; align-items: center; gap: 4px; padding: 0.5rem 1rem;">
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">add</span>
+                        <span>${t('board_settings.btn_create_tag') || 'Créer'}</span>
+                    </button>
+                </div>
+                <div id="settings-tag-create-msg" style="font-size: 0.82rem; min-height: 1.2em; margin-top: 6px;"></div>
+            </div>
+
+            <!-- Tags List -->
+            <div id="settings-tags-list" class="settings-tags-list"></div>
         </div>
     `;
 }
@@ -668,6 +723,297 @@ function _bindBackgroundSection() {
             }
         });
     }
+}
+
+// --------------------------------------------------------------------------
+// Tags management section bindings
+// --------------------------------------------------------------------------
+
+function _bindTagsSection() {
+    const listEl     = document.getElementById('settings-tags-list');
+    const nameInput  = document.getElementById('settings-new-tag-name');
+    const counterEl  = document.getElementById('settings-new-tag-counter');
+    const colorInput = document.getElementById('settings-new-tag-color');
+    const addBtn     = document.getElementById('settings-add-tag-btn');
+    const msgEl      = document.getElementById('settings-tag-create-msg');
+
+    if (!listEl) return;
+
+    // Count tasks using a tag across all workflows
+    function getTagUsageCount(tagName) {
+        let count = 0;
+        if (state.boardData?.workflows) {
+            for (const wf of state.boardData.workflows) {
+                if (Array.isArray(wf.tasks)) {
+                    for (const task of wf.tasks) {
+                        if (Array.isArray(task.tags) && task.tags.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {
+                            count++;
+                        }
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+    // Persist tags to SQLite and broadcast via Socket
+    async function persistBoardTags() {
+        saveData();
+        try {
+            await API.saveBoardData(state.currentBoardId, state.boardData);
+        } catch (err) {
+            Logger.warn('saveBoardData error during tag update', err);
+        }
+    }
+
+    // Render list of tags
+    function renderList() {
+        const tags = state.boardData?.tags || [];
+        if (tags.length === 0) {
+            listEl.innerHTML = `
+                <div style="padding: 1.5rem; text-align: center; color: var(--clr-text-muted); background: var(--clr-surface-2); border: 1px dashed var(--clr-border); border-radius: var(--border-radius-md, 8px); font-size: 0.88rem;">
+                    <span class="material-symbols-outlined" style="font-size: 28px; opacity: 0.5; display: block; margin-bottom: 4px;">label_off</span>
+                    ${t('board_settings.no_tags') || 'Aucune étiquette définie pour ce tableau.'}
+                </div>
+            `;
+            return;
+        }
+
+        listEl.innerHTML = tags.map((tag, idx) => {
+            const usageCount = getTagUsageCount(tag.name);
+            const textColor = getContrastYIQ(tag.color || '#3b82f6');
+            return `
+                <div class="settings-tag-row" data-tag-index="${idx}" data-tag-name="${escHtml(tag.name)}">
+                    <!-- Normal view -->
+                    <div class="tag-row-view" style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                            <span class="tag-pill" style="background-color: ${escHtml(tag.color)}; color: ${textColor};" title="${escHtml(tag.name)}">
+                                ${escHtml(tag.name)}
+                            </span>
+                            <span class="tag-usage-badge" style="color: ${usageCount > 0 ? 'var(--clr-text-muted)' : 'var(--clr-text-subtle)'};">
+                                ${usageCount > 0 ? t('board_settings.tag_used_in_tasks', { count: usageCount }) : (t('board_settings.tag_not_used') || 'Non utilisée')}
+                            </span>
+                        </div>
+                        <div class="tag-row-actions">
+                            <button type="button" class="tag-action-icon-btn tag-edit-btn" title="Modifier" aria-label="Modifier l'étiquette">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
+                            </button>
+                            <button type="button" class="tag-action-icon-btn danger tag-delete-btn" title="Supprimer" aria-label="Supprimer l'étiquette">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Edit view (hidden initially) -->
+                    <div class="tag-row-edit" style="display: none; align-items: center; justify-content: space-between; width: 100%; gap: 8px;">
+                        <div style="position: relative; flex: 1; min-width: 140px;">
+                            <input type="text" class="form-input tag-edit-name-input" value="${escHtml(tag.name)}" maxlength="30" style="padding-right: 40px; font-size: 0.88rem; padding-top: 6px; padding-bottom: 6px;">
+                            <span class="tag-edit-counter" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.7rem; color: var(--clr-text-muted); pointer-events: none; font-variant-numeric: tabular-nums;">${tag.name.length}/30</span>
+                        </div>
+                        <input type="color" class="color-input-small tag-edit-color-input" value="${escHtml(tag.color || '#3b82f6')}" title="Modifier la couleur" style="width: 34px; height: 34px; min-width: 34px; min-height: 34px;">
+                        <div style="display: flex; gap: 4px;">
+                            <button type="button" class="tag-action-icon-btn success tag-save-btn" title="Enregistrer" aria-label="Enregistrer">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">check</span>
+                            </button>
+                            <button type="button" class="tag-action-icon-btn tag-cancel-btn" title="Annuler" aria-label="Annuler">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Wire each row's edit and delete handlers
+        listEl.querySelectorAll('.settings-tag-row').forEach(row => {
+            const index = parseInt(row.dataset.tagIndex, 10);
+            const tag = (state.boardData?.tags || [])[index];
+            if (!tag) return;
+
+            const viewContainer = row.querySelector('.tag-row-view');
+            const editContainer = row.querySelector('.tag-row-edit');
+            const editBtn       = row.querySelector('.tag-edit-btn');
+            const deleteBtn     = row.querySelector('.tag-delete-btn');
+            const saveBtn       = row.querySelector('.tag-save-btn');
+            const cancelBtn     = row.querySelector('.tag-cancel-btn');
+            const editNameInput = row.querySelector('.tag-edit-name-input');
+            const editCounter   = row.querySelector('.tag-edit-counter');
+            const editColorInput= row.querySelector('.tag-edit-color-input');
+
+            // Switch to edit mode
+            editBtn?.addEventListener('click', () => {
+                viewContainer.style.display = 'none';
+                editContainer.style.display = 'flex';
+                editNameInput.focus();
+                editNameInput.select();
+            });
+
+            // Cancel edit
+            cancelBtn?.addEventListener('click', () => {
+                editContainer.style.display = 'none';
+                viewContainer.style.display = 'flex';
+                editNameInput.value = tag.name;
+                editColorInput.value = tag.color || '#3b82f6';
+                if (editCounter) editCounter.textContent = `${tag.name.length}/30`;
+            });
+
+            // Live edit counter
+            editNameInput?.addEventListener('input', () => {
+                const len = editNameInput.value.length;
+                if (editCounter) {
+                    editCounter.textContent = `${len}/30`;
+                    editCounter.style.color = len >= 30 ? '#ef4444' : (len >= 24 ? '#f59e0b' : 'var(--clr-text-muted)');
+                }
+            });
+
+            // Save edit
+            const handleSave = async () => {
+                const newName = (editNameInput.value || '').trim().slice(0, 30);
+                const newColor = editColorInput.value;
+                if (!newName) {
+                    alert(t('board_settings.tag_name_empty') || 'Le nom de l\'étiquette ne peut pas être vide.');
+                    return;
+                }
+
+                // Check duplicate if name changed
+                const isDuplicate = (state.boardData?.tags || []).some(
+                    (t, i) => i !== index && t.name.toLowerCase() === newName.toLowerCase()
+                );
+                if (isDuplicate) {
+                    alert(t('board_settings.tag_already_exists') || 'Une étiquette avec ce nom existe déjà.');
+                    return;
+                }
+
+                const oldName = tag.name;
+                tag.name = newName;
+                tag.color = newColor;
+
+                // Cascade update to all tasks across all workflows
+                if (Array.isArray(state.boardData?.workflows)) {
+                    for (const wf of state.boardData.workflows) {
+                        if (Array.isArray(wf.tasks)) {
+                            for (const task of wf.tasks) {
+                                if (Array.isArray(task.tags)) {
+                                    for (const taskTag of task.tags) {
+                                        if (taskTag.name.toLowerCase() === oldName.toLowerCase()) {
+                                            taskTag.name = newName;
+                                            taskTag.color = newColor;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                await persistBoardTags();
+                renderList();
+            };
+
+            saveBtn?.addEventListener('click', handleSave);
+            editNameInput?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSave();
+                } else if (e.key === 'Escape') {
+                    cancelBtn?.click();
+                }
+            });
+
+            // Delete tag
+            deleteBtn?.addEventListener('click', () => {
+                const usageCount = getTagUsageCount(tag.name);
+                const confirmMsg = usageCount > 0
+                    ? t('board_settings.confirm_delete_used_tag', { name: tag.name, count: usageCount })
+                    : t('board_settings.confirm_delete_tag', { name: tag.name });
+
+                showConfirm(confirmMsg, async () => {
+                    const tagNameToRemove = tag.name;
+                    // Remove from board tags
+                    state.boardData.tags.splice(index, 1);
+
+                    // Cascade remove from tasks if used
+                    if (Array.isArray(state.boardData?.workflows)) {
+                        for (const wf of state.boardData.workflows) {
+                            if (Array.isArray(wf.tasks)) {
+                                for (const task of wf.tasks) {
+                                    if (Array.isArray(task.tags)) {
+                                        task.tags = task.tags.filter(t => t.name.toLowerCase() !== tagNameToRemove.toLowerCase());
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    await persistBoardTags();
+                    renderList();
+                });
+            });
+        });
+    }
+
+    // Input counter for create form
+    nameInput?.addEventListener('input', () => {
+        const len = nameInput.value.length;
+        if (counterEl) {
+            counterEl.textContent = `${len}/30`;
+            counterEl.style.color = len >= 30 ? '#ef4444' : (len >= 24 ? '#f59e0b' : 'var(--clr-text-muted)');
+        }
+        if (msgEl) msgEl.textContent = '';
+    });
+
+    // Add Tag Handler
+    const handleAdd = async () => {
+        const name = (nameInput.value || '').trim().slice(0, 30);
+        const color = colorInput.value;
+
+        if (!name) {
+            if (msgEl) {
+                msgEl.textContent = t('board_settings.tag_name_empty') || 'Le nom ne peut pas être vide.';
+                msgEl.style.color = 'var(--clr-danger)';
+            }
+            nameInput.focus();
+            return;
+        }
+
+        if (!state.boardData) state.boardData = {};
+        if (!Array.isArray(state.boardData.tags)) state.boardData.tags = [];
+
+        if (state.boardData.tags.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+            if (msgEl) {
+                msgEl.textContent = t('board_settings.tag_already_exists') || 'Cette étiquette existe déjà.';
+                msgEl.style.color = 'var(--clr-danger)';
+            }
+            return;
+        }
+
+        state.boardData.tags.push({ name, color });
+        await persistBoardTags();
+
+        nameInput.value = '';
+        if (counterEl) {
+            counterEl.textContent = '0/30';
+            counterEl.style.color = 'var(--clr-text-muted)';
+        }
+        if (msgEl) {
+            msgEl.textContent = t('board_settings.tag_created') || 'Étiquette créée avec succès.';
+            msgEl.style.color = 'var(--clr-success)';
+            setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 3000);
+        }
+
+        renderList();
+    };
+
+    addBtn?.addEventListener('click', handleAdd);
+    nameInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAdd();
+        }
+    });
+
+    // Initial list render
+    renderList();
 }
 
 // --------------------------------------------------------------------------

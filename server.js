@@ -289,6 +289,32 @@ function broadcastOnlineUsers() {
     io.emit('onlineUsers', users);
 }
 
+function sanitizeBoardTags(boardData) {
+    if (!boardData || typeof boardData !== 'object') return;
+    if (Array.isArray(boardData.tags)) {
+        boardData.tags.forEach(t => {
+            if (t && typeof t.name === 'string') {
+                t.name = t.name.trim().slice(0, 30);
+            }
+        });
+    }
+    if (Array.isArray(boardData.workflows)) {
+        boardData.workflows.forEach(wf => {
+            if (Array.isArray(wf.tasks)) {
+                wf.tasks.forEach(task => {
+                    if (Array.isArray(task.tags)) {
+                        task.tags.forEach(t => {
+                            if (t && typeof t.name === 'string') {
+                                t.name = t.name.trim().slice(0, 30);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+}
+
 io.on('connection', (socket) => {
     socket.currentBoardId = null;
     logger.socket(`User connected: ${socket.user.name} (${socket.user.role}) [${socket.id}]`);
@@ -377,6 +403,7 @@ io.on('connection', (socket) => {
         try {
             const oldBoard = await boardRepository.findById(boardId);
             processBoardBackground(newBoardData, oldBoard?.data);
+            sanitizeBoardTags(newBoardData);
 
             const changes = describeChanges(oldBoard?.data || {}, newBoardData);
             const enrichedBoardData = await boardRepository.enrichBoardAssignees(newBoardData);
@@ -418,6 +445,14 @@ io.on('connection', (socket) => {
         try {
             const board = await boardRepository.findById(boardId);
             if (!board?.data?.workflows) return;
+
+            if (task && Array.isArray(task.tags)) {
+                task.tags.forEach(t => {
+                    if (t && typeof t.name === 'string') {
+                        t.name = t.name.trim().slice(0, 30);
+                    }
+                });
+            }
 
             const boardData = board.data;
 

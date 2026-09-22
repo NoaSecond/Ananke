@@ -227,6 +227,16 @@ input[type="color"]#workflow-color-input {
     border: 1px solid var(--border-color);
 }
 
+#task-color-input::-moz-color-swatch,
+#bg-color-picker::-moz-color-swatch,
+#workflow-color-input::-moz-color-swatch {
+    border: none;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    height: 100%;
+    width: 100%;
+}
+
 .relative-close {
     position: static;
     font-size: 1.5rem;
@@ -294,23 +304,46 @@ input[type="color"]#workflow-color-input {
 
 .color-input-small {
     -webkit-appearance: none;
+    -moz-appearance: none;
     appearance: none;
-    width: 40px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    aspect-ratio: 1 / 1;
     padding: 0;
-    border: none;
+    margin: 0;
+    border: 1px solid var(--border-color);
     background: none;
     cursor: pointer;
     overflow: hidden;
-    border-radius: 6px;
+    border-radius: 8px;
+    box-sizing: border-box;
+    display: inline-block;
+    flex-shrink: 0;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.color-input-small:hover {
+    border-color: var(--clr-primary, #6366f1);
+    transform: scale(1.06);
 }
 
 .color-input-small::-webkit-color-swatch-wrapper {
     padding: 0;
+    border-radius: 7px;
 }
 
 .color-input-small::-webkit-color-swatch {
     border: none;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    width: 100%;
+    height: 100%;
+}
+
+.color-input-small::-moz-color-swatch {
+    border: none;
+    border-radius: 7px;
+    width: 100%;
+    height: 100%;
 }

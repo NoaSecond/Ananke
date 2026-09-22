@@ -205,8 +205,24 @@ export const initTaskListeners = () => {
         }
     });
 
-    elements.taskForm.addTagBtn.addEventListener('click', () => {
-        const name = elements.taskForm.newTagName.value.trim();
+    const updateTagCounter = () => {
+        if (!elements.taskForm.newTagNameCounter || !elements.taskForm.newTagName) return;
+        const count = elements.taskForm.newTagName.value.length;
+        elements.taskForm.newTagNameCounter.textContent = `${count}/30`;
+        if (count >= 30) {
+            elements.taskForm.newTagNameCounter.style.color = '#ef4444';
+        } else if (count >= 24) {
+            elements.taskForm.newTagNameCounter.style.color = '#f59e0b';
+        } else {
+            elements.taskForm.newTagNameCounter.style.color = 'var(--clr-text-muted)';
+        }
+    };
+
+    elements.taskForm.newTagName?.addEventListener('input', updateTagCounter);
+
+    const handleCreateTag = () => {
+        const rawName = elements.taskForm.newTagName.value.trim();
+        const name = rawName.slice(0, 30);
         const color = elements.taskForm.newTagColor.value;
         if (name) {
             const newTag = { name, color };
@@ -215,10 +231,21 @@ export const initTaskListeners = () => {
                 state.boardData.tags.push(newTag);
                 saveData();
             }
-            tempTags.push(newTag);
-            renderTags(tempTags);
+            if (!tempTags.find(t => t.name === name)) {
+                tempTags.push(newTag);
+                renderTags(tempTags);
+            }
             elements.taskForm.newTagName.value = '';
+            updateTagCounter();
             toggleTagPicker(false);
+        }
+    };
+
+    elements.taskForm.addTagBtn.addEventListener('click', handleCreateTag);
+    elements.taskForm.newTagName?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleCreateTag();
         }
     });
 
@@ -833,6 +860,13 @@ const toggleTagPicker = (show) => {
     if (show) {
         elements.taskForm.tagPicker.classList.remove('hidden');
         renderAvailableTags();
+        if (elements.taskForm.newTagName) {
+            elements.taskForm.newTagName.value = '';
+            if (elements.taskForm.newTagNameCounter) {
+                elements.taskForm.newTagNameCounter.textContent = '0/30';
+                elements.taskForm.newTagNameCounter.style.color = 'var(--clr-text-muted)';
+            }
+        }
         if (elements.taskForm.tagSearchInput) {
             elements.taskForm.tagSearchInput.value = '';
             setTimeout(() => elements.taskForm.tagSearchInput.focus(), 50);

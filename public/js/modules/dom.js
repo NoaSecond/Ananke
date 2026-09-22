@@ -32,6 +32,7 @@ export const elements = {
         columnSelect: document.getElementById('task-column-select'),
         tagsContainer: document.getElementById('task-tags-container'),
         newTagName: document.getElementById('new-tag-name'),
+        newTagNameCounter: document.getElementById('tag-name-counter'),
         newTagColor: document.getElementById('new-tag-color'),
         addTagBtn: document.getElementById('add-tag-btn'),
         showTags: document.getElementById('task-show-tags-input'),

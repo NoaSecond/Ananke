@@ -666,7 +666,7 @@
                         <button id="add-assignee-btn" class="secondary-btn small-btn circular-btn" title="Assign User">
                             <span class="material-symbols-outlined">person_add</span>
                         </button>
-                        <div id="assignee-picker" class="tag-picker hidden" style="width: 320px;">
+                        <div id="assignee-picker" class="tag-picker hidden" style="width: min(92vw, 360px);">
                             <h4>Assign User</h4>
                             <input type="text" id="assignee-search-input" placeholder="Search users..."
                                 class="small-input" style="width: 100%; padding: 0.4rem 0.6rem; margin-bottom: 0.2rem;"
@@ -700,13 +700,20 @@
                                 style="width: 100%; padding: 0.4rem 0.6rem; margin-bottom: 0.2rem;" autocomplete="off">
                             <div id="available-tags-list" class="available-tags-list"></div>
                             <div class="tag-picker-divider">or create new</div>
-                            <div class="create-tag-row">
-                                <input type="text" id="new-tag-name" placeholder="Tag name" class="small-input">
-                                <input type="color" id="new-tag-color" value="#3b82f6" class="color-input-small">
-                                <button id="add-tag-btn" class="action-btn small-btn"
-                                    style="display: flex; align-items: center; justify-content: center; gap: 4px;">Create
-                                    <span class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
-                                        title="Raccourci : Entrée">keyboard_return</span></button>
+                            <div class="create-tag-container" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                                <div style="position: relative; width: 100%; display: flex; align-items: center;">
+                                    <input type="text" id="new-tag-name" placeholder="Tag name" class="small-input" maxlength="30" style="width: 100%; font-size: 0.9rem; padding: 0.45rem 0.6rem; padding-right: 42px;">
+                                    <span id="tag-name-counter" style="position: absolute; right: 8px; font-size: 0.72rem; color: var(--clr-text-muted); pointer-events: none; font-variant-numeric: tabular-nums;">0/30</span>
+                                </div>
+                                <div class="create-tag-row" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <input type="color" id="new-tag-color" value="#3b82f6" class="color-input-small" title="Choisir une couleur" aria-label="Tag color">
+                                    </div>
+                                    <button id="add-tag-btn" class="action-btn small-btn"
+                                        style="display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0.35rem 0.8rem;">Create
+                                        <span class="material-symbols-outlined" style="font-size: 16px; opacity: 0.8;"
+                                            title="Raccourci : Entrée">keyboard_return</span></button>
+                                </div>
                             </div>
                         </div>
                     </div>

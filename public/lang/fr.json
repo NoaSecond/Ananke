@@ -94,7 +94,19 @@
     "danger_title": "Zone de Danger",
     "danger_desc": "La suppression d’un tableau est irréversible. Toutes ses colonnes et ses tâches seront définitivement effacées.",
     "btn_delete_board": "Supprimer ce tableau",
-    "confirm_delete_board": "Êtes-vous absolument sûr ? Cette action est irréversible. Saisissez le nom du tableau pour confirmer :"
+    "confirm_delete_board": "Êtes-vous absolument sûr ? Cette action est irréversible. Saisissez le nom du tableau pour confirmer :",
+    "section_tags": "Gestion des Étiquettes",
+    "tags_desc": "Gérez les étiquettes existantes de ce tableau, modifiez leur couleur ou leur libellé, ou créez-en de nouvelles.",
+    "add_tag_title": "Créer une nouvelle étiquette",
+    "tag_name_placeholder": "Nom de l'étiquette (ex: Urgent, Bug, Frontend...)",
+    "btn_create_tag": "Créer l'étiquette",
+    "no_tags": "Aucune étiquette définie pour ce tableau.",
+    "tag_used_in_tasks": "{count} tâche(s)",
+    "tag_not_used": "Non utilisée",
+    "confirm_delete_used_tag": "L'étiquette \"{name}\" est utilisée dans {count} tâche(s). La supprimer la retirera de ces tâches. Continuer ?",
+    "confirm_delete_tag": "Supprimer définitivement l'étiquette \"{name}\" ?",
+    "tag_already_exists": "Une étiquette avec ce nom existe déjà.",
+    "tag_name_empty": "Le nom de l'étiquette ne peut pas être vide."
   },
   "profile": {
     "title": "Profil Utilisateur",
