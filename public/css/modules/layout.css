@@ -370,6 +370,33 @@ body.light-mode .sidebar-brand-icon {
     flex-wrap: wrap;
 }
 
+#add-workflow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.4rem 0.85rem;
+    background: var(--clr-surface-2);
+    color: var(--clr-text);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--border-radius-md, 8px);
+    box-shadow: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+#add-workflow-btn:hover {
+    background: var(--clr-surface-3);
+    border-color: var(--clr-primary);
+    color: var(--clr-primary);
+}
+
+#add-workflow-btn .material-symbols-outlined {
+    font-size: 18px;
+    color: var(--clr-primary);
+}
+
 /* ── View container (kanban / dashboard / settings) ── */
 
 #view-container {
@@ -401,6 +428,10 @@ body.light-mode .sidebar-brand-icon {
 .online-users-container {
     display: flex;
     align-items: center;
+}
+
+.online-users-container:not(:empty) {
+    margin-right: 0.85rem;
 }
 
 .online-users-container .online-user-avatar {
