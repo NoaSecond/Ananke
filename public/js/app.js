@@ -241,6 +241,8 @@ export async function navigateToBoard(boardId) {
     // Update board header visibility
     const boardHeader = document.getElementById('board-header');
     if (boardHeader) boardHeader.style.display = 'flex';
+    const dashboardHeader = document.getElementById('dashboard-header');
+    if (dashboardHeader) dashboardHeader.style.display = 'none';
     updateBoardHeaderPresence();
 }
 
@@ -261,10 +263,11 @@ export async function navigateToDashboard() {
     updateSidebarActiveBoard(null);
     applyBackground(null);
 
-    // Re-expand sidebar on dashboard
+    // Re-expand sidebar on dashboard and close mobile overlay
     const sidebar = document.getElementById('sidebar');
     if (sidebar) {
         sidebar.classList.remove('collapsed');
+        sidebar.classList.remove('mobile-open');
     }
 
     try {
@@ -276,9 +279,12 @@ export async function navigateToDashboard() {
         Logger.error('Failed to load boards', err);
     }
 
-    // Hide board header on dashboard
+    // Hide board header on dashboard, show dashboard mobile header
     const boardHeader = document.getElementById('board-header');
     if (boardHeader) boardHeader.style.display = 'none';
+
+    const dashboardHeader = document.getElementById('dashboard-header');
+    if (dashboardHeader) dashboardHeader.style.display = '';
 }
 
 let previousBoardSettingsView = 'dashboard';
@@ -417,6 +423,12 @@ function showView(view) {
     document.getElementById('view-app-settings')?.classList.toggle('hidden', view !== 'app-settings');
     document.getElementById('nav-dashboard')?.classList.toggle('active', view === 'dashboard');
     document.getElementById('sidebar-settings-btn')?.classList.toggle('active', view === 'app-settings');
+
+    const boardHeader = document.getElementById('board-header');
+    if (boardHeader) boardHeader.style.display = view === 'board' ? 'flex' : 'none';
+
+    const dashboardHeader = document.getElementById('dashboard-header');
+    if (dashboardHeader) dashboardHeader.style.display = view === 'dashboard' ? '' : 'none';
 }
 
 // --------------------------------------------------------------------------
@@ -424,14 +436,17 @@ function showView(view) {
 // --------------------------------------------------------------------------
 
 function initSidebar() {
-    // Mobile toggle
-    const mobileToggle = document.getElementById('sidebar-toggle-mobile');
-    const overlay      = document.getElementById('sidebar-overlay');
-    if (mobileToggle) {
-        const sidebar = document.getElementById('sidebar');
-        mobileToggle.addEventListener('click', () => sidebar?.classList.toggle('mobile-open'));
-        overlay?.addEventListener('click', () => sidebar?.classList.remove('mobile-open'));
-    }
+    // Mobile toggle (board & dashboard)
+    const mobileToggle     = document.getElementById('sidebar-toggle-mobile');
+    const dashMobileToggle = document.getElementById('dashboard-sidebar-toggle-mobile');
+    const overlay          = document.getElementById('sidebar-overlay');
+    const sidebar          = document.getElementById('sidebar');
+
+    const toggleSidebar = () => sidebar?.classList.toggle('mobile-open');
+
+    mobileToggle?.addEventListener('click', toggleSidebar);
+    dashMobileToggle?.addEventListener('click', toggleSidebar);
+    overlay?.addEventListener('click', () => sidebar?.classList.remove('mobile-open'));
 
     // Dashboard link
     document.getElementById('nav-dashboard')?.addEventListener('click', navigateToDashboard);

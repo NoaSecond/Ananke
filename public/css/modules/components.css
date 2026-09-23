@@ -382,7 +382,7 @@ body.light-mode .bmc-link {
     max-width: 480px;
     margin: 0 auto;
     position: relative;
-    min-width: 200px;
+    min-width: 120px;
 }
 
 .search-wrapper {
