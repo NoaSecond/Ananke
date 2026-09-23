@@ -205,7 +205,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     ${(task.customFields || []).filter(f => f.showOnCard).map(f => {
                     let val = f.value;
                     if (f.type === 'link') {
-                        val = `<a href="${f.value}" target="_blank" onclick="event.stopPropagation()">${f.value}</a>`;
+                        val = `<a href="${f.value}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${f.value}</a>`;
                     } else if (f.type === 'checklist') {
                         let items = [];
                         try { items = typeof f.value === 'string' ? JSON.parse(f.value) : (f.value || []); } catch (e) { items = []; }
@@ -379,6 +379,11 @@ export const initBoardListeners = () => {
         }
 
         // Task Actions
+        // If user clicked directly on a link inside the card, let the link open in a new tab without opening the view task modal
+        if (e.target.closest('a')) {
+            return;
+        }
+
         const taskCard = e.target.closest('.task-card');
         const editTaskBtn = e.target.closest('.edit-btn');
         const duplicateTaskBtn = e.target.closest('.duplicate-btn');
