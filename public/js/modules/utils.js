@@ -192,12 +192,48 @@ export function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+let isMarkedConfigured = false;
+function ensureMarked() {
+    if (isMarkedConfigured) return;
+    if (typeof marked !== 'undefined') {
+        marked.use({
+            gfm: true,
+            breaks: true,
+            renderer: {
+                link({ href, title, text }) {
+                    const cleanHref = href || '#';
+                    const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+                    return `<a href="${cleanHref}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
+                }
+            }
+        });
+        isMarkedConfigured = true;
+    }
+}
+
+let isHookConfigured = false;
+function ensureHooks() {
+    if (isHookConfigured) return;
+    if (typeof DOMPurify !== 'undefined') {
+        DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+            if (node.tagName === 'A') {
+                node.setAttribute('target', '_blank');
+                node.setAttribute('rel', 'noopener noreferrer');
+            }
+        });
+        isHookConfigured = true;
+    }
+}
+
 /**
  * Parse le Markdown avec marked et l'assainit avec DOMPurify
  * Bloque les balises script, iframes, onerror inline, URLs javascript:, etc.
+ * Ouvre tous les liens dans un nouvel onglet (target="_blank" rel="noopener noreferrer").
  */
 export function renderSafeMarkdown(content) {
     if (!content) return '';
+    ensureMarked();
+    ensureHooks();
     const rawHtml = typeof marked !== 'undefined' ? marked.parse(content) : escapeHtml(content);
     if (typeof DOMPurify !== 'undefined') {
         return DOMPurify.sanitize(rawHtml, {

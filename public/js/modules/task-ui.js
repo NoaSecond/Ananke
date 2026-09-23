@@ -750,7 +750,7 @@ export const openViewTaskModal = (task, workflow) => {
         elements.viewTaskDisplay.customFields.innerHTML = task.customFields.map(f => {
             let val = f.value;
             if (f.type === 'link') {
-                val = `<a href="${f.value}" target="_blank">${f.value}</a>`;
+                val = `<a href="${f.value}" target="_blank" rel="noopener noreferrer">${f.value}</a>`;
             } else if (f.type === 'checklist') {
                 let items = [];
                 try { items = typeof f.value === 'string' ? JSON.parse(f.value) : (f.value || []); } catch (e) { items = []; }
