@@ -467,4 +467,298 @@
     background: rgba(34, 197, 94, 0.1);
 }
 
+/* ── App Settings: User Management ── */
+
+.app-settings-create-card {
+    background: var(--clr-surface);
+    padding: 1.25rem;
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--clr-border);
+    margin-bottom: 1.5rem;
+}
+
+.app-settings-card-title {
+    margin: 0 0 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--clr-text);
+}
+
+.app-settings-create-form {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.app-settings-form-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.app-settings-form-field .form-label {
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+}
+
+.app-settings-form-field.field-email {
+    flex: 2;
+    min-width: 200px;
+}
+
+.app-settings-form-field.field-password {
+    flex: 2;
+    min-width: 240px;
+}
+
+.app-settings-pwd-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.app-settings-pwd-input {
+    margin: 0;
+    height: 42px;
+    box-sizing: border-box;
+    padding-right: 135px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    width: 100%;
+}
+
+.app-settings-pwd-actions {
+    position: absolute;
+    right: 6px;
+    display: flex;
+    gap: 4px;
+}
+
+.app-settings-form-field.field-role {
+    flex: 1;
+    min-width: 120px;
+}
+
+.app-settings-create-btn {
+    flex-shrink: 0;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 18px;
+}
+
+/* ── App Settings: User List Rows ── */
+
+.app-settings-user-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--border-radius-md);
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.app-settings-user-row:hover {
+    background: var(--clr-surface-2, var(--clr-surface));
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.app-settings-user-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.app-settings-user-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.app-settings-user-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--clr-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-settings-user-email {
+    font-size: 0.78rem;
+    color: var(--clr-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-settings-user-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.app-settings-user-actions .role-select {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    height: 32px;
+}
+
+.app-settings-user-actions .member-remove-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--clr-text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.app-settings-user-actions .member-remove-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--clr-text);
+}
+
+.app-settings-user-actions .app-settings-delete-user-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--clr-danger);
+}
+
+.app-settings-user-actions .app-settings-reset-pwd-btn:hover {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--clr-primary);
+}
+
+/* ── Mobile Responsive Settings ── */
+
+@media (max-width: 640px) {
+    #view-board-settings,
+    #view-profile,
+    #view-app-settings {
+        padding: 1.25rem 0.85rem;
+    }
+
+    .settings-section {
+        padding: 1rem 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    .settings-page-header {
+        margin-bottom: 1.25rem;
+    }
+
+    .settings-page-title {
+        font-size: 1.2rem;
+    }
+
+    /* Create User Form on Mobile */
+    .app-settings-create-card {
+        padding: 1rem 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .app-settings-create-form {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .app-settings-create-form .app-settings-form-field.field-email,
+    .app-settings-create-form .app-settings-form-field.field-password,
+    .app-settings-create-form .app-settings-form-field.field-role {
+        flex: none !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .app-settings-create-btn {
+        width: 100%;
+        height: 42px;
+        margin-top: 4px;
+    }
+
+    /* User Row on Mobile */
+    .app-settings-user-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .app-settings-user-main {
+        width: 100%;
+    }
+
+    .app-settings-user-email {
+        white-space: normal;
+        word-break: break-all;
+    }
+
+    .app-settings-user-actions {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        padding-top: 8px;
+        border-top: 1px solid var(--clr-border);
+        gap: 8px;
+    }
+
+    .app-settings-user-actions .role-select {
+        flex: 1;
+        min-width: 0;
+        height: 36px;
+    }
+
+    .app-settings-user-actions .member-remove-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--clr-surface-2);
+        flex-shrink: 0;
+    }
+
+    /* Board Settings Members on Mobile */
+    .member-row {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .member-row .member-info {
+        flex: 1 1 calc(100% - 50px);
+    }
+
+    .member-row .member-email {
+        white-space: normal;
+        word-break: break-all;
+    }
+
+    .member-row .member-role-select {
+        flex: 1;
+        height: 34px;
+    }
+
+    .member-row .member-remove-btn {
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
+    }
+}
+
+
 

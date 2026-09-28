@@ -58,34 +58,34 @@ export async function renderAppSettingsView({ onBack } = {}) {
 
                 ${isAdmin ? `
                     <!-- Create User Form Card -->
-                    <div style="background:var(--clr-surface);padding:1.25rem;border-radius:var(--border-radius-md);border:1px solid var(--clr-border);margin-bottom:1.5rem;">
-                        <h4 style="margin:0 0 1rem;font-size:0.95rem;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--clr-text);">
+                    <div class="app-settings-create-card">
+                        <h4 class="app-settings-card-title">
                             <span class="material-symbols-outlined" style="font-size:18px;color:var(--clr-primary);">person_add</span>
                             ${t('settings.create_user_title')}
                         </h4>
-                        <form id="app-settings-create-user-form" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-                            <div style="flex:2;min-width:200px;">
-                                <label class="form-label" style="font-size:0.8rem;" for="app-settings-email">${t('profile.email')}</label>
-                                <input class="form-input" type="email" id="app-settings-email" required placeholder="user@example.com" style="margin:0;height:42px;box-sizing:border-box;">
+                        <form id="app-settings-create-user-form" class="app-settings-create-form">
+                            <div class="app-settings-form-field field-email">
+                                <label class="form-label" for="app-settings-email">${t('profile.email')}</label>
+                                <input class="form-input" type="email" id="app-settings-email" required placeholder="user@example.com">
                             </div>
-                            <div style="flex:2;min-width:240px;">
-                                <label class="form-label" style="font-size:0.8rem;" for="app-settings-password">${t('settings.temp_password')}</label>
-                                <div style="position:relative;display:flex;align-items:center;">
-                                    <input class="form-input" type="text" id="app-settings-password" required placeholder="Temp123!" style="margin:0;height:42px;box-sizing:border-box;padding-right:135px;font-family:monospace;font-size:0.9rem;">
-                                    <div style="position:absolute;right:6px;display:flex;gap:4px;">
-                                        <button type="button" id="app-settings-pwd-generate-btn" class="secondary-btn small-btn" style="font-size:0.75rem;padding:4px 8px;" data-i18n="settings.generate_pwd">${t('settings.generate_pwd') || 'Generate'}</button>
-                                        <button type="button" id="app-settings-pwd-copy-btn" class="secondary-btn small-btn" style="font-size:0.75rem;padding:4px 8px;" data-i18n="settings.copy_pwd">${t('settings.copy_pwd') || 'Copy'}</button>
+                            <div class="app-settings-form-field field-password">
+                                <label class="form-label" for="app-settings-password">${t('settings.temp_password')}</label>
+                                <div class="app-settings-pwd-wrapper">
+                                    <input class="form-input app-settings-pwd-input" type="text" id="app-settings-password" required placeholder="Temp123!">
+                                    <div class="app-settings-pwd-actions">
+                                        <button type="button" id="app-settings-pwd-generate-btn" class="secondary-btn small-btn" data-i18n="settings.generate_pwd">${t('settings.generate_pwd') || 'Generate'}</button>
+                                        <button type="button" id="app-settings-pwd-copy-btn" class="secondary-btn small-btn" data-i18n="settings.copy_pwd">${t('settings.copy_pwd') || 'Copy'}</button>
                                     </div>
                                 </div>
                             </div>
-                            <div style="flex:1;min-width:120px;">
-                                <label class="form-label" style="font-size:0.8rem;" for="app-settings-role">${t('settings.role_label') || 'Role'}</label>
-                                <select class="form-input role-select" id="app-settings-role" data-role="user" style="margin:0;height:42px;box-sizing:border-box;width:100%;">
+                            <div class="app-settings-form-field field-role">
+                                <label class="form-label" for="app-settings-role">${t('settings.role_label') || 'Role'}</label>
+                                <select class="form-input role-select" id="app-settings-role" data-role="user">
                                     <option value="user">${t('roles.user') || 'Utilisateur'}</option>
                                     <option value="admin">${t('roles.admin') || 'Admin'}</option>
                                 </select>
                             </div>
-                            <button type="submit" class="action-btn" style="flex-shrink:0;height:42px;display:flex;align-items:center;gap:6px;padding:0 18px;">
+                            <button type="submit" class="action-btn app-settings-create-btn">
                                 <span class="material-symbols-outlined" style="font-size:18px;">add</span>
                                 <span>${t('settings.create_user_btn')}</span>
                             </button>
@@ -362,29 +362,31 @@ function _renderUserRows(users) {
         const displayName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.name || 'User';
 
         return `
-        <div class="member-row" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--clr-surface);border:1px solid var(--clr-border);border-radius:var(--border-radius-md);transition:background var(--transition-fast);">
-            ${avatarHtml}
-            <div style="flex:1;min-width:0;">
-                <div style="font-weight:600;font-size:0.9rem;color:var(--clr-text);">${escapeHtml(displayName)}</div>
-                <div style="font-size:0.78rem;color:var(--clr-text-muted);">${escapeHtml(u.email || '')}</div>
+        <div class="app-settings-user-row">
+            <div class="app-settings-user-main">
+                ${avatarHtml}
+                <div class="app-settings-user-details">
+                    <div class="app-settings-user-name" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</div>
+                    <div class="app-settings-user-email" title="${escapeHtml(u.email || '')}">${escapeHtml(u.email || '')}</div>
+                </div>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
+            <div class="app-settings-user-actions">
                 ${!isOwner ? `
-                    <select class="small-select role-select app-settings-role-select" data-user-id="${u.id}" data-role="${u.role}" style="font-size:0.8rem;padding:4px 8px;">
+                    <select class="small-select role-select app-settings-role-select" data-user-id="${u.id}" data-role="${u.role}">
                         <option value="user" ${u.role === 'user' || u.role === 'reader' || u.role === 'editor' ? 'selected' : ''}>${t('roles.user') || 'Utilisateur'}</option>
                         <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>${t('roles.admin') || 'Admin'}</option>
                     </select>
                 ` : `<span class="role-badge owner">${t('roles.owner') || 'Owner'}</span>`}
 
                 ${isCurrentUserOwner ? `
-                    <button type="button" class="member-remove-btn app-settings-reset-pwd-btn" data-user-id="${u.id}" data-user-email="${escapeHtml(u.email || '')}" data-user-name="${escapeHtml(displayName)}" title="${t('settings.reset_pwd_tooltip') || 'Set temporary password'}" style="padding:4px 8px;border-radius:6px;border:none;background:transparent;cursor:pointer;color:var(--clr-text-muted);transition:color var(--transition-fast);">
-                        <span class="material-symbols-outlined" style="font-size:18px;">lock_reset</span>
+                    <button type="button" class="member-remove-btn app-settings-reset-pwd-btn" data-user-id="${u.id}" data-user-email="${escapeHtml(u.email || '')}" data-user-name="${escapeHtml(displayName)}" title="${t('settings.reset_pwd_tooltip') || 'Set temporary password'}">
+                        <span class="material-symbols-outlined">lock_reset</span>
                     </button>
                 ` : ''}
 
                 ${!isOwner && !isSelf ? `
-                    <button type="button" class="member-remove-btn app-settings-delete-user-btn" data-user-id="${u.id}" title="${t('modal.btn_delete')}" style="padding:4px 8px;border-radius:6px;border:none;background:transparent;cursor:pointer;color:var(--clr-text-muted);transition:color var(--transition-fast);">
-                        <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+                    <button type="button" class="member-remove-btn app-settings-delete-user-btn" data-user-id="${u.id}" title="${t('modal.btn_delete')}">
+                        <span class="material-symbols-outlined">delete</span>
                     </button>
                 ` : ''}
             </div>
