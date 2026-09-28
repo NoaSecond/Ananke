@@ -215,8 +215,11 @@ router.post('/complete-setup', authenticate, validateProfileSetup, async (req, r
         setCookieToken(req, res, token);
 
         logger.info(`Profile updated: ${name} (${updated.email})`);
-        res.json({ success: true, user: { ...updated, name, token_version: undefined } });
     } catch (err) {
+        if (err.message?.includes('UNIQUE constraint failed')) {
+            logger.warn(`Profile update failed — email already exists: ${email}`);
+            return res.status(409).json({ error: 'Email déjà utilisé', code: 'EMAIL_ALREADY_EXISTS' });
+        }
         logger.error(`complete-setup error: ${err.message}`);
         res.status(500).json({ error: 'Erreur interne du serveur' });
     }

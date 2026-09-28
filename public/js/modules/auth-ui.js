@@ -212,7 +212,11 @@ export function initAuth(initSocketCallback) {
                         state.socket.emit('profileUpdated');
                     }
                 } else {
-                    messageEl.textContent = res.error || 'Update failed';
+                    let errMsg = res.error || 'Update failed';
+                    if (res.code === 'EMAIL_ALREADY_EXISTS' || res.error === 'Email déjà utilisé') {
+                        errMsg = t('profile.email_already_exists') || 'Email address already in use.';
+                    }
+                    messageEl.textContent = errMsg;
                 }
             } catch (err) {
                 Logger.error('Setup completion error', err);

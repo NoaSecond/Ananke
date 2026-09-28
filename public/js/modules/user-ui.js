@@ -4,6 +4,7 @@ import { state } from './state.js';
 import { Logger } from './utils.js';
 import { openModal } from './modals.js';
 import { renderAvatarHtml } from './avatar.js';
+import { t } from './i18n.js';
 
 export function initUserManagement() {
     if (elements.manageUsersBtn) {
@@ -71,7 +72,7 @@ export function initUserManagement() {
             try {
                 const res = await API.createAccount({ email, password, role });
                 if (res.success) {
-                    messageEl.textContent = 'Account created successfully!';
+                    messageEl.textContent = t('settings.user_created_success') || 'Account created successfully!';
                     messageEl.style.color = '#22c55e';
                     elements.inviteForm.reset();
                     if (invitePwdInput) {
@@ -79,11 +80,19 @@ export function initUserManagement() {
                     }
                     loadUsers();
                 } else {
-                    messageEl.textContent = res.error || 'Creation failed';
+                    let errMsg = res.error || t('settings.user_creation_failed') || 'Creation failed';
+                    if (res.code === 'EMAIL_ALREADY_EXISTS' || res.error === 'Email déjà utilisé') {
+                        errMsg = t('settings.email_already_exists') || 'Email address already in use.';
+                    } else if (res.code === 'INVALID_EMAIL' || res.error?.toLowerCase().includes('email')) {
+                        errMsg = t('settings.invalid_email') || res.error;
+                    } else if (res.code === 'PASSWORD_TOO_SHORT' || res.error?.includes('8 caractères')) {
+                        errMsg = t('settings.password_min_length') || res.error;
+                    }
+                    messageEl.textContent = errMsg;
                     messageEl.style.color = '#ef4444';
                 }
             } catch (err) {
-                messageEl.textContent = 'Network error';
+                messageEl.textContent = t('modal.error') || 'Network error';
                 messageEl.style.color = '#ef4444';
             }
         });

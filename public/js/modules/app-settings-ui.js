@@ -289,13 +289,21 @@ function _bindEvents(isAdmin) {
                     _loadUsersList();
                 } else {
                     if (msgEl) {
-                        msgEl.textContent = res.error || 'Creation failed';
+                        let errMsg = res.error || t('settings.user_creation_failed') || 'Creation failed';
+                        if (res.code === 'EMAIL_ALREADY_EXISTS' || res.error === 'Email déjà utilisé') {
+                            errMsg = t('settings.email_already_exists') || 'Email address already in use.';
+                        } else if (res.code === 'INVALID_EMAIL' || res.error?.toLowerCase().includes('email')) {
+                            errMsg = t('settings.invalid_email') || res.error;
+                        } else if (res.code === 'PASSWORD_TOO_SHORT' || res.error?.includes('8 caractères')) {
+                            errMsg = t('settings.password_min_length') || res.error;
+                        }
+                        msgEl.textContent = errMsg;
                         msgEl.style.color = 'var(--clr-danger, #ef4444)';
                     }
                 }
             } catch (err) {
                 if (msgEl) {
-                    msgEl.textContent = 'Network error';
+                    msgEl.textContent = t('modal.error') || 'Network error';
                     msgEl.style.color = 'var(--clr-danger, #ef4444)';
                 }
             }

@@ -59,7 +59,7 @@ router.post('/', requireRole('admin'), createLimiter, validateCreateAccount, asy
     } catch (err) {
         if (err.message?.includes('UNIQUE constraint failed')) {
             logger.warn(`Account creation failed — email already exists: ${email}`);
-            return res.status(409).json({ error: 'Email déjà utilisé' });
+            return res.status(409).json({ error: 'Email déjà utilisé', code: 'EMAIL_ALREADY_EXISTS' });
         }
         logger.error(`Account creation error: ${err.message}`);
         res.status(500).json({ error: 'Erreur interne du serveur' });
