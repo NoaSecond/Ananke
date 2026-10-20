@@ -155,6 +155,7 @@ export const initTaskListeners = () => {
                 task.showAssigneesOnCard = elements.taskForm.showAssignees.checked;
 
                 if (workflow.id != newWorkflowId && targetWorkflow) {
+                    recordTaskMovement(task, workflow, targetWorkflow);
                     workflow.tasks.splice(tIndex, 1);
                     targetWorkflow.tasks.push(task);
                 }
@@ -827,6 +828,7 @@ export const openViewTaskModal = (task, workflow) => {
         renderMediaGallery(task.media, elements.viewTaskDisplay.mediaGallery, false);
     }
     renderComments(task);
+    renderTaskHistory(task, workflow);
 
     openModal(elements.viewTaskModal);
 };
@@ -848,6 +850,7 @@ export const refreshTaskView = () => {
         currentViewingTask = latestTask;
         currentViewingWorkflow = latestWorkflow;
         renderComments(latestTask);
+        renderTaskHistory(latestTask, latestWorkflow);
         // Also update comment count on the task card if we want to be thorough, 
         // but renderBoard() already does that.
     } else {
@@ -1283,5 +1286,198 @@ const renderComments = (task) => {
     });
 
     // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
+};
+
+export function recordTaskMovement(task, fromWorkflow, toWorkflow) {
+    if (!task || !toWorkflow) return;
+    if (fromWorkflow && String(fromWorkflow.id) === String(toWorkflow.id)) return;
+
+    if (!Array.isArray(task.history)) {
+        task.history = [];
+        // If task was in fromWorkflow without history, record initial column
+        if (fromWorkflow) {
+            const createdField = (task.customFields || []).find(f => f.name === 'Created at');
+            let createdTime = new Date().toISOString();
+            if (createdField && createdField.value) {
+                const parsed = new Date(createdField.value);
+                if (!isNaN(parsed.getTime())) createdTime = parsed.toISOString();
+            }
+            task.history.push({
+                type: 'column_change',
+                fromColumn: null,
+                toColumn: fromWorkflow.title || 'Initial',
+                fromWorkflowId: null,
+                toWorkflowId: fromWorkflow.id,
+                timestamp: createdTime,
+                userId: null,
+                userName: null
+            });
+        }
+    }
+
+    const userName = state.currentUser ? (
+        state.currentUser.name ||
+        `${state.currentUser.first_name || ''} ${state.currentUser.last_name || ''}`.trim() ||
+        state.currentUser.email
+    ) : null;
+
+    task.history.push({
+        type: 'column_change',
+        fromColumn: fromWorkflow ? fromWorkflow.title : null,
+        toColumn: toWorkflow.title,
+        fromWorkflowId: fromWorkflow ? fromWorkflow.id : null,
+        toWorkflowId: toWorkflow.id,
+        timestamp: new Date().toISOString(),
+        userId: state.currentUser ? state.currentUser.id : null,
+        userName: userName
+    });
+}
+
+function formatHistoryDate(isoString) {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return isoString;
+
+    const lang = localStorage.getItem('lang') || 'fr';
+    const locale = lang === 'fr' ? 'fr-FR' : 'en-US';
+
+    return date.toLocaleString(locale, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function formatRelativeTime(isoString) {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return '';
+
+    const now = new Date();
+    const diffSec = Math.floor((now - date) / 1000);
+    const lang = localStorage.getItem('lang') || 'fr';
+    const isFr = lang === 'fr';
+
+    if (diffSec < 45) return isFr ? "À l'instant" : "Just now";
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return isFr ? `Il y a ${diffMin} min` : `${diffMin}m ago`;
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return isFr ? `Il y a ${diffHour}h` : `${diffHour}h ago`;
+    const diffDays = Math.floor(diffHour / 24);
+    if (diffDays === 1) return isFr ? 'Hier' : 'Yesterday';
+    if (diffDays < 7) return isFr ? `Il y a ${diffDays} j` : `${diffDays}d ago`;
+
+    return formatHistoryDate(isoString);
+}
+
+export const renderTaskHistory = (task, workflow) => {
+    const container = elements.viewTaskDisplay.historyList;
+    if (!container) return;
+
+    const historyCountEl = elements.viewTaskDisplay.historyCount;
+    const columnBadge = elements.viewTaskDisplay.columnBadge;
+
+    // Header current column badge
+    if (columnBadge && workflow) {
+        columnBadge.style.display = 'inline-flex';
+        columnBadge.innerHTML = `
+            <span class="material-symbols-outlined" style="font-size: 13px; opacity: 0.8;">view_column</span>
+            <span>${escapeHtml(workflow.title)}</span>
+        `;
+        if (workflow.color) {
+            columnBadge.style.borderColor = workflow.color;
+        }
+    }
+
+    const history = Array.isArray(task.history) ? [...task.history] : [];
+
+    if (historyCountEl) {
+        if (history.length > 0) {
+            historyCountEl.style.display = 'inline-flex';
+            historyCountEl.innerHTML = `
+                <span class="material-symbols-outlined" style="font-size: 13px;">history</span>
+                <span>${history.length}</span>
+            `;
+            historyCountEl.title = `${history.length} ${t('task.history_entries') || 'déplacements'}`;
+        } else {
+            historyCountEl.style.display = 'none';
+        }
+    }
+
+    if (history.length === 0) {
+        const createdField = (task.customFields || []).find(f => f.name === 'Created at');
+        const createdDate = createdField?.value ? formatHistoryDate(createdField.value) : null;
+
+        container.innerHTML = `
+            <div class="task-history-empty">
+                <div class="task-history-empty-icon">
+                    <span class="material-symbols-outlined">timeline</span>
+                </div>
+                <div class="task-history-empty-text">
+                    <div style="font-weight: 500; font-size: 0.88rem; color: var(--text-color);">
+                        ${workflow ? `${t('task.currently_in') || 'Actuellement dans'} <span class="history-pill history-pill-to">${escapeHtml(workflow.title)}</span>` : (t('task.no_history') || 'Aucun déplacement enregistré')}
+                    </div>
+                    <div style="font-size: 0.78rem; opacity: 0.65; margin-top: 4px;">
+                        ${createdDate ? `${t('task.created_on') || 'Créée le'} ${createdDate}. ` : ''}
+                        ${t('task.history_hint') || 'Les changements de colonne apparaîtront ici automatiquement avec la date et l\'heure.'}
+                    </div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '';
+
+    history.forEach((entry, index) => {
+        const isCreation = !entry.fromColumn;
+        const isCurrent = index === history.length - 1;
+        const fullDate = formatHistoryDate(entry.timestamp);
+        const relTime = formatRelativeTime(entry.timestamp);
+
+        const itemEl = document.createElement('div');
+        itemEl.className = `task-history-item ${isCreation ? 'is-creation' : ''} ${isCurrent ? 'is-current' : ''}`;
+
+        itemEl.innerHTML = `
+            <div class="task-history-dot" title="${isCreation ? 'Création' : (isCurrent ? 'Position actuelle' : 'Déplacement')}">
+                <span class="material-symbols-outlined">${isCreation ? 'add' : (isCurrent ? 'done' : 'arrow_downward')}</span>
+            </div>
+            <div class="task-history-card">
+                <div class="task-history-main">
+                    ${isCreation ? `
+                        <div class="task-history-transition">
+                            <span style="opacity: 0.75; font-size: 0.82rem;">${t('task.created_in') || 'Créée dans'}</span>
+                            <span class="history-pill history-pill-to">${escapeHtml(entry.toColumn)}</span>
+                        </div>
+                    ` : `
+                        <div class="task-history-transition">
+                            <span class="history-pill history-pill-from">${escapeHtml(entry.fromColumn || '?')}</span>
+                            <span class="material-symbols-outlined history-arrow">arrow_forward</span>
+                            <span class="history-pill history-pill-to">${escapeHtml(entry.toColumn)}</span>
+                        </div>
+                    `}
+                    ${isCurrent ? `<span class="history-current-pill">${t('task.current_column') || 'Actuelle'}</span>` : ''}
+                </div>
+                <div class="task-history-meta">
+                    <span class="task-history-time" title="${escapeHtml(fullDate)}">
+                        <span class="material-symbols-outlined" style="font-size: 13px; opacity: 0.7;">schedule</span>
+                        <span>${escapeHtml(relTime)}</span>
+                        <span style="opacity: 0.6; font-size: 0.7rem;">(${escapeHtml(fullDate)})</span>
+                    </span>
+                    ${entry.userName ? `
+                        <span class="task-history-user" title="${escapeHtml(entry.userName)}">
+                            <span class="material-symbols-outlined" style="font-size: 13px; opacity: 0.7;">person</span>
+                            <span>${escapeHtml(entry.userName)}</span>
+                        </span>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        container.appendChild(itemEl);
+    });
+
     container.scrollTop = container.scrollHeight;
 };

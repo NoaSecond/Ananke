@@ -69,7 +69,15 @@
     "comments": "Discussion",
     "write_comment": "Écrire un commentaire...",
     "no_comments": "Aucun commentaire pour le moment.",
-    "read_only": "Lecture seule"
+    "read_only": "Lecture seule",
+    "history": "Historique des déplacements",
+    "history_entries": "déplacements",
+    "no_history": "Aucun déplacement enregistré",
+    "currently_in": "Actuellement dans",
+    "created_in": "Créée dans",
+    "created_on": "Créée le",
+    "current_column": "Actuelle",
+    "history_hint": "Les changements de colonne apparaîtront ici automatiquement avec la date et l'heure."
   },
   "board_settings": {
     "title": "Paramètres du Tableau — {name}",

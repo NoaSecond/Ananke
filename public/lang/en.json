@@ -69,7 +69,15 @@
     "comments": "Discussion",
     "write_comment": "Write a comment...",
     "no_comments": "No comments yet.",
-    "read_only": "Read only"
+    "read_only": "Read only",
+    "history": "Movement History",
+    "history_entries": "movements",
+    "no_history": "No movements recorded",
+    "currently_in": "Currently in",
+    "created_in": "Created in",
+    "created_on": "Created on",
+    "current_column": "Current",
+    "history_hint": "Column movements will appear here automatically with date and time."
   },
   "board_settings": {
     "title": "Board Settings — {name}",

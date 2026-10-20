@@ -1,7 +1,7 @@
 import { state, getFullUrl } from './state.js';
 import { elements } from './dom.js';
 import { Logger, ErrorHandler } from './utils.js';
-import { openTaskEditModal, openViewTaskModal, updateInputCounter } from './task-ui.js';
+import { openTaskEditModal, openViewTaskModal, updateInputCounter, recordTaskMovement } from './task-ui.js';
 import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
 import { renderAvatarHtml, getContrastYIQ, renderSafeMarkdown, escapeHtml } from './utils.js';
@@ -326,6 +326,9 @@ export const initDragAndDrop = () => {
                 const [task] = oldWorkflow.tasks.splice(taskIndex, 1);
                 const newWorkflow = state.boardData.workflows.find(w => w.id == evt.to.dataset.workflowId);
                 newWorkflow.tasks.splice(evt.newIndex, 0, task);
+                if (oldWorkflow.id != newWorkflow.id) {
+                    recordTaskMovement(task, oldWorkflow, newWorkflow);
+                }
                 renderBoard();
                 saveData();
             }
@@ -441,6 +444,16 @@ export const initBoardListeners = () => {
                 const newTask = JSON.parse(JSON.stringify(task));
                 newTask.id = crypto.randomUUID();
                 newTask.title = `${task.title} (Copy)`;
+                newTask.history = [{
+                    type: 'column_change',
+                    fromColumn: null,
+                    toColumn: workflow.title,
+                    fromWorkflowId: null,
+                    toWorkflowId: workflow.id,
+                    timestamp: new Date().toISOString(),
+                    userId: state.currentUser?.id || null,
+                    userName: state.currentUser ? (state.currentUser.name || `${state.currentUser.first_name || ''} ${state.currentUser.last_name || ''}`.trim() || state.currentUser.email) : null
+                }];
                 const taskIndex = workflow.tasks.indexOf(task);
                 workflow.tasks.splice(taskIndex + 1, 0, newTask);
                 saveData();
@@ -479,11 +492,22 @@ export const initBoardListeners = () => {
                 const workflow = state.boardData.workflows.find(w => w.id == elements.addModalWorkflowId.value);
                 if (workflow) {
                     const today = new Date().toISOString().split('T')[0];
+                    const userName = state.currentUser ? (state.currentUser.name || `${state.currentUser.first_name || ''} ${state.currentUser.last_name || ''}`.trim() || state.currentUser.email) : null;
                     const newTask = {
                         id: crypto.randomUUID(),
                         title,
                         description: 'Click to edit...',
                         color: '#6b7280',
+                        history: [{
+                            type: 'column_change',
+                            fromColumn: null,
+                            toColumn: workflow.title,
+                            fromWorkflowId: null,
+                            toWorkflowId: workflow.id,
+                            timestamp: new Date().toISOString(),
+                            userId: state.currentUser?.id || null,
+                            userName: userName
+                        }],
                         customFields: [{ name: 'Created at', type: 'date', value: today, showOnCard: true }],
                         assignees: state.currentUser ? [{
                             id: state.currentUser.id,

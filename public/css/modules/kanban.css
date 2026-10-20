@@ -815,3 +815,200 @@ body.light-mode .assignee-item:hover {
         transform: translateY(0);
     }
 }
+
+/* Task Movement History Timeline */
+.view-task-column-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.task-history-timeline {
+    position: relative;
+    padding: 0.4rem 0.2rem;
+    max-height: 280px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.task-history-item {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    padding-left: 2rem;
+    padding-bottom: 1rem;
+}
+
+.task-history-item:last-child {
+    padding-bottom: 0.2rem;
+}
+
+/* Vertical line */
+.task-history-item::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 20px;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color);
+    opacity: 0.7;
+}
+
+.task-history-item:last-child::before {
+    display: none;
+}
+
+/* Timeline dot */
+.task-history-dot {
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color);
+    z-index: 1;
+    transition: all 0.2s ease;
+}
+
+.task-history-dot .material-symbols-outlined {
+    font-size: 14px;
+}
+
+.task-history-item.is-creation .task-history-dot {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.12);
+}
+
+.task-history-item.is-current .task-history-dot {
+    border-color: #10b981;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.task-history-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.task-history-card:hover {
+    border-color: var(--primary-color);
+}
+
+.task-history-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.task-history-transition {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.history-arrow {
+    font-size: 15px !important;
+    opacity: 0.5;
+}
+
+.history-pill {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.history-pill-from {
+    background: var(--border-color);
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.history-pill-to {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--primary-color, #6366f1);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.history-current-pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.task-history-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.75rem;
+    opacity: 0.65;
+    flex-wrap: wrap;
+}
+
+.task-history-time, .task-history-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.task-history-empty {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.85rem 1rem;
+    background: var(--bg-color);
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+}
+
+.task-history-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.task-history-empty-icon .material-symbols-outlined {
+    font-size: 20px;
+}
