@@ -749,6 +749,17 @@ body.light-mode .assignee-item:hover {
     flex-wrap: wrap;
 }
 
+.task-card-footer .task-assignees-display {
+    margin-top: 0;
+}
+
+.task-card-footer-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
 .task-card-footer-item {
     display: flex;
     align-items: center;

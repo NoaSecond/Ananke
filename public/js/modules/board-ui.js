@@ -187,10 +187,26 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
 
                 const commentsCount = Array.isArray(task.comments) ? task.comments.length : 0;
                 const commentsHtml = commentsCount > 0 ? `
-                    <div class="task-card-footer-item" title="${commentsCount} comments">
+                    <div class="task-card-footer-item" title="${commentsCount} ${t('task.comments') || 'comments'}">
                         <span class="material-symbols-outlined" style="font-size: 1rem;">forum</span>
                         <span>${commentsCount}</span>
                     </div>` : '';
+
+                const mediaCount = Array.isArray(task.media) ? task.media.length : 0;
+                const mediaHtml = mediaCount > 0 ? `
+                    <div class="task-card-footer-item" title="${mediaCount} ${t('task.media') || 'media'}">
+                        <span class="material-symbols-outlined" style="font-size: 1rem;">image</span>
+                        <span>${mediaCount}</span>
+                    </div>` : '';
+
+                const badgesHtml = (commentsHtml || mediaHtml) ? `
+                    <div class="task-card-footer-badges">
+                        ${commentsHtml}
+                        ${mediaHtml}
+                    </div>` : '';
+
+                const showAssignees = task.showAssigneesOnCard !== false && Boolean(assigneesHtml);
+                const hasFooter = showAssignees || Boolean(badgesHtml);
 
                 taskCard.innerHTML = `
                     ${taskActionsHtml}
@@ -200,10 +216,10 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     <div class="task-tags-display">
                         ${task.tags.map(tag => `<span class="tag-pill-small" style="background-color: ${escapeHtml(tag.color)}; color: ${getContrastYIQ(tag.color || '#3b82f6')};" title="${escapeHtml(tag.name)}">${escapeHtml(tag.name)}</span>`).join('')}
                     </div>` : ''}
-                    ${((task.showAssigneesOnCard !== false && assigneesHtml) || commentsHtml) ? `
+                    ${hasFooter ? `
                     <div class="task-card-footer">
-                        ${(task.showAssigneesOnCard !== false && assigneesHtml) ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
-                        ${commentsHtml}
+                        ${showAssignees ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
+                        ${badgesHtml}
                     </div>` : ''}
                     ${(task.showDescriptionOnCard !== false && task.description) ? `<div class="task-card-description">${renderSafeMarkdown(task.description)}</div>` : ''}
                     ${(task.customFields || []).filter(f => f.showOnCard).map(f => {
