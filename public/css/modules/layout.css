@@ -450,6 +450,10 @@ body.light-mode .sidebar-brand-icon {
     overflow-x: auto;
     align-items: flex-start;
     flex: 1;
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
     scrollbar-width: thin;
     scrollbar-color: var(--clr-border) transparent;
 }

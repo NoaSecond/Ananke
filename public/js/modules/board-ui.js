@@ -1,7 +1,7 @@
 import { state, getFullUrl } from './state.js';
 import { elements } from './dom.js';
 import { Logger, ErrorHandler } from './utils.js';
-import { openTaskEditModal, openViewTaskModal, updateInputCounter } from './task-ui.js';
+import { openTaskEditModal, openViewTaskModal, updateInputCounter, recordTaskMovement } from './task-ui.js';
 import { openWorkflowModal } from './workflow-ui.js';
 import { showConfirm, openModal, closeModal } from './modals.js';
 import { renderAvatarHtml, getContrastYIQ, renderSafeMarkdown, escapeHtml } from './utils.js';
@@ -29,6 +29,10 @@ export const saveData = ErrorHandler.wrapSync(() => {
 export const saveTaskOnly = ErrorHandler.wrapSync((task, workflowId) => {
     if (state.socket) {
         state.socket.emit('updateTask', { task, workflowId });
+    }
+    if (state.currentBoardId && state.boards) {
+        const b = state.boards.find(item => item.id === state.currentBoardId);
+        if (b) b.data = state.boardData;
     }
 }, 'Task saving');
 
@@ -181,12 +185,28 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     return renderAvatarHtml(a, { className: 'task-assignee-avatar' });
                 }).join('');
 
-                const commentsCount = (task.comments || []).length;
+                const commentsCount = Array.isArray(task.comments) ? task.comments.length : 0;
                 const commentsHtml = commentsCount > 0 ? `
-                    <div class="task-card-footer-item" title="${commentsCount} comments">
+                    <div class="task-card-footer-item" title="${commentsCount} ${t('task.comments') || 'comments'}">
                         <span class="material-symbols-outlined" style="font-size: 1rem;">forum</span>
                         <span>${commentsCount}</span>
                     </div>` : '';
+
+                const mediaCount = Array.isArray(task.media) ? task.media.length : 0;
+                const mediaHtml = mediaCount > 0 ? `
+                    <div class="task-card-footer-item" title="${mediaCount} ${t('task.media') || 'media'}">
+                        <span class="material-symbols-outlined" style="font-size: 1rem;">image</span>
+                        <span>${mediaCount}</span>
+                    </div>` : '';
+
+                const badgesHtml = (commentsHtml || mediaHtml) ? `
+                    <div class="task-card-footer-badges">
+                        ${commentsHtml}
+                        ${mediaHtml}
+                    </div>` : '';
+
+                const showAssignees = task.showAssigneesOnCard !== false && Boolean(assigneesHtml);
+                const hasFooter = showAssignees || Boolean(badgesHtml);
 
                 taskCard.innerHTML = `
                     ${taskActionsHtml}
@@ -196,10 +216,10 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     <div class="task-tags-display">
                         ${task.tags.map(tag => `<span class="tag-pill-small" style="background-color: ${escapeHtml(tag.color)}; color: ${getContrastYIQ(tag.color || '#3b82f6')};" title="${escapeHtml(tag.name)}">${escapeHtml(tag.name)}</span>`).join('')}
                     </div>` : ''}
-                    ${((task.showAssigneesOnCard !== false && assigneesHtml) || commentsHtml) ? `
+                    ${hasFooter ? `
                     <div class="task-card-footer">
-                        ${(task.showAssigneesOnCard !== false && assigneesHtml) ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
-                        ${commentsHtml}
+                        ${showAssignees ? `<div class="task-assignees-display">${assigneesHtml}</div>` : ''}
+                        ${badgesHtml}
                     </div>` : ''}
                     ${(task.showDescriptionOnCard !== false && task.description) ? `<div class="task-card-description">${renderSafeMarkdown(task.description)}</div>` : ''}
                     ${(task.customFields || []).filter(f => f.showOnCard).map(f => {
@@ -258,6 +278,9 @@ export const initDragAndDrop = () => {
         disabled: isReader,
         filter: '.locked, .workflow-actions, .workflow-menu-btn, .workflow-menu',
         preventOnFilter: false,
+        delay: 150,
+        delayOnTouchOnly: true,
+        touchStartThreshold: 5,
         onStart: () => { state.isDraggingInternal = true; },
         onMove: (evt) => {
             // Prevent dragging column into a task list or any other nested container
@@ -287,6 +310,9 @@ export const initDragAndDrop = () => {
             draggable: '.task-card',
             disabled: isReader,
             animation: 150,
+            delay: 150,
+            delayOnTouchOnly: true,
+            touchStartThreshold: 5,
             onStart: () => { state.isDraggingInternal = true; },
             onMove: (evt) => {
                 // Prevent dragging a task into something that is not a task list
@@ -300,6 +326,9 @@ export const initDragAndDrop = () => {
                 const [task] = oldWorkflow.tasks.splice(taskIndex, 1);
                 const newWorkflow = state.boardData.workflows.find(w => w.id == evt.to.dataset.workflowId);
                 newWorkflow.tasks.splice(evt.newIndex, 0, task);
+                if (oldWorkflow.id != newWorkflow.id) {
+                    recordTaskMovement(task, oldWorkflow, newWorkflow);
+                }
                 renderBoard();
                 saveData();
             }
@@ -415,6 +444,16 @@ export const initBoardListeners = () => {
                 const newTask = JSON.parse(JSON.stringify(task));
                 newTask.id = crypto.randomUUID();
                 newTask.title = `${task.title} (Copy)`;
+                newTask.history = [{
+                    type: 'column_change',
+                    fromColumn: null,
+                    toColumn: workflow.title,
+                    fromWorkflowId: null,
+                    toWorkflowId: workflow.id,
+                    timestamp: new Date().toISOString(),
+                    userId: state.currentUser?.id || null,
+                    userName: state.currentUser ? (state.currentUser.name || `${state.currentUser.first_name || ''} ${state.currentUser.last_name || ''}`.trim() || state.currentUser.email) : null
+                }];
                 const taskIndex = workflow.tasks.indexOf(task);
                 workflow.tasks.splice(taskIndex + 1, 0, newTask);
                 saveData();
@@ -453,11 +492,22 @@ export const initBoardListeners = () => {
                 const workflow = state.boardData.workflows.find(w => w.id == elements.addModalWorkflowId.value);
                 if (workflow) {
                     const today = new Date().toISOString().split('T')[0];
+                    const userName = state.currentUser ? (state.currentUser.name || `${state.currentUser.first_name || ''} ${state.currentUser.last_name || ''}`.trim() || state.currentUser.email) : null;
                     const newTask = {
                         id: crypto.randomUUID(),
                         title,
                         description: 'Click to edit...',
                         color: '#6b7280',
+                        history: [{
+                            type: 'column_change',
+                            fromColumn: null,
+                            toColumn: workflow.title,
+                            fromWorkflowId: null,
+                            toWorkflowId: workflow.id,
+                            timestamp: new Date().toISOString(),
+                            userId: state.currentUser?.id || null,
+                            userName: userName
+                        }],
                         customFields: [{ name: 'Created at', type: 'date', value: today, showOnCard: true }],
                         assignees: state.currentUser ? [{
                             id: state.currentUser.id,

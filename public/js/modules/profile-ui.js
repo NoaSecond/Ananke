@@ -334,7 +334,11 @@ function _bindEvents() {
                     Logger.success('Profile updated successfully');
                 } else {
                     if (messageEl) {
-                        messageEl.textContent = res.error || t('profile.save_failed');
+                        let errMsg = res.error || t('profile.save_failed');
+                        if (res.code === 'EMAIL_ALREADY_EXISTS' || res.error === 'Email déjà utilisé') {
+                            errMsg = t('profile.email_already_exists') || 'Email address already in use.';
+                        }
+                        messageEl.textContent = errMsg;
                         messageEl.style.color = 'var(--clr-danger)';
                     }
                 }

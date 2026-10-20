@@ -27,7 +27,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 10,
+    max: process.env.NODE_ENV === 'production' ? 10 : 100,
+    skipSuccessfulRequests: true,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Trop de tentatives de connexion. Veuillez réessayer dans 15 minutes.' },
@@ -215,8 +216,25 @@ router.post('/complete-setup', authenticate, validateProfileSetup, async (req, r
         setCookieToken(req, res, token);
 
         logger.info(`Profile updated: ${name} (${updated.email})`);
-        res.json({ success: true, user: { ...updated, name, token_version: undefined } });
+
+        res.json({
+            success: true,
+            user: {
+                id:                updated.id,
+                name,
+                role:              updated.role,
+                email:             updated.email,
+                first_name:        updated.first_name,
+                last_name:         updated.last_name,
+                is_setup_complete: updated.is_setup_complete,
+                avatar_url:        updated.avatar_url,
+            },
+        });
     } catch (err) {
+        if (err.message?.includes('UNIQUE constraint failed')) {
+            logger.warn(`Profile update failed — email already exists: ${email}`);
+            return res.status(409).json({ error: 'Email déjà utilisé', code: 'EMAIL_ALREADY_EXISTS' });
+        }
         logger.error(`complete-setup error: ${err.message}`);
         res.status(500).json({ error: 'Erreur interne du serveur' });
     }

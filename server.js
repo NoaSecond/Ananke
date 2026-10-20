@@ -456,22 +456,26 @@ io.on('connection', (socket) => {
 
             const boardData = board.data;
 
+            // Target workflow must exist
+            const targetWf = boardData.workflows.find(w => String(w.id) === String(workflowId));
+            if (!targetWf) {
+                logger.warn(`updateTask target workflow not found: workflowId=${workflowId}`);
+                return;
+            }
+
             // Remove task from its current column
             let oldIndex = -1;
             let oldWfId  = null;
             for (const wf of boardData.workflows) {
-                const idx = wf.tasks.findIndex(t => t.id === task.id);
+                const idx = wf.tasks.findIndex(t => String(t.id) === String(task.id));
                 if (idx !== -1) { oldWfId = wf.id; oldIndex = idx; wf.tasks.splice(idx, 1); break; }
             }
 
             // Insert into target column
-            const targetWf = boardData.workflows.find(w => w.id === workflowId);
-            if (targetWf) {
-                if (oldWfId === workflowId && oldIndex !== -1) {
-                    targetWf.tasks.splice(oldIndex, 0, task);
-                } else {
-                    targetWf.tasks.push(task);
-                }
+            if (String(oldWfId) === String(workflowId) && oldIndex !== -1) {
+                targetWf.tasks.splice(oldIndex, 0, task);
+            } else {
+                targetWf.tasks.push(task);
             }
 
             const enrichedBoardData = await boardRepository.enrichBoardAssignees(boardData);

@@ -91,22 +91,22 @@ function validateCreateAccount(req, res, next) {
     const { email, password, role } = req.body;
 
     if (!email || !isValidEmail(email)) {
-        return res.status(400).json({ error: 'Format d\'adresse email invalide.' });
+        return res.status(400).json({ error: 'Format d\'adresse email invalide.', code: 'INVALID_EMAIL' });
     }
     if (!password || typeof password !== 'string' || password.length < 8) {
-        return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caractères.' });
+        return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caractères.', code: 'PASSWORD_TOO_SHORT' });
     }
     if (password.length > 128) {
-        return res.status(400).json({ error: 'Mot de passe trop long.' });
+        return res.status(400).json({ error: 'Mot de passe trop long.', code: 'PASSWORD_TOO_LONG' });
     }
 
     const userRole = role || 'user';
     if (!ALLOWED_GLOBAL_ROLES.includes(userRole) && req.user?.role !== 'owner') {
-        return res.status(400).json({ error: 'Rôle invalide.' });
+        return res.status(400).json({ error: 'Rôle invalide.', code: 'INVALID_ROLE' });
     }
     // Owner can also set 'owner' role
     if (!['user', 'reader', 'editor', 'admin', 'owner'].includes(userRole)) {
-        return res.status(400).json({ error: 'Rôle invalide.' });
+        return res.status(400).json({ error: 'Rôle invalide.', code: 'INVALID_ROLE' });
     }
 
     req.body.email = email.toLowerCase().trim();
