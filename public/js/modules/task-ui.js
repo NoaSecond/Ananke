@@ -13,6 +13,18 @@ let tempAssignees = [];
 let tempMedia = [];
 let currentViewingTask = null;
 let currentViewingWorkflow = null;
+const DEFAULT_TASK_COLOR = '#6b7280';
+let isTaskColorCustomized = false;
+
+const updateDefaultTaskColor = () => {
+    if (!isTaskColorCustomized || elements.taskForm.color.value.toLowerCase() === DEFAULT_TASK_COLOR) {
+        if (tempTags.length > 0 && tempTags[0]?.color) {
+            elements.taskForm.color.value = tempTags[0].color;
+        } else if (tempTags.length === 0) {
+            elements.taskForm.color.value = DEFAULT_TASK_COLOR;
+        }
+    }
+};
 
 // Helper for input character counter
 export function updateInputCounter(inputEl, counterEl, max = 100) {
@@ -43,7 +55,10 @@ export const openTaskEditModal = (task, workflow) => {
     elements.taskForm.title.value = task.title || '';
     updateInputCounter(elements.taskForm.title, elements.taskForm.titleCounter, 100);
     elements.taskForm.description.value = task.description;
-    elements.taskForm.color.value = task.color;
+    const taskColor = (task.color || DEFAULT_TASK_COLOR).toLowerCase();
+    const firstTagColor = (task.tags && task.tags[0]?.color) ? task.tags[0].color.toLowerCase() : null;
+    isTaskColorCustomized = (taskColor !== DEFAULT_TASK_COLOR && taskColor !== firstTagColor);
+    elements.taskForm.color.value = task.color || DEFAULT_TASK_COLOR;
     elements.taskForm.showTags.checked = task.showTags !== false;
     elements.taskForm.showDesc.checked = task.showDescriptionOnCard !== false;
     elements.taskForm.showAssignees.checked = task.showAssigneesOnCard !== false;
@@ -109,6 +124,10 @@ window.checkTaskDirty = () => {
 };
 
 export const initTaskListeners = () => {
+    elements.taskForm.color.addEventListener('input', () => {
+        isTaskColorCustomized = true;
+    });
+
     elements.taskForm.title.addEventListener('input', () => {
         updateInputCounter(elements.taskForm.title, elements.taskForm.titleCounter, 100);
     });
@@ -234,6 +253,7 @@ export const initTaskListeners = () => {
             if (!tempTags.find(t => t.name === name)) {
                 tempTags.push(newTag);
                 renderTags(tempTags);
+                updateDefaultTaskColor();
             }
             elements.taskForm.newTagName.value = '';
             updateTagCounter();
@@ -857,6 +877,7 @@ const renderTags = (tags) => {
             e.stopPropagation(); // Stop propagation to prevent issues
             tempTags.splice(index, 1);
             renderTags(tempTags);
+            updateDefaultTaskColor();
         };
         elements.taskForm.tagsContainer.appendChild(tagEl);
     });
@@ -868,8 +889,7 @@ const renderTags = (tags) => {
             onEnd: (evt) => {
                 const [movedItem] = tempTags.splice(evt.oldIndex, 1);
                 tempTags.splice(evt.newIndex, 0, movedItem);
-                // We don't re-render here to keep the drag-and-drop smooth,
-                // but the tempTags array is now in the correct order.
+                updateDefaultTaskColor();
             }
         });
     }
@@ -959,6 +979,7 @@ const renderAvailableTags = () => {
             if (!tempTags.find(t => t.name === tag.name)) {
                 tempTags.push(tag);
                 renderTags(tempTags);
+                updateDefaultTaskColor();
             }
             toggleTagPicker(false);
         };
