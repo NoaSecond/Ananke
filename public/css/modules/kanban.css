@@ -61,6 +61,8 @@
     min-height: 100px;
     padding: 1rem;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
 }
 
 .workflow-actions {

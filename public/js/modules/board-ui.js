@@ -262,6 +262,9 @@ export const initDragAndDrop = () => {
         disabled: isReader,
         filter: '.locked, .workflow-actions, .workflow-menu-btn, .workflow-menu',
         preventOnFilter: false,
+        delay: 150,
+        delayOnTouchOnly: true,
+        touchStartThreshold: 5,
         onStart: () => { state.isDraggingInternal = true; },
         onMove: (evt) => {
             // Prevent dragging column into a task list or any other nested container
@@ -291,6 +294,9 @@ export const initDragAndDrop = () => {
             draggable: '.task-card',
             disabled: isReader,
             animation: 150,
+            delay: 150,
+            delayOnTouchOnly: true,
+            touchStartThreshold: 5,
             onStart: () => { state.isDraggingInternal = true; },
             onMove: (evt) => {
                 // Prevent dragging a task into something that is not a task list
