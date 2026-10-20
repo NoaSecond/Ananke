@@ -64,7 +64,11 @@
     "save": "Enregistrer la tâche",
     "delete": "Supprimer la tâche",
     "cancel": "Annuler",
-    "confirm_delete": "Êtes-vous sûr de vouloir supprimer cette tâche ?"
+    "confirm_delete": "Êtes-vous sûr de vouloir supprimer cette tâche ?",
+    "comments": "Discussion",
+    "write_comment": "Écrire un commentaire...",
+    "no_comments": "Aucun commentaire pour le moment.",
+    "read_only": "Lecture seule"
   },
   "board_settings": {
     "title": "Paramètres du Tableau — {name}",

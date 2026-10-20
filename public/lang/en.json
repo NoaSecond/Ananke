@@ -64,7 +64,11 @@
     "save": "Save Task",
     "delete": "Delete Task",
     "cancel": "Cancel",
-    "confirm_delete": "Are you sure you want to delete this task?"
+    "confirm_delete": "Are you sure you want to delete this task?",
+    "comments": "Discussion",
+    "write_comment": "Write a comment...",
+    "no_comments": "No comments yet.",
+    "read_only": "Read only"
   },
   "board_settings": {
     "title": "Board Settings — {name}",

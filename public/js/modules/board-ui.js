@@ -30,6 +30,10 @@ export const saveTaskOnly = ErrorHandler.wrapSync((task, workflowId) => {
     if (state.socket) {
         state.socket.emit('updateTask', { task, workflowId });
     }
+    if (state.currentBoardId && state.boards) {
+        const b = state.boards.find(item => item.id === state.currentBoardId);
+        if (b) b.data = state.boardData;
+    }
 }, 'Task saving');
 
 export function isCurrentBoardReader() {
@@ -181,7 +185,7 @@ export const renderBoard = ErrorHandler.wrapSync(() => {
                     return renderAvatarHtml(a, { className: 'task-assignee-avatar' });
                 }).join('');
 
-                const commentsCount = (task.comments || []).length;
+                const commentsCount = Array.isArray(task.comments) ? task.comments.length : 0;
                 const commentsHtml = commentsCount > 0 ? `
                     <div class="task-card-footer-item" title="${commentsCount} comments">
                         <span class="material-symbols-outlined" style="font-size: 1rem;">forum</span>

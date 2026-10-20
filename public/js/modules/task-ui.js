@@ -629,25 +629,34 @@ export const initTaskListeners = () => {
     // Discussion Listeners
     if (elements.viewTaskDisplay.sendCommentBtn) {
         elements.viewTaskDisplay.sendCommentBtn.addEventListener('click', () => {
+            if (isCurrentBoardReader()) return;
             const text = elements.viewTaskDisplay.commentInput.value.trim();
             if (text && currentViewingTask) {
-                // Find task in current board data to avoid stale reference
+                // Find task and workflow in current board data to avoid stale reference
                 let taskToUpdate = null;
+                let foundWorkflow = null;
                 for (const workflow of state.boardData.workflows) {
                     taskToUpdate = workflow.tasks.find(t => t.id == currentViewingTask.id);
-                    if (taskToUpdate) break;
+                    if (taskToUpdate) {
+                        foundWorkflow = workflow;
+                        break;
+                    }
                 }
 
-                if (taskToUpdate) {
+                if (taskToUpdate && foundWorkflow) {
                     if (!taskToUpdate.comments) taskToUpdate.comments = [];
+                    const authorName = state.currentUser?.first_name
+                        ? `${state.currentUser.first_name} ${state.currentUser.last_name || ''}`.trim()
+                        : (state.currentUser?.name || state.currentUser?.email || 'Anonymous');
                     taskToUpdate.comments.push({
-                        author: state.currentUser?.name || 'Anonymous',
+                        author: authorName,
                         text: text,
                         timestamp: Date.now()
                     });
                     elements.viewTaskDisplay.commentInput.value = '';
                     renderComments(taskToUpdate);
-                    saveTaskOnly(taskToUpdate, workflow.id);
+                    renderBoard();
+                    saveTaskOnly(taskToUpdate, foundWorkflow.id);
                     // Update the reference we hold to the new one
                     currentViewingTask = taskToUpdate;
                 }
@@ -656,8 +665,9 @@ export const initTaskListeners = () => {
     }
 
     if (elements.viewTaskDisplay.commentInput) {
-        elements.viewTaskDisplay.commentInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
+        elements.viewTaskDisplay.commentInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 elements.viewTaskDisplay.sendCommentBtn.click();
             }
         });
@@ -710,9 +720,23 @@ export const openViewTaskModal = (task, workflow) => {
     currentViewingTask = task;
     currentViewingWorkflow = workflow;
 
+    const isReader = isCurrentBoardReader();
+
     // Hide edit button for readers
     if (elements.viewTaskDisplay.editBtn) {
-        elements.viewTaskDisplay.editBtn.style.display = isCurrentBoardReader() ? 'none' : 'flex';
+        elements.viewTaskDisplay.editBtn.style.display = isReader ? 'none' : 'flex';
+    }
+
+    if (elements.viewTaskDisplay.commentInput) {
+        elements.viewTaskDisplay.commentInput.disabled = isReader;
+        elements.viewTaskDisplay.commentInput.placeholder = isReader
+            ? (t('task.read_only') || (localStorage.getItem('lang') === 'fr' ? 'Lecture seule' : 'Read only'))
+            : (t('task.write_comment') || (localStorage.getItem('lang') === 'fr' ? 'Écrire un commentaire...' : 'Write a comment...'));
+    }
+
+    if (elements.viewTaskDisplay.sendCommentBtn) {
+        elements.viewTaskDisplay.sendCommentBtn.disabled = isReader;
+        elements.viewTaskDisplay.sendCommentBtn.style.display = isReader ? 'none' : 'flex';
     }
 
     elements.viewTaskDisplay.title.textContent = task.title;
@@ -1218,7 +1242,7 @@ const renderComments = (task) => {
 
     const comments = task.comments || [];
     container.innerHTML = comments.length === 0 ?
-        `<p style="opacity: 0.5; font-size: 0.9rem; font-style: italic;">${localStorage.getItem('lang') === 'fr' ? 'Aucun commentaire pour le moment.' : 'No comments yet.'}</p>` : '';
+        `<p style="opacity: 0.5; font-size: 0.9rem; font-style: italic;">${t('task.no_comments') || (localStorage.getItem('lang') === 'fr' ? 'Aucun commentaire pour le moment.' : 'No comments yet.')}</p>` : '';
 
     comments.forEach(comment => {
         const div = document.createElement('div');
