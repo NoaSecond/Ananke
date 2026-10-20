@@ -41,7 +41,7 @@
     padding: 1.25rem;
     cursor: pointer;
     box-shadow: var(--shadow-sm);
-    transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+    transition: box-shadow var(--transition-base), border-color var(--transition-base);
     position: relative;
     overflow: hidden;
     display: flex;
@@ -50,7 +50,6 @@
 }
 
 .board-card:hover {
-    transform: translateY(-2px);
     box-shadow: var(--shadow-md), 0 0 0 1px var(--clr-primary-glow);
     border-color: rgba(99,102,241,0.3);
 }

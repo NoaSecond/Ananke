@@ -450,6 +450,7 @@ body.light-mode .sidebar-brand-icon {
     overflow-x: auto;
     align-items: flex-start;
     flex: 1;
+    min-height: 0;
     scrollbar-width: thin;
     scrollbar-color: var(--clr-border) transparent;
 }
